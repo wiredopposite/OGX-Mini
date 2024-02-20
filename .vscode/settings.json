@@ -1,0 +1,17 @@
+{
+    "files.associations": {
+        "hiddescriptors.h": "c",
+        "xid_steelbattalion.h": "c",
+        "irq.h": "c",
+        "xinput_driver.h": "c",
+        "stdint.h": "c",
+        "hid_driver.h": "c",
+        "array": "cpp",
+        "string": "cpp",
+        "string_view": "cpp",
+        "ranges": "cpp",
+        "usbh_pvt.h": "c",
+        "gamepad.h": "c"
+    },
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
+}

@@ -1,0 +1,7 @@
+build
+release
+generated
+tools
+.ignore
+.vsvode
+src/usbh/tusb_hid/experiment
