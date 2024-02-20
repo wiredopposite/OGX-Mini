@@ -3,5 +3,5 @@ release
 generated
 tools
 .ignore
-.vsvode
+.vscode
 src/usbh/tusb_hid/experiment
