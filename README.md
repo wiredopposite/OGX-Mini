@@ -6,7 +6,7 @@ Firmware for the RP2040/Pico, setup for the [Adafruit Feather USB Host board](ht
 - XInput (not Xbox 360)
 - Nintendo Switch (must be in dock mode, no rumble yet)
 
-Currently there's no way to switch what device is being emulated on the fly, so the firmware must be compiled specifically for whichever platform you'd like to play on. As long as that's the case, I'll provide compiled .uf2 files for each platform in [Releases](releases).
+Currently there's no way to switch what device is being emulated on the fly, so the firmware must be compiled specifically for whichever platform you'd like to play on. As long as that's the case, I'll provide compiled .uf2 files for each platform in [Releases](https://github.com/wiredopposite/OGX-Mini/releases).
 
 # Supported devices
 - Original Xbox Duke and S controllers
