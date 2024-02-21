@@ -4,9 +4,9 @@
 Firmware for the RP2040/Pico, setup for the [Adafruit Feather USB Host board](https://www.adafruit.com/product/5723), capable of emulating gamepads for
 - Original Xbox
 - XInput (not Xbox 360)
-- Nintendo Switch (Rumble not implemented yet)
+- Nintendo Switch (must be in dock mode, no rumble yet)
 
-Currently there's no way to switch what device is being emulated on the fly (working on that), so the firmware must be compiled specifically for whichever platform you'd like to play on. As long as that's the case, I'll provide compiled .uf2 files for each platform in Releases.
+Currently there's no way to switch what device is being emulated on the fly, so the firmware must be compiled specifically for whichever platform you'd like to play on. As long as that's the case, I'll provide compiled .uf2 files for each platform in Releases.
 
 # Supported devices
 - Original Xbox Duke and S controllers
