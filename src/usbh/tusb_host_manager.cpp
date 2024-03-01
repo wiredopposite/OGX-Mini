@@ -4,8 +4,15 @@
 #include "tusb_xinput/xinput_host.h"
 
 #include "tusb_hid/hid_host_app.h"
-#include "tusb_hid/ps4.h"
-#include "tusb_hid/ps5.h"
+#include "tusb_hid/shared.h"
+
+// #include "tusb_hid/switch_pro.h"
+// #include "tusb_hid/switch_wired.h"
+// #include "tusb_hid/n64usb.h"
+// #include "tusb_hid/psclassic.h"
+// #include "tusb_hid/ps3.h"
+// #include "tusb_hid/ps4.h"
+// #include "tusb_hid/ps5.h"
 
 #include "tusb_host_manager.h"
 
@@ -16,17 +23,36 @@ HostMode host_mode;
 bool device_mounted = false;
 uint8_t device_daddr = 0;
 
-// HostMode get_host_mode()
-// {
-//     return host_mode;
-// }
+typedef struct 
+{
+    const usb_vid_pid_t* devices;
+    size_t num_devices;
+    HostMode check_mode;
+} DeviceTypeInfo;
 
-// not sure why this and tuh_mounted are always true
-// unused atm, come back to it
-// bool tuh_device_mounted()
-// {
-//     return device_mounted;
-// }
+const DeviceTypeInfo device_types[] = 
+{
+    { n64_devices, sizeof(n64_devices) / sizeof(usb_vid_pid_t), HOST_MODE_HID_N64USB },
+    { psc_devices, sizeof(psc_devices) / sizeof(usb_vid_pid_t), HOST_MODE_HID_PSCLASSIC },
+    { ps3_devices, sizeof(ps3_devices) / sizeof(usb_vid_pid_t), HOST_MODE_HID_PS3 },
+    { ps4_devices, sizeof(ps4_devices) / sizeof(usb_vid_pid_t), HOST_MODE_HID_PS4 },
+    { ps5_devices, sizeof(ps5_devices) / sizeof(usb_vid_pid_t), HOST_MODE_HID_PS5 },
+    { switch_wired_devices, sizeof(switch_wired_devices) / sizeof(usb_vid_pid_t), HOST_MODE_HID_SWITCH_WIRED },
+    { switch_pro_devices, sizeof(switch_pro_devices) / sizeof(usb_vid_pid_t), HOST_MODE_HID_SWITCH_PRO }
+};
+
+bool check_vid_pid(const usb_vid_pid_t* devices, size_t num_devices, HostMode check_mode, uint16_t vid, uint16_t pid) 
+{
+    for (size_t i = 0; i < num_devices; i++) 
+    {
+        if (vid == devices[i].vid && pid == devices[i].pid) 
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
 
 void tuh_mount_cb(uint8_t daddr)
 {
@@ -39,35 +65,31 @@ void tuh_mount_cb(uint8_t daddr)
     uint16_t vid, pid;
     tuh_vid_pid_get(daddr, &vid, &pid);
 
-    // lists of device VIP/PIDs
-    const size_t num_ps4_devices = sizeof(ps4_devices) / sizeof(usb_vid_pid_t);
-    const size_t num_ps5_devices = sizeof(ps5_devices) / sizeof(usb_vid_pid_t);
-
     host_mode = HOST_MODE_XINPUT;
 
-    // check if VID/PID match any in playstation devices
-    for (size_t i = 0; i < num_ps4_devices || i < num_ps5_devices; i++)
+    // set host mode depending on VID/PID match
+    const size_t num_device_types = sizeof(device_types) / sizeof(DeviceTypeInfo);
+
+    for (size_t i = 0; i < num_device_types; i++) 
     {
-        if (i < num_ps4_devices && vid == ps4_devices[i].vid && pid == ps4_devices[i].pid)
+        if (check_vid_pid(device_types[i].devices, device_types[i].num_devices, device_types[i].check_mode, vid, pid)) 
         {
-            host_mode = HOST_MODE_HID_PS4;
-            break;
-        }
-        if (i < num_ps5_devices && vid == ps5_devices[i].vid && pid == ps5_devices[i].pid)
-        {
-            host_mode = HOST_MODE_HID_PS5;
-            break;
+            host_mode = device_types[i].check_mode;
+            return;
         }
     }
+    // host_mode = HOST_MODE_HID_PS3;
+
+    return;
 }
 
-// void tuh_umount_cb(uint8_t daddr)
-// {
-//     if (device_mounted && device_daddr == daddr)
-//     {
-//         device_mounted = false;
-//     }
-// }
+void tuh_umount_cb(uint8_t daddr)
+{
+    if (device_mounted && device_daddr == daddr)
+    {
+        device_mounted = false;
+    }
+}
 
 usbh_class_driver_t const* usbh_app_driver_get_cb(uint8_t* driver_count)
 {
@@ -84,22 +106,25 @@ usbh_class_driver_t const* usbh_app_driver_get_cb(uint8_t* driver_count)
 
 void send_fb_data_to_gamepad()
 {
-    bool rumble_sent = false;
-
-    if (host_mode == HOST_MODE_XINPUT)
+    if (device_mounted)
     {
-        rumble_sent = send_fb_data_to_xinput_gamepad();
-    }
-    else
-    {
-        rumble_sent = send_fb_data_to_hid_gamepad();
-
-        // needed so rumble doesn't get stuck on
-        // breaks xinput rumble
-        if (rumble_sent && (gamepadOut.out_state.lrumble != UINT8_MAX || gamepadOut.out_state.rrumble != UINT8_MAX))
+        if (host_mode == HOST_MODE_XINPUT)
+        {
+            send_fb_data_to_xinput_gamepad();
+        }
+        else
+        {
+            if (send_fb_data_to_hid_gamepad())
             {
-                gamepadOut.out_state.lrumble = 0;
-                gamepadOut.out_state.rrumble = 0;
+                gamepadOut.rumble_hid_reset();
             }
+        }
     }
 }
+
+// not sure why this and tuh_mounted are always true
+// unused atm, come back to it
+// bool tuh_device_mounted()
+// {
+//     return device_mounted;
+// }

@@ -10,6 +10,8 @@ enum InputMode load_input_mode()
         return INPUT_MODE_XBOXORIGINAL;
     #elif HOST_NINTENDO_SWITCH
         return INPUT_MODE_SWITCH;
+    #elif HOST_PLAYSTATION_CLASSIC
+        return INPUT_MODE_PSCLASSIC;
     #else
         return INPUT_MODE_XINPUT;
     #endif

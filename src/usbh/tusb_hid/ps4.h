@@ -5,15 +5,26 @@
 
 #include <stdint.h>
 
-#include "tusb_hid/hid_vid_pid.h"
+#include "usbh/tusb_hid/shared.h"
+
+#define REPORT_ID_GAMEPAD_STATE 0x11
 
 const usb_vid_pid_t ps4_devices[] = 
 {
     {0x054C, 0x05C4}, // DS4
     {0x054C, 0x09CC}, // DS4
+    {0x054C, 0x0BA0}, // DS4 wireless adapter
     {0x0F0D, 0x005E}, // Hori FC4
     {0x0F0D, 0x00EE}, // Hori PS4 Mini (PS4-099U)
     {0x1F4F, 0x1002}  // ASW GG Xrd controller
+};
+
+static const uint8_t led_colors[][3] =
+{
+    { 0x00, 0x00, 0x40 }, // Blue
+    { 0x40, 0x00, 0x00 }, // Red
+    { 0x00, 0x40, 0x00 }, // Green
+    { 0x20, 0x00, 0x20 }, // Pink
 };
 
 enum dualshock4_dpad_mask
@@ -31,6 +42,8 @@ enum dualshock4_dpad_mask
 
 typedef struct __attribute__((packed))
 {
+    uint8_t report_id;
+
     uint8_t lx, ly, rx, ry; // joystick
 
     struct {
@@ -69,11 +82,10 @@ typedef struct __attribute__((packed))
 
     // there is still more info
 
-} sony_ds4_report_t;
+} Dualshock4Report;
 
 typedef struct __attribute__((packed))
 {
-    // First 16 bits set what data is pertinent in this structure (1 = set; 0 = not set)
     uint8_t set_rumble : 1;
     uint8_t set_led : 1;
     uint8_t set_led_blink : 1;
@@ -103,17 +115,25 @@ typedef struct __attribute__((packed))
     uint8_t volume_speaker;
 
     uint8_t other[9];
-} sony_ds4_output_report_t;
+} Dualshock4OutReport;
 
-// #ifdef __cplusplus
-// extern "C" {
-// #endif
+struct Dualshock4State
+{
+    uint8_t dev_addr = {0};
+    uint8_t instance = {0};
+    bool leds_set = {false};
+};
 
-bool send_fb_data_to_dualshock4(uint8_t dev_addr, uint8_t instance);
-void process_dualshock4(uint8_t const* report, uint16_t len);
-
-// #ifdef __cplusplus
-// }
-// #endif
+class Dualshock4
+{
+    public:
+        void init(uint8_t dev_addr, uint8_t instance);
+        void process_report(uint8_t const* report, uint16_t len);
+        bool send_fb_data();
+    private:
+        Dualshock4State dualshock4;
+        void update_gamepad(const Dualshock4Report* ds4_data);
+        bool set_leds();
+};
 
 #endif // _PS4_H_

@@ -4,15 +4,16 @@
 #define _PS5_H_
 
 #include <stdint.h>
-#include "hid_vid_pid.h"
 
-// TODO: find more of these
+#include "usbh/tusb_hid/shared.h"
+
 const usb_vid_pid_t ps5_devices[] = 
 {
-    {0x054C, 0x0CE6} // dualsense
+    {0x054C, 0x0CE6}, // dualsense
+    {0x054C, 0x0DF2} // dualsense edge
 };
 
-enum dualsense_button0_mask
+enum dualsense_dpad_mask
 {
     PS5_MASK_DPAD_UP = 0x00,
     PS5_MASK_DPAD_UP_RIGHT = 0x01,
@@ -23,13 +24,17 @@ enum dualsense_button0_mask
     PS5_MASK_DPAD_LEFT = 0x06,
     PS5_MASK_DPAD_LEFT_UP = 0x07,
     PS5_MASK_DPAD_NONE = 0x08,
-    PS5_MASK_SQUARE = 0x10,
-    PS5_MASK_CROSS = 0x20,
-    PS5_MASK_CIRCLE = 0x40,
-    PS5_MASK_TRIANGLE = 0x80,
 };
 
-enum dualsense_button1_mask
+// enum dualsense_action_mask
+// {
+//     PS5_MASK_SQUARE = 0x10,
+//     PS5_MASK_CROSS = 0x20,
+//     PS5_MASK_CIRCLE = 0x40,
+//     PS5_MASK_TRIANGLE = 0x80,
+// };
+
+enum dualsense_buttons0_mask
 {
     PS5_MASK_L1 = 0x01,
     PS5_MASK_R1 = 0x02,
@@ -41,19 +46,28 @@ enum dualsense_button1_mask
     PS5_MASK_R3 = 0x80,
 };
 
-enum dualsense_button2_mask
+enum dualsense_buttons1_mask
 {
     PS5_MASK_PS = 0x01,
     PS5_MASK_TOUCH_PAD = 0x02,
     PS5_MASK_MIC = 0x04,
 };
 
-struct dualsense_input_report {
+struct DualsenseReport {
+    uint8_t report_id;
+
     uint8_t lx, ly; 
     uint8_t rx, ry; 
     uint8_t lt, rt;
-    uint8_t seq_number; // Sequence number for the input report
-    uint8_t button[4]; // Array of button masks
+    uint8_t seq_number;
+
+    uint8_t dpad : 4;
+    uint8_t square : 1;
+    uint8_t cross : 1;
+    uint8_t circle : 1;
+    uint8_t triangle : 1;
+
+    uint8_t buttons[3];
 
     // Motion sensors
     uint16_t gyro[3]; // Gyroscope data for x, y, z axes
@@ -76,7 +90,7 @@ struct dualsense_input_report {
     uint8_t reserved4[10];
 } __attribute__((packed));
 
-struct dualsense_output_report_t {
+struct DualsenseOutReport {
     uint8_t valid_flag0;
     uint8_t valid_flag1;
 
@@ -117,15 +131,21 @@ struct dualsense_output_report_t {
     uint8_t lightbar_blue;
 } __attribute__((packed));
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+struct DualsenseState
+{
+    uint8_t dev_addr = {0};
+    uint8_t instance = {0};
+};
 
-bool send_fb_data_to_dualsense(uint8_t dev_addr, uint8_t instance);
-void process_dualsense(uint8_t const* report, uint16_t len);
-
-#ifdef __cplusplus
-}
-#endif
+class Dualsense
+{
+    public:
+        void init(uint8_t dev_addr, uint8_t instance);
+        void process_report(uint8_t const* report, uint16_t len);
+        bool send_fb_data();
+    private:
+        DualsenseState dualsense;
+        void update_gamepad(const DualsenseReport* ds_data);
+};
 
 #endif // _PS5_H_

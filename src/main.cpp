@@ -10,8 +10,8 @@
 
 #include "usbh/tusb_host.h"
 
-#include "usbd/drivers/drivermanager.h"
-#include "usbd/drivers/gpdriver.h"
+#include "usbd/drivermanager.h"
+#include "usbd/gpdriver.h"
 
 #include "Gamepad.h"
 #include "input_mode.h"

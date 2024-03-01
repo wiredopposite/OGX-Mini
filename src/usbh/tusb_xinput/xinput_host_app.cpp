@@ -5,7 +5,7 @@
 #include "pico/stdlib.h"
 #include "hardware/gpio.h"
 
-#include "tusb_xinput/xinput_host.h"
+#include "usbh/tusb_xinput/xinput_host.h"
 #include "Gamepad.h"
 
 static bool gamepad_mounted = false;
@@ -43,6 +43,39 @@ void tuh_xinput_umount_cb(uint8_t dev_addr, uint8_t instance)
     {
         gamepad_mounted = false;
     }
+}
+
+void Gamepad::update_gamepad_state_from_xinput(const xinput_gamepad_t* xinput_data) 
+{
+    reset_state();
+
+    state.up    = (xinput_data->wButtons & XINPUT_GAMEPAD_DPAD_UP) != 0;
+    state.down  = (xinput_data->wButtons & XINPUT_GAMEPAD_DPAD_DOWN) != 0;
+    state.left  = (xinput_data->wButtons & XINPUT_GAMEPAD_DPAD_LEFT) != 0;
+    state.right = (xinput_data->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) != 0;
+    
+    state.a     = (xinput_data->wButtons & XINPUT_GAMEPAD_A) != 0;
+    state.b     = (xinput_data->wButtons & XINPUT_GAMEPAD_B) != 0;
+    state.x     = (xinput_data->wButtons & XINPUT_GAMEPAD_X) != 0;
+    state.y     = (xinput_data->wButtons & XINPUT_GAMEPAD_Y) != 0;
+    
+    state.l3    = (xinput_data->wButtons & XINPUT_GAMEPAD_LEFT_THUMB) != 0;
+    state.r3    = (xinput_data->wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) != 0;
+    state.back  = (xinput_data->wButtons & XINPUT_GAMEPAD_BACK) != 0;
+    state.start = (xinput_data->wButtons & XINPUT_GAMEPAD_START) != 0;
+    
+    state.rb    = (xinput_data->wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER) != 0;
+    state.lb    = (xinput_data->wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER) != 0;
+    state.sys   = (xinput_data->wButtons & XINPUT_GAMEPAD_GUIDE) != 0;   
+
+    state.lt = xinput_data->bLeftTrigger;
+    state.rt = xinput_data->bRightTrigger;
+
+    state.lx = xinput_data->sThumbLX;
+    state.ly = xinput_data->sThumbLY;
+
+    state.rx = xinput_data->sThumbRX;
+    state.ry = xinput_data->sThumbRY;
 }
 
 void tuh_xinput_report_received_cb(uint8_t dev_addr, uint8_t instance, xinputh_interface_t const* report, uint16_t len)

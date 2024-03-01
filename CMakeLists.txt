@@ -28,6 +28,7 @@ set(PICO_TINYUSB_PATH "${CMAKE_CURRENT_LIST_DIR}/lib/tinyusb")
 pico_sdk_init()
 
 add_subdirectory(lib/Pico-PIO-USB)
+add_subdirectory(lib)
 
 file(GLOB_RECURSE SOURCES 
 "src/usbh/*"
@@ -35,22 +36,10 @@ file(GLOB_RECURSE SOURCES
 "src/usbh/tusb_hid/*"
 "src/*" 
 "src/usbd/*"
-"src/usbd/drivers/*" 
-"src/usbd/drivers/astro/*"
-"src/usbd/drivers/egret/*"
-"src/usbd/drivers/hid/*"
-"src/usbd/drivers/keyboard/*"
-"src/usbd/drivers/mdmini/*"
-"src/usbd/drivers/neogeo/*"
-"src/usbd/drivers/net/*"
-"src/usbd/drivers/pcengine/*"
-"src/usbd/drivers/ps4/*"
-"src/usbd/drivers/psclassic/*"
-"src/usbd/drivers/shared/*"
-"src/usbd/drivers/switch/*"
-"src/usbd/drivers/xbone/*"
-"src/usbd/drivers/xboxog/*" 
-"src/usbd/drivers/xinput/*")
+"src/usbd/shared/*"
+"src/usbd/switch/*"
+"src/usbd/xboxog/*" 
+"src/usbd/xinput/*")
 
 # Firmware
 add_executable(${NAME}
@@ -61,10 +50,9 @@ target_include_directories(${NAME} PUBLIC
         ${CMAKE_CURRENT_LIST_DIR}/src ${CMAKE_CURRENT_LIST_DIR}/lib)
 
 include_directories(
-lib/
-src/usbh
-src/usbd 
-src/usbd/drivers)
+lib/)
+# src/usbh
+# src/usbd)
 
 #------- Comment out the following line if compiling for the normal Pi Pico -------#
 add_compile_definitions(FEATHER_RP2040)
@@ -72,9 +60,10 @@ add_compile_definitions(FEATHER_RP2040)
 
 #------ These are your options for platforms -----#
 #------ Uncomment only one at a time -------------#
-add_compile_definitions(HOST_ORIGINAL_XBOX)
-# add_compile_definitions(HOST_XINPUT)
+# add_compile_definitions(HOST_ORIGINAL_XBOX)
+add_compile_definitions(HOST_XINPUT)
 # add_compile_definitions(HOST_NINTENDO_SWITCH)
+# add_compile_definitions(HOST_PLAYSTATION_CLASSIC)
 
 
 target_link_libraries(${NAME}
@@ -93,6 +82,7 @@ target_link_libraries(${NAME}
     tinyusb_board
     tinyusb_host
     tinyusb_pico_pio_usb
+    CRC32
     cmsis_core
 )
 
