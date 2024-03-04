@@ -46,7 +46,6 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
         gamepad_mounted = true;
     }
 
-    // will probably add an arg to init functions with a gamepad pointer
     if (host_mode == HOST_MODE_HID_SWITCH_PRO && !switch_pro)
     {
         switch_pro = new SwitchPro();

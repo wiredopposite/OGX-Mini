@@ -3,11 +3,14 @@
 #include "pico/stdlib.h"
 
 #include "tusb.h"
+#include "class/hid/hid_host.h"
 
 #include "usbh/tusb_hid/shared.h"
 #include "usbh/tusb_hid/ps3.h"
 
 #include "Gamepad.h"
+
+/* this does not work currently */
 
 void Dualshock3::init(uint8_t dev_addr, uint8_t instance)
 {
@@ -15,22 +18,39 @@ void Dualshock3::init(uint8_t dev_addr, uint8_t instance)
 
     dualshock3.dev_addr = dev_addr;
     dualshock3.instance = instance;
-
-    enable_report();
+        
+    // tuh_hid_set_protocol(dualshock3.dev_addr, dualshock3.instance, HID_PROTOCOL_REPORT);
+    // sleep_ms(200);
+    enable_reports();
 }
 
-bool Dualshock3::enable_report()
+bool Dualshock3::enable_reports()
 {
+    // uint8_t cmd_buf[4];
+    // cmd_buf[0] = 0x42;
+    // cmd_buf[1] = 0x0c;
+    // cmd_buf[2] = 0x00;
+    // cmd_buf[3] = 0x00;
+
+    // // if (tuh_hid_send_ready)
+    // // {
+    //     dualshock3.report_enabled = tuh_hid_set_report(dualshock3.dev_addr, dualshock3.instance, 0xF4, HID_REPORT_TYPE_FEATURE, &cmd_buf, sizeof(cmd_buf));
+    // // }
+
     static uint8_t buffer[5] = {};
     buffer[0] = 0xF4;
     buffer[1] = 0x42;
     buffer[2] = 0x03;
     buffer[3] = 0x00;
-    buffer[4] = 0x00; 
+    buffer[4] = 0x00;
 
-    if (tuh_hid_send_ready)
+    dualshock3.report_enabled = tuh_hid_set_report(dualshock3.dev_addr, dualshock3.instance, 0, HID_REPORT_TYPE_FEATURE, buffer, sizeof(buffer));
+
+    tuh_hid_send_report(dualshock3.dev_addr, dualshock3.instance, 0, buffer, sizeof(buffer));
+
+    if (dualshock3.report_enabled)
     {
-        dualshock3.report_enabled = tuh_hid_set_report(dualshock3.dev_addr, dualshock3.instance, 0, HID_REPORT_TYPE_FEATURE, &buffer, sizeof(buffer));
+        tuh_hid_receive_report(dualshock3.dev_addr, dualshock3.instance);
     }
 
     return dualshock3.report_enabled;
@@ -78,37 +98,42 @@ void Dualshock3::update_gamepad(const DualShock3Report* ds3_data)
 
 void Dualshock3::process_report(uint8_t const* report, uint16_t len)
 {
-    if (!dualshock3.report_enabled)
-    {
-        return;
-    }
+    // if (report[0] != 0x01) return;
 
     static DualShock3Report prev_report = { 0 };
 
     DualShock3Report ds3_report;
     memcpy(&ds3_report, report, sizeof(ds3_report));
 
-    if (memcmp(&ds3_report, &prev_report, sizeof(ds3_report)) != 0)
-    {
+    // if (memcmp(&ds3_report, &prev_report, sizeof(ds3_report)) != 0)
+    // {
         update_gamepad(&ds3_report);
         prev_report = ds3_report;
-    }
+    // }
 }
 
 bool Dualshock3::send_fb_data()
 {
-    // sony_ds4_output_report_t output_report = {0};
-    // output_report.set_rumble = 1;
-    // output_report.motor_left = gamepadOut.out_state.lrumble;
-    // output_report.motor_right = gamepadOut.out_state.rrumble;
+    uint8_t default_report[] = {
+  			0x01, 0xff, 0x00, 0xff, 0x00,
+  			0x00, 0x00, 0x00, 0x00, 0x00,
+  			0xff, 0x27, 0x10, 0x00, 0x32,
+  			0xff, 0x27, 0x10, 0x00, 0x32,
+  			0xff, 0x27, 0x10, 0x00, 0x32,
+  			0xff, 0x27, 0x10, 0x00, 0x32,
+  			0x00, 0x00, 0x00, 0x00, 0x00
+    };
+
+    struct sixaxis_output_report default_output_report;
+
+    memcpy(&default_output_report, default_report, sizeof(default_output_report));
+
+    default_output_report.leds_bitmap |= 0x1 << (dualshock3.instance+1);
+
+    bool rumble_sent = tuh_hid_send_report(dualshock3.dev_addr, dualshock3.instance, 0x1, &default_output_report, sizeof(default_output_report));
     
     // bool rumble_sent = tuh_hid_send_report(dev_addr, instance, 5, &output_report, sizeof(output_report));
 
-    // if (rumble_sent)
-    // {
-    //     gamepadOut.rumble_hid_reset();
-    // }
-
-    // return rumble_sent;
-    return true;
+    return rumble_sent;
+    // return true;
 }

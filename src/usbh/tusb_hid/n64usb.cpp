@@ -2,6 +2,7 @@
 #include "pico/stdlib.h"
 #include "tusb.h"
 
+#include "usbh/tusb_hid/shared.h"
 #include "usbh/tusb_hid/n64usb.h"
 
 #include "Gamepad.h"
@@ -63,29 +64,8 @@ void N64USB::update_gamepad(const N64USBReport* n64_data)
 
     if (n64_data->buttons & N64_Z_MASK)         gamepad.state.rt = 0xFF;
 
-    int32_t new_value_ly = -(static_cast<int32_t>(n64_data->y - 127) << 8);
-    int32_t new_value_lx = static_cast<int32_t>(n64_data->x - 127) << 8;
-
-    if (new_value_lx > INT16_MAX) 
-    {
-        new_value_lx = INT16_MAX;
-    }
-    else if (new_value_lx < INT16_MIN)
-    {
-        new_value_lx = INT16_MIN;
-    }
-    
-    if (new_value_ly > INT16_MAX) 
-    {
-        new_value_ly = INT16_MAX;
-    }
-    else if (new_value_ly < INT16_MIN)
-    {
-        new_value_ly = INT16_MIN;
-    }
-
-    gamepad.state.ly = (int16_t)new_value_ly;
-    gamepad.state.lx = (int16_t)new_value_lx;
+    gamepad.state.ly = scale_uint8_to_int16(n64_data->y, true);
+    gamepad.state.lx = scale_uint8_to_int16(n64_data->x, false);
 }
 
 void N64USB::process_report(uint8_t const* report, uint16_t len)

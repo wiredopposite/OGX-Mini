@@ -48,9 +48,19 @@ void usbh_main()
 
     tuh_init(1);
 
+    uint32_t fb_sent_time = to_ms_since_boot(get_absolute_time());
+    const uint32_t fb_interval = 100;
+
     while (true)
     {
         tuh_task();
-        send_fb_data_to_gamepad();
+
+        uint32_t current_time = to_ms_since_boot(get_absolute_time());
+
+        if (current_time - fb_sent_time >= fb_interval) 
+        {
+            send_fb_data_to_gamepad();
+            fb_sent_time = current_time;
+        }
     }
 }

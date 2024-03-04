@@ -78,7 +78,6 @@ void tuh_mount_cb(uint8_t daddr)
             return;
         }
     }
-    // host_mode = HOST_MODE_HID_PS3;
 
     return;
 }

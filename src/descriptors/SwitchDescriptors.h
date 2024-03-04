@@ -41,6 +41,55 @@
 #define SWITCH_JOYSTICK_MID 0x80
 #define SWITCH_JOYSTICK_MAX 0xFF
 
+struct SwitchProReport
+{
+    uint8_t reportId;
+    uint8_t timer;
+
+    uint8_t connInfo : 4;
+    uint8_t battery  : 4;
+
+    uint8_t y  : 1;
+    uint8_t x  : 1;
+    uint8_t b  : 1;
+    uint8_t a  : 1;
+    uint8_t    : 2;
+    uint8_t r  : 1;
+    uint8_t zr : 1;
+
+    uint8_t minus   : 1;
+    uint8_t plus    : 1;
+    uint8_t stickR  : 1;
+    uint8_t stickL  : 1;
+    uint8_t home    : 1;
+    uint8_t capture : 1;
+    uint8_t         : 0;
+
+    uint8_t down  : 1;
+    uint8_t up    : 1;
+    uint8_t right : 1;
+    uint8_t left  : 1;
+    uint8_t       : 2;
+    uint8_t l     : 1;
+    uint8_t zl    : 1;
+
+    uint16_t leftX  : 12;
+    uint16_t leftY  : 12;
+    uint16_t rightX : 12;
+    uint16_t rightY : 12;
+
+    uint8_t vibrator;
+
+    uint16_t accelerX;
+    uint16_t accelerY;
+    uint16_t accelerZ;
+
+    uint16_t velocityX;
+    uint16_t velocityY;
+    uint16_t velocityZ;
+}
+__attribute__((packed));
+
 typedef struct __attribute((packed, aligned(1)))
 {
 	uint16_t buttons;
@@ -61,6 +110,7 @@ typedef struct
 	uint8_t rx;
 	uint8_t ry;
 } SwitchOutReport;
+
 
 static const uint8_t switch_string_language[]     = { 0x09, 0x04 };
 static const uint8_t switch_string_manufacturer[] = "HORI CO.,LTD.";

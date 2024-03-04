@@ -4,7 +4,7 @@
 
 #include "input_mode.h"
 
-enum InputMode load_input_mode()
+enum InputMode get_input_mode()
 {
     #ifdef HOST_ORIGINAL_XBOX
         return INPUT_MODE_XBOXORIGINAL;

@@ -68,20 +68,20 @@ void SwitchDriver::process(Gamepad * gamepad, uint8_t * outBuffer) {
     }
 
 	switchReport.buttons = 0
-		| (gamepad->state.a 	? SWITCH_MASK_B    	: 0)
-		| (gamepad->state.b 	? SWITCH_MASK_A    	: 0)
-		| (gamepad->state.x 	? SWITCH_MASK_Y    	: 0)
-		| (gamepad->state.y 	? SWITCH_MASK_X    	: 0)
-		| (gamepad->state.lb 	? SWITCH_MASK_L    	: 0)
-		| (gamepad->state.rb 	? SWITCH_MASK_R    	: 0)
-		| (gamepad->state.lt 	? SWITCH_MASK_ZL   	: 0)
-		| (gamepad->state.rt 	? SWITCH_MASK_ZR   	: 0)
-		| (gamepad->state.back 	? SWITCH_MASK_MINUS	: 0)
-		| (gamepad->state.start ? SWITCH_MASK_PLUS 	: 0)
-		| (gamepad->state.l3 	? SWITCH_MASK_L3   	: 0)
-		| (gamepad->state.r3 	? SWITCH_MASK_R3   	: 0)
-		| (gamepad->state.sys 	? SWITCH_MASK_HOME 	: 0)
-		// | (gamepad->pressedA2() ? SWITCH_MASK_CAPTURE : 0) // need to come up with something for this
+		| (gamepad->state.a 	? SWITCH_MASK_B    		: 0)
+		| (gamepad->state.b 	? SWITCH_MASK_A    		: 0)
+		| (gamepad->state.x 	? SWITCH_MASK_Y    		: 0)
+		| (gamepad->state.y 	? SWITCH_MASK_X    		: 0)
+		| (gamepad->state.lb 	? SWITCH_MASK_L    		: 0)
+		| (gamepad->state.rb 	? SWITCH_MASK_R    		: 0)
+		| (gamepad->state.lt 	? SWITCH_MASK_ZL   		: 0)
+		| (gamepad->state.rt 	? SWITCH_MASK_ZR   		: 0)
+		| (gamepad->state.back 	? SWITCH_MASK_MINUS		: 0)
+		| (gamepad->state.start ? SWITCH_MASK_PLUS 		: 0)
+		| (gamepad->state.l3 	? SWITCH_MASK_L3   		: 0)
+		| (gamepad->state.r3 	? SWITCH_MASK_R3   		: 0)
+		| (gamepad->state.sys 	? SWITCH_MASK_HOME 		: 0)
+		| (gamepad->state.misc  ? SWITCH_MASK_CAPTURE 	: 0)
 	;
 
 	switchReport.lx = static_cast<uint8_t>((gamepad->state.lx + 32768) >> 8);

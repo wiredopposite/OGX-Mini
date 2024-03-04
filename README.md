@@ -1,30 +1,29 @@
 # OGX-Mini
 ![Adafruit Feather RP2040 USB Host](images/ada_feather_rp2040_usb.jpg "Adafruit Feather RP2040 USB Host")
 
-Firmware for the RP2040, setup for the [Adafruit Feather USB Host board](https://www.adafruit.com/product/5723), capable of emulating gamepads for
+Firmware for the RP2040, setup for the [Adafruit Feather USB Host board](https://www.adafruit.com/product/5723) (an be used with the Pi Pico), capable of emulating gamepads for
 - Original Xbox
 - XInput (not Xbox 360)
-- Nintendo Switch (must be in dock mode, no rumble yet)
+- Nintendo Switch (must be in dock mode)
+- Playstation Classic
 
 Currently there's no way to switch what device is being emulated on the fly, so the firmware must be compiled specifically for whichever platform you'd like to play on. As long as that's the case, I'll provide compiled .uf2 files for each platform in [Releases](https://github.com/wiredopposite/OGX-Mini/releases).
 
 # Supported devices
 ## Wired controllers
-- Original Xbox Duke and S controllers
-- Xbox 360, One, Series, and Elite controllers
-- Nintendo Switch Pro controller
-- Nintnedo Switch wired controllers (tested with PowerA brand, no rumble)
-- Nintendo 64 USB controller (experimental)
-- Playstation Classic controller
-- Dualshock 3 / Batoh (PS3) controllers
-- Dualshock 4 (PS4) controllers
-- Dualsense (PS5) controllers (Dualsense Edge should work but it's untested)
+- Original Xbox Duke and S
+- Xbox 360, One, Series, and Elite
+- Nintendo Switch Pro
+- Nintnedo Switch wired (tested with PowerA brand, no rumble)
+- Nintendo 64 USB (experimental, tested with RetroLink brand)
+- Playstation Classic
+- Dualshock 4 (PS4)
+- Dualsense (PS5, Dualsense Edge should work but it's untested)
 
 ## Wireless adapters
 - Xbox 360 PC adapter (Microsoft or clones, syncs 1 controller)
 - 8Bitdo v1 and v2 Bluetooth adapters
-- Generic Nintendo Switch wireless adapters
-- Most/all wireless adapters that present as Switch/XInput/Playstation controllers
+- Most wireless adapters that present as Switch/XInput/Playstation controllers should work
 
 Note: There are some third party controllers that use incorrect VID and PIDs, these will not work correctly.
 

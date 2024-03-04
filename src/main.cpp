@@ -25,7 +25,7 @@ int main(void)
 
     board_init();
 
-    InputMode mode = load_input_mode();
+    InputMode mode = get_input_mode();
 
     DriverManager& driverManager = DriverManager::getInstance();
     driverManager.setup(mode);

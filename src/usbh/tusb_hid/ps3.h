@@ -7,6 +7,8 @@
 
 #include "usbh/tusb_hid/shared.h"
 
+#define PS3_REPORT_BUFFER_SIZE 48
+
 const usb_vid_pid_t ps3_devices[] = 
 {
     {0x054C, 0x0268}, // Sony Batoh (Dualshock 3)
@@ -60,6 +62,30 @@ struct DualShock3Report
 }
 __attribute__((packed));
 
+struct sixaxis_led {
+	uint8_t time_enabled; /* the total time the led is active (0xff means forever) */
+	uint8_t duty_length;  /* how long a cycle is in deciseconds (0 means "really fast") */
+	uint8_t enabled;
+	uint8_t duty_off; /* % of duty_length the led is off (0xff means 100%) */
+	uint8_t duty_on;  /* % of duty_length the led is on (0xff mean 100%) */
+} __attribute__((packed));
+
+struct sixaxis_rumble {
+	uint8_t padding;
+	uint8_t right_duration; /* Right motor duration (0xff means forever) */
+	uint8_t right_motor_on; /* Right (small) motor on/off, only supports values of 0 or 1 (off/on) */
+	uint8_t left_duration;    /* Left motor duration (0xff means forever) */
+	uint8_t left_motor_force; /* left (large) motor, supports force values from 0 to 255 */
+} __attribute__((packed));
+
+struct sixaxis_output_report {
+	struct sixaxis_rumble rumble;
+	uint8_t padding[4];
+	uint8_t leds_bitmap; /* bitmap of enabled LEDs: LED_1 = 0x02, LED_2 = 0x04, ... */
+	struct sixaxis_led led[4];    /* LEDx at (4 - x) */
+	struct sixaxis_led _reserved; /* LED5, not actually soldered */
+} __attribute__((packed));
+
 struct Dualshock3State
 {
     bool report_enabled {false};
@@ -70,20 +96,16 @@ struct Dualshock3State
 class Dualshock3
 {
     public:
-        Dualshock3State dualshock3;
-
         void init(uint8_t dev_addr, uint8_t instance);
         void process_report(uint8_t const* report, uint16_t len);
         bool send_fb_data();
         
     private:
-        bool enable_report();
+        Dualshock3State dualshock3;
+
+        bool enable_reports();
         void reset_state();
         void update_gamepad(const DualShock3Report* ds3_data);
 };
-
-// bool init_dualshock3(uint8_t dev_addr, uint8_t instance);
-// bool send_fb_data_to_dualshock3(uint8_t dev_addr, uint8_t instance);
-// void process_dualshock3(uint8_t const* report, uint16_t len);
 
 #endif // _PS3_H_
