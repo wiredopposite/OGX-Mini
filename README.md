@@ -1,7 +1,7 @@
 # OGX-Mini
 ![Adafruit Feather RP2040 USB Host](images/ada_feather_rp2040_usb.jpg "Adafruit Feather RP2040 USB Host")
 
-Firmware for the RP2040, setup for the [Adafruit Feather USB Host board](https://www.adafruit.com/product/5723) (an be used with the Pi Pico), capable of emulating gamepads for
+Firmware for the RP2040, setup for the [Adafruit Feather USB Host board](https://www.adafruit.com/product/5723) (can be used with the Pi Pico), capable of emulating gamepads for
 - Original Xbox
 - XInput (not Xbox 360)
 - Nintendo Switch (docked)
@@ -19,7 +19,7 @@ Currently there's no way to switch what device is being emulated on the fly, so 
 - Nintendo Switch Pro
 - Nintnedo Switch wired (tested with PowerA brand, no rumble)
 - Nintendo 64 USB (experimental, tested with RetroLink brand)
-- Playstation Classic
+- PlayStation Classic
 
 ## Wireless adapters
 - Xbox 360 PC adapter (Microsoft or clones, syncs 1 controller)
