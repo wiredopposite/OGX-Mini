@@ -57,7 +57,7 @@ lib/)
 
 #------- Comment out the following line if compiling for the normal Pi Pico -------#
 
-add_compile_definitions(FEATHER_RP2040)
+# add_compile_definitions(FEATHER_RP2040)
 
 #------- USB host data +/- will be GPIO 0/1 ---------------------------------------#
 
@@ -65,8 +65,8 @@ add_compile_definitions(FEATHER_RP2040)
 #------ These are your options for platforms -----#
 #------ Uncomment only one at a time -------------#
 
-# add_compile_definitions(HOST_ORIGINAL_XBOX)
-add_compile_definitions(HOST_XINPUT)
+add_compile_definitions(HOST_ORIGINAL_XBOX)
+# add_compile_definitions(HOST_XINPUT)
 # add_compile_definitions(HOST_NINTENDO_SWITCH)
 # add_compile_definitions(HOST_PLAYSTATION_3)
 # add_compile_definitions(HOST_PLAYSTATION_CLASSIC)
