@@ -3,6 +3,7 @@
 #include "tusb.h"
 
 #include "usbh/tusb_hid/ps5.h"
+#include "utilities/scaling.h"
 
 #include "Gamepad.h"
 

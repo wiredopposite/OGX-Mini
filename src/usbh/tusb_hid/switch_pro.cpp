@@ -4,7 +4,6 @@
 
 #include "tusb.h"
 
-#include "usbh/tusb_hid/shared.h"
 #include "usbh/tusb_hid/switch_pro.h"
 
 #include "Gamepad.h"

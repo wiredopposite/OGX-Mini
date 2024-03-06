@@ -6,14 +6,6 @@
 #include "tusb_hid/hid_host_app.h"
 #include "tusb_hid/shared.h"
 
-// #include "tusb_hid/switch_pro.h"
-// #include "tusb_hid/switch_wired.h"
-// #include "tusb_hid/n64usb.h"
-// #include "tusb_hid/psclassic.h"
-// #include "tusb_hid/ps3.h"
-// #include "tusb_hid/ps4.h"
-// #include "tusb_hid/ps5.h"
-
 #include "tusb_host_manager.h"
 
 #include "Gamepad.h"
@@ -115,6 +107,7 @@ void send_fb_data_to_gamepad()
         {
             if (send_fb_data_to_hid_gamepad())
             {
+                // needed so rumble doesn't get stuck on
                 gamepadOut.rumble_hid_reset();
             }
         }

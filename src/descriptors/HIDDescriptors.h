@@ -123,8 +123,8 @@ typedef struct __attribute((packed, aligned(1)))
 } HIDReport;
 
 static const uint8_t hid_string_language[]     = { 0x09, 0x04 };
-static const uint8_t hid_string_manufacturer[] = "Open Stick Community";
-static const uint8_t hid_string_product[]      = "GP2040-CE (D-Input)";
+static const uint8_t hid_string_manufacturer[] = "Raspberry Pi";
+static const uint8_t hid_string_product[]      = "OGX-Mini";
 static const uint8_t hid_string_version[]      = "1.0";
 
 static const uint8_t *hid_string_descriptors[] __attribute__((unused)) =

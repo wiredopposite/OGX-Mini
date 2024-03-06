@@ -87,7 +87,7 @@
 #define CFG_TUD_ENABLED     1
 
 // CFG_TUSB_DEBUG is defined by compiler in DEBUG build
-// #define CFG_TUSB_DEBUG           0
+// #define CFG_TUSB_DEBUG      1
 
 /* USB DMA on some MCUs can only access a specific SRAM region with restriction on alignment.
  * Tinyusb use follows macros to declare transferring memory so that they can be put
@@ -129,8 +129,11 @@
 #define CFG_TUD_ENDPOINT0_SIZE    64
 #endif
 
+#define CFG_TUD_CDC_RX_BUFSIZE 256
+#define CFG_TUD_CDC_TX_BUFSIZE 256
+
 //------------- CLASS -------------//
-#define CFG_TUD_CDC              0
+#define CFG_TUD_CDC              1
 #define CFG_TUD_ECM_RNDIS        0
 #define CFG_TUD_HID              2
 

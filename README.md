@@ -4,8 +4,9 @@
 Firmware for the RP2040, setup for the [Adafruit Feather USB Host board](https://www.adafruit.com/product/5723) (an be used with the Pi Pico), capable of emulating gamepads for
 - Original Xbox
 - XInput (not Xbox 360)
-- Nintendo Switch (must be in dock mode)
+- Nintendo Switch (docked)
 - Playstation Classic
+- Playstation 3
 
 Currently there's no way to switch what device is being emulated on the fly, so the firmware must be compiled specifically for whichever platform you'd like to play on. As long as that's the case, I'll provide compiled .uf2 files for each platform in [Releases](https://github.com/wiredopposite/OGX-Mini/releases).
 
@@ -13,17 +14,17 @@ Currently there's no way to switch what device is being emulated on the fly, so 
 ## Wired controllers
 - Original Xbox Duke and S
 - Xbox 360, One, Series, and Elite
+- Dualshock 4 (PS4)
+- Dualsense (PS5, Dualsense Edge should work but it's untested)
 - Nintendo Switch Pro
 - Nintnedo Switch wired (tested with PowerA brand, no rumble)
 - Nintendo 64 USB (experimental, tested with RetroLink brand)
 - Playstation Classic
-- Dualshock 4 (PS4)
-- Dualsense (PS5, Dualsense Edge should work but it's untested)
 
 ## Wireless adapters
 - Xbox 360 PC adapter (Microsoft or clones, syncs 1 controller)
 - 8Bitdo v1 and v2 Bluetooth adapters
-- Most wireless adapters that present as Switch/XInput/Playstation controllers should work
+- Most wireless adapters that present themselves as Switch/XInput/Playstation controllers should work
 
 Note: There are some third party controllers that use incorrect VID and PIDs, these will not work correctly.
 

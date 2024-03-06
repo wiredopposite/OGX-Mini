@@ -12,6 +12,10 @@ enum InputMode get_input_mode()
         return INPUT_MODE_SWITCH;
     #elif HOST_PLAYSTATION_CLASSIC
         return INPUT_MODE_PSCLASSIC;
+    #elif HOST_PLAYSTATION_3
+        return INPUT_MODE_HID;
+    #elif HOST_DEBUG
+        return INPUT_MODE_USBSERIAL;
     #else
         return INPUT_MODE_XINPUT;
     #endif

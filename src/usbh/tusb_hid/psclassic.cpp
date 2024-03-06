@@ -3,7 +3,7 @@
 #include "tusb.h"
 
 #include "usbh/tusb_hid/psclassic.h"
-#include "usbh/tusb_hid/ps4.h"
+// #include "usbh/tusb_hid/ps4.h"
 
 #include "Gamepad.h"
 

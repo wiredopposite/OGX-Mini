@@ -4,9 +4,8 @@
 
 #include "tusb.h"
 
+#include "utilities/scaling.h"
 #include "descriptors/SwitchDescriptors.h"
-
-#include "usbh/tusb_hid/shared.h"
 #include "usbh/tusb_hid/switch_wired.h"
 
 #include "Gamepad.h"
@@ -102,6 +101,6 @@ void SwitchWired::update_gamepad(const SwitchWiredReport* switch_report)
 
 bool SwitchWired::send_fb_data()
 {
-    // mine doesn't have rumble motors so idk what goes here
+    // mine doesn't have rumble motors, not sure what goes here
     return true;
 }

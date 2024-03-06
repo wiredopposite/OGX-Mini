@@ -2,7 +2,8 @@
 #include "pico/stdlib.h"
 #include "tusb.h"
 
-#include "usbh/tusb_hid/shared.h"
+#include "utilities/scaling.h"
+
 #include "usbh/tusb_hid/n64usb.h"
 
 #include "Gamepad.h"

@@ -5,23 +5,33 @@
 #include "tusb.h"
 #include "class/hid/hid_host.h"
 
-#include "usbh/tusb_hid/shared.h"
+#include "utilities/scaling.h"
+
 #include "usbh/tusb_hid/ps3.h"
 
 #include "Gamepad.h"
 
+#include "utilities/log.h"
+
+/* ---------------------------- */
 /* this does not work currently */
+/* ---------------------------- */
 
 void Dualshock3::init(uint8_t dev_addr, uint8_t instance)
 {
-    reset_state();
-
     dualshock3.dev_addr = dev_addr;
     dualshock3.instance = instance;
         
     // tuh_hid_set_protocol(dualshock3.dev_addr, dualshock3.instance, HID_PROTOCOL_REPORT);
     // sleep_ms(200);
-    enable_reports();
+    if (enable_reports())
+    {
+        log("reports enabled, addr: %02X inst: %02X", dev_addr, instance);
+    }
+    else
+    {
+        log("reports enable failed");
+    }
 }
 
 bool Dualshock3::enable_reports()
@@ -56,12 +66,12 @@ bool Dualshock3::enable_reports()
     return dualshock3.report_enabled;
 }
 
-void Dualshock3::reset_state()
-{
-    dualshock3.report_enabled = false;
-    dualshock3.dev_addr = 0;
-    dualshock3.instance = 0;
-}
+// void Dualshock3::reset_state()
+// {
+//     dualshock3.report_enabled = false;
+//     dualshock3.dev_addr = 0;
+//     dualshock3.instance = 0;
+// }
 
 void Dualshock3::update_gamepad(const DualShock3Report* ds3_data)
 {
@@ -100,6 +110,14 @@ void Dualshock3::process_report(uint8_t const* report, uint16_t len)
 {
     // if (report[0] != 0x01) return;
 
+    // print hex values
+    char hex_buffer[len * 3];
+    for (int i = 0; i < len; i++) 
+    {
+        sprintf(hex_buffer + (i * 3), "%02X ", report[i]); // Convert byte to hexadecimal string
+    }
+    log(hex_buffer);
+
     static DualShock3Report prev_report = { 0 };
 
     DualShock3Report ds3_report;
@@ -131,8 +149,6 @@ bool Dualshock3::send_fb_data()
     default_output_report.leds_bitmap |= 0x1 << (dualshock3.instance+1);
 
     bool rumble_sent = tuh_hid_send_report(dualshock3.dev_addr, dualshock3.instance, 0x1, &default_output_report, sizeof(default_output_report));
-    
-    // bool rumble_sent = tuh_hid_send_report(dev_addr, instance, 5, &output_report, sizeof(output_report));
 
     return rumble_sent;
     // return true;

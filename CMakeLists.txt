@@ -35,6 +35,7 @@ file(GLOB_RECURSE SOURCES
 "src/usbh/tusb_xinput/*"
 "src/usbh/tusb_hid/*"
 "src/*" 
+"src/utilities/*"
 "src/usbd/*"
 "src/usbd/shared/*"
 "src/usbd/switch/*"
@@ -55,15 +56,21 @@ lib/)
 # src/usbd)
 
 #------- Comment out the following line if compiling for the normal Pi Pico -------#
+
 add_compile_definitions(FEATHER_RP2040)
-#------- USB host data +/- will be GPIO 0/1 for the Pico --------------------------#
+
+#------- USB host data +/- will be GPIO 0/1 ---------------------------------------#
+
 
 #------ These are your options for platforms -----#
 #------ Uncomment only one at a time -------------#
+
 # add_compile_definitions(HOST_ORIGINAL_XBOX)
 add_compile_definitions(HOST_XINPUT)
 # add_compile_definitions(HOST_NINTENDO_SWITCH)
+# add_compile_definitions(HOST_PLAYSTATION_3)
 # add_compile_definitions(HOST_PLAYSTATION_CLASSIC)
+# add_compile_definitions(HOST_DEBUG) # CDC device, include log.h and use log() as you would printf()
 
 
 target_link_libraries(${NAME}

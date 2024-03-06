@@ -5,6 +5,8 @@
 
 #include "usbh/tusb_hid/ps4.h"
 
+#include "utilities/scaling.h"
+
 #include "Gamepad.h"
 
 void Dualshock4::init(uint8_t dev_addr, uint8_t instance)

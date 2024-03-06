@@ -1,6 +1,8 @@
 #include "usbd/switch/SwitchDriver.h"
 #include "usbd/shared/driverhelper.h"
 
+#include "utilities/scaling.h"
+
 void SwitchDriver::initialize() {
 	switchReport = {
 		.buttons = 0,
@@ -25,7 +27,8 @@ void SwitchDriver::initialize() {
 	};
 }
 
-void SwitchDriver::process(Gamepad * gamepad, uint8_t * outBuffer) {
+void SwitchDriver::process(Gamepad * gamepad, uint8_t * outBuffer) 
+{
 	switchReport.hat = SWITCH_HAT_NOTHING;
 
     if (gamepad->state.up) 
@@ -84,10 +87,15 @@ void SwitchDriver::process(Gamepad * gamepad, uint8_t * outBuffer) {
 		| (gamepad->state.misc  ? SWITCH_MASK_CAPTURE 	: 0)
 	;
 
-	switchReport.lx = static_cast<uint8_t>((gamepad->state.lx + 32768) >> 8);
-	switchReport.ly = static_cast<uint8_t>(((-gamepad->state.ly - 1) + 32768) >> 8);
-	switchReport.rx = static_cast<uint8_t>((gamepad->state.rx + 32768) >> 8);
-	switchReport.ry = static_cast<uint8_t>(((-gamepad->state.ry - 1) + 32768) >> 8);
+	switchReport.lx = scale_int16_to_uint8(gamepad->state.lx, false);
+	switchReport.ly = scale_int16_to_uint8(gamepad->state.ly, true);
+	switchReport.rx = scale_int16_to_uint8(gamepad->state.rx, false);
+	switchReport.ry = scale_int16_to_uint8(gamepad->state.ry, true);
+
+	// switchReport.lx = static_cast<uint8_t>((gamepad->state.lx + 32768) >> 8);
+	// switchReport.ly = static_cast<uint8_t>(((-gamepad->state.ly - 1) + 32768) >> 8);
+	// switchReport.rx = static_cast<uint8_t>((gamepad->state.rx + 32768) >> 8);
+	// switchReport.ry = static_cast<uint8_t>(((-gamepad->state.ry - 1) + 32768) >> 8);
 
 	// Wake up TinyUSB device
 	if (tud_suspended())

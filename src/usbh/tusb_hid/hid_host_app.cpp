@@ -11,7 +11,7 @@
 
 #include "usbh/tusb_host_manager.h" // global enum host_mode
 
-// TODO: make a class for all this
+// TODO: make a host driver class for all this
 
 N64USB* n64usb = nullptr;
 PSClassic* psclassic = nullptr;
