@@ -10,6 +10,9 @@
 #include "tusb_host.h"
 #include "tusb_host_manager.h"
 
+// TODO figure out something to do with the leds
+// tuh_mounted is always true after unplugging a gamepad, idk what's up with that
+
 #ifdef FEATHER_RP2040
     #define PIO_USB_DP_PIN  16 // DM = 17
     #define PIN_5V_EN       18

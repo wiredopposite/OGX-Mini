@@ -5,6 +5,8 @@
 extern "C" {
 #endif
 
+#include "Gamepad.h"
+
 enum InputMode
 {
     INPUT_MODE_XINPUT,
@@ -18,6 +20,7 @@ enum InputMode
 };
 
 enum InputMode get_input_mode();
+void change_input_mode(Gamepad previous_gamepad_state);
 
 #ifdef __cplusplus
 }

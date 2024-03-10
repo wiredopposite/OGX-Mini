@@ -11,8 +11,9 @@
 
 #include "usbh/tusb_host_manager.h" // global enum host_mode
 
-// TODO: make a host driver class for all this
+// TODO: make a class for all this
 
+Mouse* mouse = nullptr;
 N64USB* n64usb = nullptr;
 PSClassic* psclassic = nullptr;
 Dualshock3* dualshock3 = nullptr;
@@ -81,6 +82,11 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
         n64usb = new N64USB();
         n64usb->init(dev_addr, instance);
     }
+    else if (host_mode == HOST_MODE_HID_MOUSE && !mouse)
+    {
+        mouse = new Mouse();
+        mouse->init(dev_addr, instance);
+    }
     
     if (!tuh_hid_receive_report(dev_addr, instance))
     {
@@ -129,6 +135,11 @@ void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance)
             delete dualsense;
             dualsense = nullptr;
         }
+        if (mouse)
+        {
+            delete mouse;
+            mouse = nullptr;
+        }
     }
 }
 
@@ -157,6 +168,9 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
             break;
         case HOST_MODE_HID_N64USB:
             n64usb->process_report(report, len);
+            break;
+        case HOST_MODE_HID_MOUSE:
+            mouse->process_report(report, len);
             break;
     }
 
@@ -200,6 +214,9 @@ bool send_fb_data_to_hid_gamepad()
                 break;
             case HOST_MODE_HID_N64USB:
                 rumble_sent = n64usb->send_fb_data();
+                break;
+            case HOST_MODE_HID_MOUSE:
+                rumble_sent = mouse->send_fb_data();
                 break;
         }
     }

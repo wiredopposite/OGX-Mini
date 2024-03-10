@@ -213,13 +213,13 @@ static const uint8_t hid_report_descriptor[] =
 
 static const uint8_t hid_hid_descriptor[] =
 {
-		0x09,								 // bLength
-		0x21,								 // bDescriptorType (HID)
-		0x11, 0x01,							 // bcdHID 1.11
-		0x00,								 // bCountryCode
-		0x01,								 // bNumDescriptors
-		0x22,								 // bDescriptorType[0] (HID)
-		sizeof(hid_report_descriptor), 0x00, // wDescriptorLength[0] 90
+	0x09,								 // bLength
+	0x21,								 // bDescriptorType (HID)
+	0x11, 0x01,							 // bcdHID 1.11
+	0x00,								 // bCountryCode
+	0x01,								 // bNumDescriptors
+	0x22,								 // bDescriptorType[0] (HID)
+	sizeof(hid_report_descriptor), 0x00, // wDescriptorLength[0] 90
 };
 
 #define CONFIG1_DESC_SIZE		(9+9+9+7)

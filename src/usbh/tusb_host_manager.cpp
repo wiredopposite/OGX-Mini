@@ -14,6 +14,7 @@ HostMode host_mode;
 
 bool device_mounted = false;
 uint8_t device_daddr = 0;
+tusb_desc_interface_t config_descriptor;
 
 typedef struct 
 {
@@ -26,7 +27,7 @@ const DeviceTypeInfo device_types[] =
 {
     { n64_devices, sizeof(n64_devices) / sizeof(usb_vid_pid_t), HOST_MODE_HID_N64USB },
     { psc_devices, sizeof(psc_devices) / sizeof(usb_vid_pid_t), HOST_MODE_HID_PSCLASSIC },
-    { ps3_devices, sizeof(ps3_devices) / sizeof(usb_vid_pid_t), HOST_MODE_HID_PS3 },
+    // { ps3_devices, sizeof(ps3_devices) / sizeof(usb_vid_pid_t), HOST_MODE_HID_PS3 },
     { ps4_devices, sizeof(ps4_devices) / sizeof(usb_vid_pid_t), HOST_MODE_HID_PS4 },
     { ps5_devices, sizeof(ps5_devices) / sizeof(usb_vid_pid_t), HOST_MODE_HID_PS5 },
     { switch_wired_devices, sizeof(switch_wired_devices) / sizeof(usb_vid_pid_t), HOST_MODE_HID_SWITCH_WIRED },
@@ -46,6 +47,20 @@ bool check_vid_pid(const usb_vid_pid_t* devices, size_t num_devices, HostMode ch
     return false;
 }
 
+void config_descriptor_complete_cb(tuh_xfer_t* xfer)
+{
+    if (xfer->result == XFER_RESULT_SUCCESS)
+    {
+        if ((config_descriptor.bInterfaceSubClass == 0x5D && config_descriptor.bInterfaceProtocol == 0x81) ||
+            (config_descriptor.bInterfaceSubClass == 0x5D && config_descriptor.bInterfaceProtocol == 0x01) ||
+            (config_descriptor.bInterfaceSubClass == 0x47 && config_descriptor.bInterfaceProtocol == 0xD0) ||
+            (config_descriptor.bInterfaceSubClass == 0x42 && config_descriptor.bInterfaceClass == 0x58))
+        {
+            host_mode = HOST_MODE_XINPUT;
+        }
+    }
+}
+
 void tuh_mount_cb(uint8_t daddr)
 {
     if (!device_mounted)
@@ -56,8 +71,6 @@ void tuh_mount_cb(uint8_t daddr)
 
     uint16_t vid, pid;
     tuh_vid_pid_get(daddr, &vid, &pid);
-
-    host_mode = HOST_MODE_XINPUT;
 
     // set host mode depending on VID/PID match
     const size_t num_device_types = sizeof(device_types) / sizeof(DeviceTypeInfo);
@@ -71,7 +84,10 @@ void tuh_mount_cb(uint8_t daddr)
         }
     }
 
-    return;
+    // if (!tuh_descriptor_get_configuration(daddr, 0, &config_descriptor, sizeof(config_descriptor), config_descriptor_complete_cb, 0))
+    // {
+        host_mode = HOST_MODE_HID_MOUSE; // idk
+    // }
 }
 
 void tuh_umount_cb(uint8_t daddr)
@@ -106,17 +122,7 @@ void send_fb_data_to_gamepad()
         else
         {
             if (send_fb_data_to_hid_gamepad())
-            {
-                // needed so rumble doesn't get stuck on
-                gamepadOut.rumble_hid_reset();
-            }
+                gamepadOut.rumble_hid_reset(); // needed so rumble doesn't get stuck on
         }
     }
 }
-
-// not sure why this and tuh_mounted are always true
-// unused atm, come back to it
-// bool tuh_device_mounted()
-// {
-//     return device_mounted;
-// }

@@ -46,3 +46,26 @@ int16_t scale_uint8_to_int16(uint8_t value, bool invert)
 
     return (int16_t)scaled_value;
 }
+
+int16_t scale_int8_to_int16(int8_t value, bool invert)
+{
+    const uint16_t multiplier = 257;
+
+    int32_t scaled_value = (int32_t)value * multiplier;
+
+    if (invert)
+    {
+        scaled_value = -scaled_value;
+    }
+
+    if (scaled_value < INT16_MIN)
+    {
+        scaled_value = INT16_MIN;
+    } 
+    else if (scaled_value > INT16_MAX) 
+    {
+        scaled_value = INT16_MAX;
+    }    
+
+    return (int16_t)scaled_value;
+}

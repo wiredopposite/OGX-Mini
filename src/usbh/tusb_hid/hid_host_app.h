@@ -1,6 +1,7 @@
 #ifndef _HID_HOST_APP_H_
 #define _HID_HOST_APP_H_
 
+#include "usbh/tusb_hid/mouse.h"
 #include "usbh/tusb_hid/n64usb.h"
 #include "usbh/tusb_hid/psclassic.h"
 #include "usbh/tusb_hid/ps3.h"

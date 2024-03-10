@@ -4,4 +4,3 @@ release
 generated
 tools
 .ignore
-src/usbh/tusb_hid/experiment

@@ -3,6 +3,7 @@
 // #include "net/NetDriver.h"
 // #include "keyboard/KeyboardDriver.h"
 
+// #include "usbd/dinput/DInputDriver.h"
 #include "usbd/hid/HIDDriver.h"
 #include "usbd/psclassic/PSClassicDriver.h"
 #include "usbd/switch/SwitchDriver.h"
@@ -23,6 +24,9 @@ void DriverManager::setup(InputMode mode)
         case INPUT_MODE_HID:
             driver = new HIDDriver();
             break;
+        // case INPUT_MODE_HID:
+        //     driver = new DInputDriver();
+        //     break;
         case INPUT_MODE_PSCLASSIC:
             driver = new PSClassicDriver();
             break;

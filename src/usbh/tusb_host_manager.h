@@ -10,7 +10,8 @@ typedef enum
     HOST_MODE_HID_PS3,
     HOST_MODE_HID_PS4,
     HOST_MODE_HID_PS5,
-    HOST_MODE_HID_N64USB
+    HOST_MODE_HID_N64USB,
+    HOST_MODE_HID_MOUSE
 } HostMode;
 
 extern HostMode host_mode;

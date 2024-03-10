@@ -6,6 +6,7 @@
 
 #include "usbd/hid/HIDDriver.h"
 #include "descriptors/HIDDescriptors.h"
+#include "descriptors/PS3Descriptors.h"
 #include "usbd/shared/driverhelper.h"
 
 // Magic byte sequence to enable PS button on PS3
@@ -127,11 +128,13 @@ void HIDDriver::process(Gamepad * gamepad, uint8_t * outBuffer)
 uint16_t HIDDriver::get_report(uint8_t report_id, hid_report_type_t report_type, uint8_t *buffer, uint16_t reqlen) 
 {
     memcpy(buffer, &hidReport, sizeof(HIDReport));
-	return sizeof(HIDReport);
+    return sizeof(HIDReport);
 }
 
 // Only PS4 does anything with set report
-void HIDDriver::set_report(uint8_t report_id, hid_report_type_t report_type, uint8_t const *buffer, uint16_t bufsize) {}
+void HIDDriver::set_report(uint8_t report_id, hid_report_type_t report_type, uint8_t const *buffer, uint16_t bufsize) 
+{
+}
 
 // Only XboxOG and Xbox One use vendor control xfer cb
 bool HIDDriver::vendor_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_request_t const *request) 

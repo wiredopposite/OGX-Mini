@@ -40,6 +40,7 @@ file(GLOB_RECURSE SOURCES
 "src/usbd/shared/*"
 "src/usbd/switch/*"
 "src/usbd/xboxog/*" 
+"src/usbd/dinput/*" 
 "src/usbd/xinput/*")
 
 # Firmware
@@ -52,25 +53,15 @@ target_include_directories(${NAME} PUBLIC
 
 include_directories(
 lib/)
-# src/usbh
-# src/usbd)
 
 #------- Comment out the following line if compiling for the normal Pi Pico -------#
 
-# add_compile_definitions(FEATHER_RP2040)
+add_compile_definitions(FEATHER_RP2040)
 
 #------- USB host data +/- will be GPIO 0/1 ---------------------------------------#
 
-
-#------ These are your options for platforms -----#
-#------ Uncomment only one at a time -------------#
-
-add_compile_definitions(HOST_ORIGINAL_XBOX)
-# add_compile_definitions(HOST_XINPUT)
-# add_compile_definitions(HOST_NINTENDO_SWITCH)
-# add_compile_definitions(HOST_PLAYSTATION_3)
-# add_compile_definitions(HOST_PLAYSTATION_CLASSIC)
-# add_compile_definitions(HOST_DEBUG) # CDC device, include log.h and use log() as you would printf()
+#------- CDC MODE --------#
+# add_compile_definitions(HOST_DEBUG) # makes RP2040 a CDC device, include "utilities/log.h" and use log() as you would printf()
 
 
 target_link_libraries(${NAME}
@@ -90,6 +81,7 @@ target_link_libraries(${NAME}
     tinyusb_host
     tinyusb_pico_pio_usb
     CRC32
+    hid_parser
     cmsis_core
 )
 
