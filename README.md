@@ -1,11 +1,7 @@
 # OGX-Mini
 ![Adafruit Feather RP2040 USB Host](images/ada_feather_rp2040_usb.jpg "Adafruit Feather RP2040 USB Host")
 
-<<<<<<< Updated upstream
-Firmware for the RP2040, setup for the [Adafruit Feather USB Host board](https://www.adafruit.com/product/5723) (an be used with the Pi Pico), capable of emulating gamepads for
-=======
 Firmware for the RP2040, setup for the [Adafruit Feather USB Host board](https://www.adafruit.com/product/5723) (can be used with the Pi Pico as well), capable of emulating gamepads for
->>>>>>> Stashed changes
 - Original Xbox
 - XInput (not Xbox 360)
 - Nintendo Switch (docked)
