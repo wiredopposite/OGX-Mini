@@ -43,13 +43,16 @@ void Mouse::update_gamepad(const hid_mouse_report_t* mouse_report)
 {
     // gamepad.reset_state();
 
-    if (mouse_report->buttons & 0x01) gamepad.state.rt = 0xFF;
-    else gamepad.state.rt = 0x00;
-    if (mouse_report->buttons & 0x02) gamepad.state.lt = 0xFF;
-    else gamepad.state.lt = 0x00;
-    // if (mouse_report->wheel != 0) gamepad.state.y = true;
+    gamepad.state.rt = (mouse_report->buttons & MOUSE_BUTTON_LEFT ) ? 0xFF : 0x00;
+    gamepad.state.lt = (mouse_report->buttons & MOUSE_BUTTON_RIGHT) ? 0xFF : 0x00;
 
-    int32_t scaled_y = scale_int8_to_int16(mouse_report->y, true) * 2;
+    // for testing
+    gamepad.state.x  = (mouse_report->buttons & MOUSE_BUTTON_BACKWARD);
+    gamepad.state.a  = (mouse_report->buttons & MOUSE_BUTTON_FORWARD );
+
+    gamepad.state.y  = (mouse_report->wheel != 0);
+
+    int32_t scaled_y = scale_int8_to_int16(mouse_report->y, true) * 2; // * 2 to make more responsive
     int32_t scaled_x = scale_int8_to_int16(mouse_report->x, false) * 2;
 
     gamepad.state.ry = scale_and_clamp_axes(scaled_y);

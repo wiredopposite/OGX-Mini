@@ -3,10 +3,10 @@
 
 Firmware for the RP2040, setup for the [Adafruit Feather USB Host board](https://www.adafruit.com/product/5723) (can be used with the Pi Pico as well), capable of emulating gamepads for
 - Original Xbox
-- XInput (not Xbox 360)
-- Nintendo Switch (docked)
-- Playstation Classic
 - Playstation 3
+- Nintendo Switch (docked)
+- XInput (not Xbox 360)
+- Playstation Classic
 
 ## Supported devices
 ### Wired controllers
