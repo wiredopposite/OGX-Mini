@@ -26,10 +26,10 @@ Firmware for the RP2040, setup for the [Adafruit Feather USB Host board](https:/
 
 Note: There are some third party controllers that can change their VID/PID, these might not work correctly.
 
-## Input mode button combos
-By default the input mode is set to OG Xbox, you must hold a button combo for 3 seconds to change which platform you want to play on. 
+## Changing input mode
+By default the input mode is set to OG Xbox, you must hold a button combo for 3 seconds to change which platform you want to play on. Your chosen input mode will persist after powering off the device. 
 
-The new input mode will be written to the flash and will persist after powering off the device.
+Start = Plus (Switch) = Options (Dualsense/DS4)
 
 ### XInput
 Start + Dpad Up 
@@ -40,7 +40,7 @@ Start + Dpad Down
 ### PlayStation 3
 Start + Dpad Left
 ### PlayStation Classic
-Start + A (Cross on PS gamepads, B on Switch gamepads)
+Start + A (Cross for PlayStation and B for Switch gamepads)
 
 After a new mode is stored, the RP2040 will reset itself so you don't need to unplug it. 
 
@@ -50,7 +50,7 @@ If your third party controller isn't working, but the original version is listed
 ## Compiling
 You can compile this for the Pi Pico by commenting out this line in CMakeLists.txt
 `add_compile_definitions(FEATHER_RP2040)`
-That will set the D+ and D- host pins to GPIO 0 and 1. Below that you can uncomment whichever platform (OG Xbox, Xinput, etc.) you'd like to use. 
+That will set the D+ and D- host pins to GPIO 0 and 1. 
 
 Here's a diagram of how you'd use the Pico:
 ![Pi Pico Wiring Diagram](images/pi_pico_diagram.png "Pi Pico Wiring Diagram]")

@@ -35,7 +35,7 @@ int main(void)
 
     Gamepad previous_gamepad = gamepad;
     absolute_time_t last_time_gamepad_changed = get_absolute_time();
-    absolute_time_t last_time_gamepad_stored = get_absolute_time();
+    absolute_time_t last_time_gamepad_checked = get_absolute_time();
 
     while (1) 
     {
@@ -43,7 +43,7 @@ int main(void)
         GPDriver* driver = driverManager.getDriver();
         driver->process(&gamepad, outBuffer);
 
-        if (absolute_time_diff_us(last_time_gamepad_stored, get_absolute_time()) >= 20000) 
+        if (absolute_time_diff_us(last_time_gamepad_checked, get_absolute_time()) >= 200000) 
         {
             // check if digital buttons have changed (first 16 bytes of gamepad.state)
             if (memcmp(&gamepad.state, &previous_gamepad.state, 16) != 0)
@@ -54,9 +54,11 @@ int main(void)
             // haven't changed for 3 seconds
             else if (absolute_time_diff_us(last_time_gamepad_changed, get_absolute_time()) >= 3000000) 
             {
-                change_input_mode(previous_gamepad); // checks if button combo is pressed, stores new mode in NVM and resets rp2040 if so
+                change_input_mode(previous_gamepad);
                 last_time_gamepad_changed = get_absolute_time();
             }
+
+            last_time_gamepad_checked = get_absolute_time();
         }
 
         sleep_ms(1);

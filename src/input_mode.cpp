@@ -58,25 +58,21 @@ void change_input_mode(Gamepad previous_gamepad)
     {
         new_mode = INPUT_MODE_PSCLASSIC;
     }
-
-    // this seems to cause issues
-
     // else if (previous_gamepad.state.b)
     // {
     //     new_mode = INPUT_MODE_USBSERIAL;
     // }
-
     else
     {
         return;
     }
 
     store_input_mode(new_mode);
-    sleep_ms(100);
+    sleep_ms(200);
 
     // restart the rp2040
     AIRCR_Register = 0x5FA0004;
-    sleep_ms(100);
+    sleep_ms(200);
 }
 
 enum InputMode get_input_mode()
