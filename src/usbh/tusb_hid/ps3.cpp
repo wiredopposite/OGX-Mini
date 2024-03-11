@@ -6,31 +6,32 @@
 #include "class/hid/hid_host.h"
 
 #include "utilities/scaling.h"
+#include "Gamepad.h"
 
 #include "usbh/tusb_hid/ps3.h"
 
-#include "Gamepad.h"
-
 #include "utilities/log.h"
 
-/* ---------------------------- */
-/* this does not work currently */
-/* ---------------------------- */
+/* -------------------------------------------- */
+/* this only works for DInput currently, no DS3 */
+/* -------------------------------------------- */
 
 void Dualshock3::init(uint8_t dev_addr, uint8_t instance)
 {
     dualshock3.dev_addr = dev_addr;
     dualshock3.instance = instance;
+
+    uint16_t vid, pid;
+    tuh_vid_pid_get(dualshock3.dev_addr, &vid, &pid);
+    if (vid == 0x054C && pid == 0x0268) dualshock3.sixaxis = true;
         
-    // tuh_hid_set_protocol(dualshock3.dev_addr, dualshock3.instance, HID_PROTOCOL_REPORT);
-    // sleep_ms(200);
     if (enable_reports())
     {
-        log("reports enabled, addr: %02X inst: %02X", dev_addr, instance);
+        // log("reports enabled, addr: %02X inst: %02X", dev_addr, instance);
     }
     else
     {
-        log("reports enable failed");
+        // log("report enable failed");
     }
 }
 
@@ -66,14 +67,67 @@ bool Dualshock3::enable_reports()
     return dualshock3.report_enabled;
 }
 
-// void Dualshock3::reset_state()
-// {
-//     dualshock3.report_enabled = false;
-//     dualshock3.dev_addr = 0;
-//     dualshock3.instance = 0;
-// }
+void Dualshock3::update_gamepad_dinput(const DInputReport* dinput_report)
+{
+    gamepad.reset_state();
 
-void Dualshock3::update_gamepad(const DualShock3Report* ds3_data)
+    switch (dinput_report->direction)
+    {
+        case DINPUT_HAT_UP:
+            gamepad.state.up = true;
+            break;
+        case DINPUT_HAT_UPRIGHT:
+            gamepad.state.up = true;
+            gamepad.state.right = true;
+            break;
+        case DINPUT_HAT_RIGHT:
+            gamepad.state.right = true;
+            break;
+        case DINPUT_HAT_DOWNRIGHT:
+            gamepad.state.right = true;
+            gamepad.state.down = true;
+            break;
+        case DINPUT_HAT_DOWN:
+            gamepad.state.down = true;
+            break;
+        case DINPUT_HAT_DOWNLEFT:
+            gamepad.state.down = true;
+            gamepad.state.left = true;
+            break;
+        case DINPUT_HAT_LEFT:
+            gamepad.state.left = true;
+            break;
+        case DINPUT_HAT_UPLEFT:
+            gamepad.state.up = true;
+            gamepad.state.left = true;
+            break;
+    }
+
+    if (dinput_report->square_btn)   gamepad.state.x = true;
+    if (dinput_report->triangle_btn) gamepad.state.y = true;
+    if (dinput_report->cross_btn)    gamepad.state.a = true;
+    if (dinput_report->circle_btn)   gamepad.state.b = true;
+
+    if (dinput_report->select_btn)   gamepad.state.back = true;
+    if (dinput_report->start_btn)    gamepad.state.start = true;
+    if (dinput_report->ps_btn)       gamepad.state.sys = true;
+
+    if (dinput_report->l3_btn) gamepad.state.l3 = true;
+    if (dinput_report->r3_btn) gamepad.state.r3 = true;
+
+    if (dinput_report->l1_btn) gamepad.state.lb = true;
+    if (dinput_report->r1_btn) gamepad.state.rb = true;
+
+    if (dinput_report->l2_btn) gamepad.state.lt = 0xFF;
+    if (dinput_report->r2_btn) gamepad.state.rt = 0xFF;
+
+    gamepad.state.lx = scale_uint8_to_int16(dinput_report->l_x_axis, false);
+    gamepad.state.ly = scale_uint8_to_int16(dinput_report->l_y_axis, true);
+    gamepad.state.rx = scale_uint8_to_int16(dinput_report->r_x_axis, false);
+    gamepad.state.ry = scale_uint8_to_int16(dinput_report->r_y_axis, true);
+}
+
+void Dualshock3::update_gamepad(const Dualshock3Report* ds3_data)
 {
     gamepad.reset_state();
 
@@ -100,10 +154,10 @@ void Dualshock3::update_gamepad(const DualShock3Report* ds3_data)
     if (ds3_data->l2) gamepad.state.lt = 0xFF;
     if (ds3_data->r2) gamepad.state.rt = 0xFF;
 
-    gamepad.state.lx = scale_uint8_to_int16(ds3_data->leftX, false);
-    gamepad.state.ly = scale_uint8_to_int16(ds3_data->leftY, true);
-    gamepad.state.rx = scale_uint8_to_int16(ds3_data->rightX, false);
-    gamepad.state.ry = scale_uint8_to_int16(ds3_data->rightY, true);
+    gamepad.state.lx = scale_uint8_to_int16(ds3_data->left_x, false);
+    gamepad.state.ly = scale_uint8_to_int16(ds3_data->left_y, true);
+    gamepad.state.rx = scale_uint8_to_int16(ds3_data->right_x, false);
+    gamepad.state.ry = scale_uint8_to_int16(ds3_data->right_y, true);
 }
 
 void Dualshock3::process_report(uint8_t const* report, uint16_t len)
@@ -111,23 +165,29 @@ void Dualshock3::process_report(uint8_t const* report, uint16_t len)
     // if (report[0] != 0x01) return;
 
     // print hex values
-    char hex_buffer[len * 3];
-    for (int i = 0; i < len; i++) 
-    {
-        sprintf(hex_buffer + (i * 3), "%02X ", report[i]); // Convert byte to hexadecimal string
-    }
-    log(hex_buffer);
-
-    static DualShock3Report prev_report = { 0 };
-
-    DualShock3Report ds3_report;
-    memcpy(&ds3_report, report, sizeof(ds3_report));
-
-    // if (memcmp(&ds3_report, &prev_report, sizeof(ds3_report)) != 0)
+    // char hex_buffer[len * 3];
+    // for (int i = 0; i < len; i++) 
     // {
+    //     sprintf(hex_buffer + (i * 3), "%02X ", report[i]); // Convert byte to hexadecimal string
+    // }
+    // log(hex_buffer);
+
+    if (!dualshock3.sixaxis)
+    {
+        static DInputReport prev_report = {0};
+        DInputReport dinput_report;
+        memcpy(&dinput_report, report, sizeof(dinput_report));
+        update_gamepad_dinput(&dinput_report);
+        prev_report = dinput_report;
+    }
+    else
+    {
+        static Dualshock3Report prev_report = { 0 };
+        Dualshock3Report ds3_report;
+        memcpy(&ds3_report, report, sizeof(ds3_report));
         update_gamepad(&ds3_report);
         prev_report = ds3_report;
-    // }
+    }
 }
 
 bool Dualshock3::send_fb_data()
@@ -142,14 +202,20 @@ bool Dualshock3::send_fb_data()
   			0x00, 0x00, 0x00, 0x00, 0x00
     };
 
-    struct sixaxis_output_report default_output_report;
+    struct sixaxis_output_report output_report;
 
-    memcpy(&default_output_report, default_report, sizeof(default_output_report));
+    memcpy(&output_report, default_report, sizeof(output_report));
 
-    default_output_report.leds_bitmap |= 0x1 << (dualshock3.instance+1);
+    // default_output_report.leds_bitmap |= 0x1 << (dualshock3.instance+1);
+    output_report.leds_bitmap = 0x02;
+    // output_report.led->time_enabled = 0xFF;
+    // output_report.led->duty_on = 0xFF;
 
-    bool rumble_sent = tuh_hid_send_report(dualshock3.dev_addr, dualshock3.instance, 0x1, &default_output_report, sizeof(default_output_report));
+    output_report.rumble.right_duration = UINT8_MAX / 2;
+    if (gamepadOut.out_state.rrumble > 0) output_report.rumble.right_motor_on = 1;
 
-    return rumble_sent;
-    // return true;
+    output_report.rumble.left_duration = UINT8_MAX / 2;
+    output_report.rumble.left_motor_force = gamepadOut.out_state.lrumble;
+
+    return tuh_hid_send_report(dualshock3.dev_addr, dualshock3.instance, 0x1, &output_report, sizeof(output_report));
 }

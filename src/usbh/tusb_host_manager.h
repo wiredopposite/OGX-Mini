@@ -15,6 +15,6 @@ typedef enum
 
 extern HostMode host_mode;
 
-void send_fb_data_to_gamepad();
+bool send_fb_data_to_gamepad();
 
 #endif // _TUSB_HOST_MANAGER_H_

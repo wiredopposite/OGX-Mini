@@ -21,7 +21,7 @@ Dualsense* dualsense = nullptr;
 SwitchPro* switch_pro = nullptr;
 SwitchWired* switch_wired = nullptr;
 
-static bool gamepad_mounted = false;
+static bool gamepad_mounted;
 static uint8_t gamepad_dev_addr = 0;
 static uint8_t gamepad_instance = 0;
 
@@ -166,7 +166,6 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
     }
 }
 
-// send rumble data
 bool send_fb_data_to_hid_gamepad()
 {
     if (!gamepad_mounted)

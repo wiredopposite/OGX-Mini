@@ -14,6 +14,7 @@ const usb_vid_pid_t ps4_devices[] =
     {0x054C, 0x05C4}, // DS4
     {0x054C, 0x09CC}, // DS4
     {0x054C, 0x0BA0}, // DS4 wireless adapter
+    {0x2563, 0x0357}, // MPOW Wired Gamepad (ShenZhen ShanWan)
     {0x0F0D, 0x005E}, // Hori FC4
     {0x0F0D, 0x00EE}, // Hori PS4 Mini (PS4-099U)
     {0x1F4F, 0x1002}  // ASW GG Xrd controller

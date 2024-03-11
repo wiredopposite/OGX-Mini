@@ -12,7 +12,7 @@
 
 HostMode host_mode;
 
-bool device_mounted = false;
+bool device_mounted;
 uint8_t device_daddr = 0;
 
 typedef struct 
@@ -48,11 +48,8 @@ bool check_vid_pid(const usb_vid_pid_t* devices, size_t num_devices, HostMode ch
 
 void tuh_mount_cb(uint8_t daddr)
 {
-    if (!device_mounted)
-    {
-        device_mounted = true;
-        device_daddr = daddr;
-    }
+    device_mounted = true;
+    device_daddr = daddr;
 
     uint16_t vid, pid;
     tuh_vid_pid_get(daddr, &vid, &pid);
@@ -76,7 +73,7 @@ void tuh_mount_cb(uint8_t daddr)
 
 void tuh_umount_cb(uint8_t daddr)
 {
-    if (device_mounted && device_daddr == daddr)
+    if (device_mounted)
     {
         device_mounted = false;
     }
@@ -95,28 +92,20 @@ usbh_class_driver_t const* usbh_app_driver_get_cb(uint8_t* driver_count)
     }
 }
 
-void send_fb_data_to_gamepad()
+bool send_fb_data_to_gamepad()
 {
-    if (device_mounted)
-    {
-        if (host_mode == HOST_MODE_XINPUT)
-        {
-            send_fb_data_to_xinput_gamepad();
-        }
-        else
-        {
-            if (send_fb_data_to_hid_gamepad())
-            {
-                // needed so rumble doesn't get stuck on
-                gamepadOut.rumble_hid_reset();
-            }
-        }
-    }
-}
+    if (!device_mounted)
+        return true;
 
-// not sure why this and tuh_mounted are always true
-// unused atm, come back to it
-// bool tuh_device_mounted()
-// {
-//     return device_mounted;
-// }
+    if (host_mode == HOST_MODE_XINPUT)
+    {
+        return send_fb_data_to_xinput_gamepad();
+    }
+    else if (send_fb_data_to_hid_gamepad())
+    {
+        gamepadOut.rumble_hid_reset();
+        return true;
+    }
+    
+    return false;
+}

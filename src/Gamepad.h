@@ -48,7 +48,6 @@ class Gamepad {
 public:
     GamepadState state;
 
-	// void update_gamepad_state_from_dualshock4(const sony_ds4_report_t* ds4_data);
 	void update_gamepad_state_from_xinput(const xinput_gamepad_t* xinput_data);
 	void reset_state();
 };

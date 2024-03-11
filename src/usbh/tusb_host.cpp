@@ -59,8 +59,10 @@ void usbh_main()
 
         if (current_time - fb_sent_time >= fb_interval) 
         {
-            send_fb_data_to_gamepad();
-            fb_sent_time = current_time;
+            if (send_fb_data_to_gamepad())
+            {
+                fb_sent_time = current_time;
+            }
         }
     }
 }
