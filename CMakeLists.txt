@@ -52,8 +52,6 @@ target_include_directories(${NAME} PUBLIC
 
 include_directories(
 lib/)
-# src/usbh
-# src/usbd)
 
 #------- Comment out the following line if compiling for the normal Pi Pico -------#
 

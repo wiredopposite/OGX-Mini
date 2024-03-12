@@ -21,7 +21,7 @@ Firmware for the RP2040, setup for the [Adafruit Feather USB Host board](https:/
 
 ### Wireless adapters
 - Xbox 360 PC adapter (Microsoft or clones, syncs 1 controller)
-- 8Bitdo v1 and v2 Bluetooth adapters
+- 8Bitdo v1 and v2 Bluetooth adapters (set to XInput mode)
 - Most wireless adapters that present themselves as Switch/XInput/PlayStation controllers should work
 
 Note: There are some third party controllers that can change their VID/PID, these might not work correctly.
