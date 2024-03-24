@@ -48,8 +48,8 @@ After a new mode is stored, the RP2040 will reset itself so you don't need to un
 If your third party controller isn't working, but the original version is listed above, send me the device's VID and PID and I'll add it so it's recognized properly.
 
 ## Compiling
-You can compile this for the Pi Pico by commenting out this line in CMakeLists.txt
-`add_compile_definitions(FEATHER_RP2040)`
+You can compile this for the Pi Pico by changing `BOARD_PI_PICO` to 1 (and the other boards to 0) in board_config.h
+
 That will set the D+ and D- host pins to GPIO 0 and 1. 
 
 Here's a diagram of how you'd use the Pico:
