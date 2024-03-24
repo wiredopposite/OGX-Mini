@@ -7,7 +7,7 @@
 
 // #include "host/usbh.h"
 // #include "host/usbh_pvt.h"
-#include "usbh/tusb_xinput/xinput_host.h"
+#include "usbh/xinput/driver/xinput_host.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-const-variable"

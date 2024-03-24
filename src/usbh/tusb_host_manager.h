@@ -3,6 +3,7 @@
 
 typedef enum
 {
+    HOST_MODE_NONE,
     HOST_MODE_XINPUT,
     HOST_MODE_HID_SWITCH_PRO,
     HOST_MODE_HID_SWITCH_WIRED,
@@ -13,8 +14,6 @@ typedef enum
     HOST_MODE_HID_N64USB
 } HostMode;
 
-extern HostMode host_mode;
-
-bool send_fb_data_to_gamepad();
+void send_fb_data_to_gamepad();
 
 #endif // _TUSB_HOST_MANAGER_H_

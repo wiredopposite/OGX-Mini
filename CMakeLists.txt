@@ -31,14 +31,23 @@ add_subdirectory(lib/Pico-PIO-USB)
 add_subdirectory(lib)
 
 file(GLOB_RECURSE SOURCES 
-"src/usbh/*"
-"src/usbh/tusb_xinput/*"
-"src/usbh/tusb_hid/*"
 "src/*" 
+"src/usbh/*"
+"src/usbh/n64/*"
+"src/usbh/ps3/*"
+"src/usbh/ps4/*"
+"src/usbh/ps5/*"
+"src/usbh/psclassic/*"
+"src/usbh/switch/*"
+"src/usbh/xinput/*"
+"src/usbh/shared/*"
 "src/utilities/*"
 "src/usbd/*"
+"src/usbd/hid/*"
+"src/usbd/psclassic/*"
 "src/usbd/shared/*"
 "src/usbd/switch/*"
+"src/usbd/usbserial/"
 "src/usbd/xboxog/*" 
 "src/usbd/xinput/*")
 
@@ -52,15 +61,6 @@ target_include_directories(${NAME} PUBLIC
 
 include_directories(
 lib/)
-
-#------- Comment out the following line if compiling for the normal Pi Pico -------#
-
-add_compile_definitions(FEATHER_RP2040)
-
-#------- USB host data +/- will be GPIO 0/1 ---------------------------------------#
-
-# add_compile_definitions(HOST_DEBUG) # CDC device, include utilities/log.h and use log() as you would printf()
-
 
 target_link_libraries(${NAME}
     pico_stdlib

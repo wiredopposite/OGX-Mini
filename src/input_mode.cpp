@@ -1,12 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
-
 #include "pico/stdlib.h"
 #include "pico/multicore.h"
 #include "hardware/flash.h"
 
 #include "tusb.h"
 
+#include "board_config.h"
 #include "input_mode.h"
 
 #define AIRCR_REG (*((volatile uint32_t *)(0xE000ED0C))) // Address of the AIRCR register
@@ -16,7 +16,8 @@
 #define FLASH_TARGET_OFFSET (256 * 1024)
 #define FLASH_SIZE_BYTES (2 * 1024 * 1024)
 
-void system_reset() {
+void system_reset() 
+{
     AIRCR_REG = AIRCR_VECTKEY | AIRCR_SYSRESETREQ;
     while(1);
 }
@@ -46,7 +47,7 @@ bool store_input_mode(enum InputMode new_mode)
     // }
 
     // return true;
-}
+}   
 
 bool change_input_mode(Gamepad previous_gamepad)
 {
@@ -82,9 +83,6 @@ bool change_input_mode(Gamepad previous_gamepad)
 
     if (new_mode)
     {
-        // tinyusb needs to be kaput in order to write to the flash
-        // just hangs otherwise
-
         tud_disconnect();
         sleep_ms(300);
         multicore_reset_core1(); // stop tusb host
@@ -101,7 +99,7 @@ bool change_input_mode(Gamepad previous_gamepad)
 
 enum InputMode get_input_mode()
 {
-    #ifdef HOST_DEBUG
+    #if (CDC_DEBUG >= 1)
         return INPUT_MODE_USBSERIAL;
     #endif
 

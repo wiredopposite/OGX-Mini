@@ -1,7 +1,7 @@
 #include <cstdint>
 
 #include "Gamepad.h"
-#include "usbh/tusb_hid/shared.h"
+// #include "usbh/tusb_hid/shared.h"
 
 void Gamepad::reset_state() 
 {
@@ -11,12 +11,6 @@ void Gamepad::reset_state()
     state.rb = state.lb = state.sys = state.misc = false;
     state.lt = state.rt = 0;
     state.lx = state.ly = state.rx = state.ry = 0;
-}
-
-void GamepadOut::update_gamepad_rumble(uint8_t left_rumble, uint8_t right_rumble) 
-{
-    out_state.lrumble = left_rumble;
-    out_state.rrumble = right_rumble;
 }
 
 void GamepadOut::rumble_hid_reset()

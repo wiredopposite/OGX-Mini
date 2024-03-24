@@ -26,6 +26,8 @@
 #ifndef _TUSB_CONFIG_H_
 #define _TUSB_CONFIG_H_
 
+#include "board_config.h"
+
 #ifdef __cplusplus
  extern "C" {
 #endif

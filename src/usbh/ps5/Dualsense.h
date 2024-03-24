@@ -1,11 +1,9 @@
-#pragma once
-
-#ifndef _PS5_H_
-#define _PS5_H_
+#ifndef _DUALSENSE_H_
+#define _DUALSENSE_H_
 
 #include <stdint.h>
 
-#include "usbh/tusb_hid/shared.h"
+#include "usbh/GPHostDriver.h"
 
 const usb_vid_pid_t ps5_devices[] = 
 {
@@ -131,21 +129,21 @@ struct DualsenseOutReport {
     uint8_t lightbar_blue;
 } __attribute__((packed));
 
-struct DualsenseState
+struct DualsenseState 
 {
-    uint8_t dev_addr = {0};
-    uint8_t instance = {0};
+    int player_num = {-1};
 };
 
-class Dualsense
+class Dualsense : public GPHostDriver 
 {
     public:
-        void init(uint8_t dev_addr, uint8_t instance);
-        void process_report(uint8_t const* report, uint16_t len);
-        bool send_fb_data();
+        virtual void init(uint8_t dev_addr, uint8_t instance);
+        virtual void process_hid_report(Gamepad& gp, uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len);
+        virtual void process_xinput_report(Gamepad& gp, uint8_t dev_addr, uint8_t instance, xinputh_interface_t const* report, uint16_t len);
+        virtual bool send_fb_data(GamepadOut& gp_out, uint8_t dev_addr, uint8_t instance);
     private:
         DualsenseState dualsense;
-        void update_gamepad(const DualsenseReport* ds_data);
+        void update_gamepad(Gamepad& gp, const DualsenseReport* ds_data);
 };
 
-#endif // _PS5_H_
+#endif // _DUALSENSE_H_

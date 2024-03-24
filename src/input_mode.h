@@ -15,7 +15,6 @@ enum InputMode
     INPUT_MODE_PSCLASSIC = 0x04,
     INPUT_MODE_XBOXORIGINAL = 0x05,
     INPUT_MODE_USBSERIAL = 0x06,
-    // INPUT_MODE_CONFIG,
 };
 
 enum InputMode get_input_mode();

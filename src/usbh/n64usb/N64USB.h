@@ -5,7 +5,7 @@
 
 #include <stdint.h>
 
-#include "usbh/tusb_hid/shared.h"
+#include "usbh/GPHostDriver.h"
 
 const usb_vid_pid_t n64_devices[] = 
 {
@@ -46,21 +46,21 @@ typedef struct __attribute__((packed))
     uint16_t buttons;
 } N64USBReport;
 
-struct N64USBState
+struct N64USBState 
 {
-    uint8_t dev_addr = {0};
-    uint8_t instance = {0};
+    int player_num = {-1};
 };
 
-class N64USB
+class N64USB: public GPHostDriver 
 {
     public:
-        void init(uint8_t dev_addr, uint8_t instance);
-        void process_report(uint8_t const* report, uint16_t len);
-        bool send_fb_data();
+        virtual void init(uint8_t dev_addr, uint8_t instance);
+        virtual void process_hid_report(Gamepad& gp, uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len);
+        virtual void process_xinput_report(Gamepad& gp, uint8_t dev_addr, uint8_t instance, xinputh_interface_t const* report, uint16_t len);
+        virtual bool send_fb_data(GamepadOut& gp_out, uint8_t dev_addr, uint8_t instance);
     private:
         N64USBState n64usb;
-        void update_gamepad(const N64USBReport* n64_data);
+        void update_gamepad(Gamepad& gp, const N64USBReport* n64_data);
 };
 
 #endif // _N64USB_H_

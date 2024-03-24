@@ -1,13 +1,11 @@
 #pragma once
 
-#ifndef _PS4_H_
-#define _PS4_H_
+#ifndef _DUALSHOCK4_H_
+#define _DUALSHOCK4_H_
 
 #include <stdint.h>
 
-#include "usbh/tusb_hid/shared.h"
-
-#define REPORT_ID_GAMEPAD_STATE 0x11
+#include "usbh/GPHostDriver.h"
 
 const usb_vid_pid_t ps4_devices[] = 
 {
@@ -28,7 +26,7 @@ static const uint8_t led_colors[][3] =
     { 0x20, 0x00, 0x20 }, // Pink
 };
 
-enum dualshock4_dpad_mask
+enum Dualshock4DpadMask
 {
     PS4_DPAD_MASK_UP = 0x00,
     PS4_DPAD_MASK_UP_RIGHT = 0x01,
@@ -120,21 +118,21 @@ typedef struct __attribute__((packed))
 
 struct Dualshock4State
 {
-    uint8_t dev_addr = {0};
-    uint8_t instance = {0};
+    int player_num = {-1};
     bool leds_set = {false};
 };
 
-class Dualshock4
+class Dualshock4 : public GPHostDriver
 {
     public:
-        void init(uint8_t dev_addr, uint8_t instance);
-        void process_report(uint8_t const* report, uint16_t len);
-        bool send_fb_data();
+        virtual void init(uint8_t dev_addr, uint8_t instance);
+        virtual void process_hid_report(Gamepad& gp, uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len);
+        virtual void process_xinput_report(Gamepad& gp, uint8_t dev_addr, uint8_t instance, xinputh_interface_t const* report, uint16_t len);
+        virtual bool send_fb_data(GamepadOut& gp_out, uint8_t dev_addr, uint8_t instance);
     private:
         Dualshock4State dualshock4;
-        void update_gamepad(const Dualshock4Report* ds4_data);
-        bool set_leds();
+        void update_gamepad(Gamepad& gp, const Dualshock4Report* ds4_data);
+        bool set_leds(uint8_t dev_addr, uint8_t instance);
 };
 
-#endif // _PS4_H_
+#endif

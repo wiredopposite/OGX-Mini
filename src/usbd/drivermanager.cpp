@@ -1,8 +1,5 @@
 #include "usbd/drivermanager.h"
 
-// #include "net/NetDriver.h"
-// #include "keyboard/KeyboardDriver.h"
-
 #include "usbd/hid/HIDDriver.h"
 #include "usbd/psclassic/PSClassicDriver.h"
 #include "usbd/switch/SwitchDriver.h"
@@ -14,12 +11,6 @@ void DriverManager::setup(InputMode mode)
 {
     switch (mode) 
     {
-        // case INPUT_MODE_CONFIG:
-        //     driver = new NetDriver(); 
-        //     break;
-        // case INPUT_MODE_KEYBOARD:
-        //     driver = new KeyboardDriver();
-        //     break;
         case INPUT_MODE_HID:
             driver = new HIDDriver();
             break;
