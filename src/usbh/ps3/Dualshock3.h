@@ -22,7 +22,7 @@ const usb_vid_pid_t ps3_devices[] =
 
 struct Dualshock3State
 {
-    int player_num = {-1};
+    uint8_t player_id = {0};
     bool reports_enabled {false};
     bool sixaxis {true};
 };
@@ -30,7 +30,7 @@ struct Dualshock3State
 class Dualshock3 : public GPHostDriver
 {
     public:
-        virtual void init(uint8_t dev_addr, uint8_t instance);
+        virtual void init(uint8_t player_id, uint8_t dev_addr, uint8_t instance);
         virtual void process_hid_report(Gamepad& gp, uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len);
         virtual void process_xinput_report(Gamepad& gp, uint8_t dev_addr, uint8_t instance, xinputh_interface_t const* report, uint16_t len);
         virtual bool send_fb_data(GamepadOut& gp_out, uint8_t dev_addr, uint8_t instance);

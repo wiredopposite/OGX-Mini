@@ -2,13 +2,15 @@
 #include "usbd/xboxog/xid/xid.h"
 #include "usbd/shared/driverhelper.h"
 
-#include "Gamepad.h"
+// #include "Gamepad.h"
 
-void xid_process_rumble_data(USB_XboxGamepad_OutReport_t xid_rumble_data)
+struct XIDRumble
 {
-    gamepadOut.out_state.lrumble = xid_rumble_data.lValue >> 8;
-    gamepadOut.out_state.rrumble = xid_rumble_data.rValue >> 8;
-}
+	uint16_t left_motor = {0};
+	uint16_t right_motor = {0};
+};
+
+XIDRumble xid_rumble;
 
 void XboxOriginalDriver::initialize() {
     xboxOriginalReport = {
@@ -31,7 +33,7 @@ void XboxOriginalDriver::initialize() {
     memcpy(&class_driver, xid_get_driver(), sizeof(usbd_class_driver_t));
 }
 
-void XboxOriginalDriver::process(Gamepad * gamepad, uint8_t * outBuffer) {
+void XboxOriginalDriver::process(uint8_t idx, Gamepad * gamepad, uint8_t * outBuffer) {
 	// digital buttons
 	xboxOriginalReport.dButtons = 0
 		| (gamepad->state.up    ? XID_DUP    : 0)
@@ -76,7 +78,8 @@ void XboxOriginalDriver::process(Gamepad * gamepad, uint8_t * outBuffer) {
 
     if (xid_get_report(xIndex, &xpad_rumble_data, sizeof(xpad_rumble_data)))
     {
-        xid_process_rumble_data(xpad_rumble_data);
+        xid_rumble.left_motor = xpad_rumble_data.lValue;
+        xid_rumble.right_motor = xpad_rumble_data.rValue;
     }
 }
 
@@ -117,4 +120,10 @@ const uint8_t * XboxOriginalDriver::get_descriptor_device_qualifier_cb() {
 
 uint16_t XboxOriginalDriver::GetJoystickMidValue() {
 	return 0;
+}
+
+void XboxOriginalDriver::update_rumble(uint8_t idx, GamepadOut * gp_out)
+{
+    gp_out->state.lrumble = xid_rumble.left_motor >> 8;
+    gp_out->state.rrumble = xid_rumble.right_motor >> 8;
 }

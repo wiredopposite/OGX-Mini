@@ -15,9 +15,10 @@
 
 #include "Gamepad.h"
 #include "input_mode.h"
+#include "board_config.h"
 
-Gamepad gamepad;
-GamepadOut gamepadOut;
+Gamepad gamepad[MAX_GAMEPADS];
+GamepadOut gamepad_out[MAX_GAMEPADS];
 
 int main(void) 
 {
@@ -34,22 +35,26 @@ int main(void)
     multicore_reset_core1();
     multicore_launch_core1(usbh_main);
 
-    Gamepad previous_gamepad = gamepad;
+    Gamepad previous_gamepad = gamepad[0];
     absolute_time_t last_time_gamepad_changed = get_absolute_time();
     absolute_time_t last_time_gamepad_checked = get_absolute_time();
 
     while (1) 
     {
-        uint8_t outBuffer[64];
-        GPDriver* driver = driverManager.getDriver();
-        driver->process(&gamepad, outBuffer);
+        for (int i = 0; i < MAX_GAMEPADS; i++)
+        {
+            uint8_t outBuffer[64];
+            GPDriver* driver = driverManager.getDriver();
+            driver->process((uint8_t)i, &gamepad[i], outBuffer);
+            driver->update_rumble((uint8_t)i, &gamepad_out[i]);
+        }
 
         if (absolute_time_diff_us(last_time_gamepad_checked, get_absolute_time()) >= 500000) 
         {
             // check if digital buttons have changed (first 16 bytes of gamepad.state)
-            if (memcmp(&gamepad.state, &previous_gamepad.state, 16) != 0)
+            if (memcmp(&gamepad[0].state, &previous_gamepad.state, 16) != 0)
             {
-                memcpy(&previous_gamepad.state, &gamepad.state, sizeof(gamepad.state));
+                memcpy(&previous_gamepad.state, &gamepad[0].state, sizeof(gamepad[0].state));
                 last_time_gamepad_changed = get_absolute_time();
             }
             // haven't changed for 3 seconds

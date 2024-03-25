@@ -1,7 +1,6 @@
 #include <cstdint>
 
 #include "Gamepad.h"
-// #include "usbh/tusb_hid/shared.h"
 
 void Gamepad::reset_state() 
 {
@@ -13,15 +12,15 @@ void Gamepad::reset_state()
     state.lx = state.ly = state.rx = state.ry = 0;
 }
 
-void GamepadOut::rumble_hid_reset()
+void GamepadOut::reset_hid_rumble()
 {
-    if (out_state.lrumble != UINT8_MAX)
+    if (state.lrumble != UINT8_MAX)
     {
-        out_state.lrumble = 0;
+        state.lrumble = 0;
     }
     
-    if (out_state.rrumble != UINT8_MAX)
+    if (state.rrumble != UINT8_MAX)
     {
-        gamepadOut.out_state.rrumble = 0;
+        state.rrumble = 0;
     }
 }

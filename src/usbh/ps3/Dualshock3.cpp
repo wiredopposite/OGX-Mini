@@ -14,8 +14,10 @@
 /* this only works for DInput currently, no DS3 */
 /* -------------------------------------------- */
 
-void Dualshock3::init(uint8_t dev_addr, uint8_t instance)
+void Dualshock3::init(uint8_t player_id, uint8_t dev_addr, uint8_t instance)
 {
+    dualshock3.player_id = player_id;
+    
     uint16_t vid, pid;
     tuh_vid_pid_get(dev_addr, &vid, &pid);
 
@@ -215,10 +217,10 @@ bool Dualshock3::send_fb_data(GamepadOut& gp_out, uint8_t dev_addr, uint8_t inst
     out_report.led->duty_on = 0xFF;
 
     out_report.rumble.right_duration = UINT8_MAX / 2;
-    if (gp_out.out_state.rrumble > 0) out_report.rumble.right_motor_on = 1;
+    if (gp_out.state.rrumble > 0) out_report.rumble.right_motor_on = 1;
 
     out_report.rumble.left_duration = UINT8_MAX / 2;
-    out_report.rumble.left_motor_force = gp_out.out_state.lrumble;
+    out_report.rumble.left_motor_force = gp_out.state.lrumble;
 
     return tuh_hid_send_report(dev_addr, instance, 0x1, &out_report, sizeof(out_report));
 }

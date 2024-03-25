@@ -6,8 +6,9 @@
 
 #include "utilities/scaling.h"
 
-void Dualsense::init(uint8_t dev_addr, uint8_t instance) 
+void Dualsense::init(uint8_t player_id, uint8_t dev_addr, uint8_t instance)
 {
+    dualsense.player_id = player_id;
     tuh_hid_receive_report(dev_addr, instance);
 }
 
@@ -90,8 +91,8 @@ bool Dualsense::send_fb_data(GamepadOut& gp_out, uint8_t dev_addr, uint8_t insta
     out_report.valid_flag0 = 0x02; // idk what this means
     out_report.valid_flag1 = 0x02; // this one either
     out_report.valid_flag2 = 0x04; // uhhhhh
-    out_report.motor_left = gp_out.out_state.lrumble;
-    out_report.motor_right = gp_out.out_state.rrumble;
+    out_report.motor_left = gp_out.state.lrumble;
+    out_report.motor_right = gp_out.state.rrumble;
 
     return tuh_hid_send_report(dev_addr, instance, 5, &out_report, sizeof(out_report));
 }

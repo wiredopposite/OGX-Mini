@@ -48,13 +48,13 @@ public:
 
 class GamepadOut {
 public:
-	GamepadOutState out_state;
+	GamepadOutState state;
 
-	void rumble_hid_reset();
+	void reset_hid_rumble();
 };
 
-extern Gamepad gamepad;
-extern GamepadOut gamepadOut;
+extern Gamepad gamepad[];
+extern GamepadOut gamepad_out[];
 
 #ifdef __cplusplus
 	}

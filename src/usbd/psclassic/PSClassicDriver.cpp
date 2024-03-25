@@ -19,7 +19,7 @@ void PSClassicDriver::initialize() {
 	};
 }
 
-void PSClassicDriver::process(Gamepad * gamepad, uint8_t * outBuffer) {
+void PSClassicDriver::process(uint8_t idx, Gamepad * gamepad, uint8_t * outBuffer) {
     psClassicReport.buttons = PSCLASSIC_MASK_CENTER;
 
     if (gamepad->state.up) {
@@ -62,7 +62,8 @@ void PSClassicDriver::process(Gamepad * gamepad, uint8_t * outBuffer) {
 	uint16_t report_size = sizeof(psClassicReport);
 	if (memcmp(last_report, report, report_size) != 0) {
 		// HID ready + report sent, copy previous report
-		if (tud_hid_ready() && tud_hid_report(0, report, report_size) == true ) {
+		if (tud_hid_n_ready(idx) && tud_hid_n_report(idx, 0, report, report_size) == true ) 
+        {
 			memcpy(last_report, report, report_size);
 		}
 	}
@@ -105,4 +106,9 @@ const uint8_t * PSClassicDriver::get_descriptor_device_qualifier_cb() {
 
 uint16_t PSClassicDriver::GetJoystickMidValue() {
 	return 0;
+}
+
+void PSClassicDriver::update_rumble(uint8_t idx, GamepadOut * gp_out)
+{
+    
 }

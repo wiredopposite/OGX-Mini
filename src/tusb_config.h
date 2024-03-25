@@ -137,7 +137,7 @@
 //------------- CLASS -------------//
 #define CFG_TUD_CDC              1
 #define CFG_TUD_ECM_RNDIS        0
-#define CFG_TUD_HID              2
+#define CFG_TUD_HID              (MAX_GAMEPADS + 1)
 
 //--------------------------------------------------------------------
 // HOST CONFIGURATION
@@ -152,12 +152,12 @@
 // Size of buffer to hold descriptors and other data used for enumeration
 #define CFG_TUH_ENUMERATION_BUFSIZE 512
 
-#define CFG_TUH_HUB     1
+#define CFG_TUH_HUB     MAX_GAMEPADS
 #define CFG_TUH_CDC     0
-#define CFG_TUH_HID     1 // typical keyboard + mouse device can have 3-4 HID interfaces
+#define CFG_TUH_HID     MAX_GAMEPADS // typical keyboard + mouse device can have 3-4 HID interfaces
 #define CFG_TUH_MSC     0
 #define CFG_TUH_VENDOR  0
-#define CFG_TUH_XINPUT  1
+#define CFG_TUH_XINPUT  MAX_GAMEPADS
 
 // max device support (excluding hub device)
 #define CFG_TUH_DEVICE_MAX          (CFG_TUH_HUB ? 4 : 1) // hub typically has 4 ports

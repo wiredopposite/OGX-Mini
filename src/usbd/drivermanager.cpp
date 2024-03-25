@@ -1,6 +1,7 @@
 #include "usbd/drivermanager.h"
 
 #include "usbd/hid/HIDDriver.h"
+#include "usbd/dinput/DInputDriver.h"
 #include "usbd/psclassic/PSClassicDriver.h"
 #include "usbd/switch/SwitchDriver.h"
 #include "usbd/xboxog/XboxOriginalDriver.h"
@@ -9,10 +10,12 @@
 
 void DriverManager::setup(InputMode mode) 
 {
+    // driver = new DInputDriver();
     switch (mode) 
     {
         case INPUT_MODE_HID:
-            driver = new HIDDriver();
+            // driver = new HIDDriver();
+            driver = new DInputDriver();
             break;
         case INPUT_MODE_PSCLASSIC:
             driver = new PSClassicDriver();

@@ -3,15 +3,16 @@
 
 #include "usbh/xinput/XInput.h"
 
-void XInputHost::init(uint8_t dev_addr, uint8_t instance) 
+void XInputHost::init(uint8_t player_id, uint8_t dev_addr, uint8_t instance) 
 {
+    xinput.player_id = player_id;
     tuh_xinput_receive_report(dev_addr, instance);
 }
 
 void XInputHost::set_leds(uint8_t dev_addr, uint8_t instance)
 {
     tuh_xinput_set_led(dev_addr, instance, 0, true);
-    xinput.leds_set = tuh_xinput_set_led(dev_addr, instance, 1, true);
+    xinput.leds_set = tuh_xinput_set_led(dev_addr, instance, xinput.player_id, true);
 }
 
 void XInputHost::process_xinput_report(Gamepad& gp, uint8_t dev_addr, uint8_t instance, xinputh_interface_t const* report, uint16_t len)
@@ -76,5 +77,5 @@ bool XInputHost::send_fb_data(GamepadOut& gp_out, uint8_t dev_addr, uint8_t inst
         report_num = 0;
     }
 
-    return tuh_xinput_set_rumble(dev_addr, instance, gp_out.out_state.lrumble, gp_out.out_state.rrumble, true);
+    return tuh_xinput_set_rumble(dev_addr, instance, gp_out.state.lrumble, gp_out.state.rrumble, true);
 }

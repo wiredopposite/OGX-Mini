@@ -4,8 +4,9 @@
 
 #include "usbh/psclassic/PSClassic.h"
 
-void PSClassic::init(uint8_t dev_addr, uint8_t instance) 
+void PSClassic::init(uint8_t player_id, uint8_t dev_addr, uint8_t instance)
 {
+    psclassic.player_id = player_id;
     tuh_hid_receive_report(dev_addr, instance);
 }
 

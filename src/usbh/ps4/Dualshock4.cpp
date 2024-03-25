@@ -10,8 +10,9 @@
 
 #define REPORT_ID_GAMEPAD_STATE 0x11
 
-void Dualshock4::init(uint8_t dev_addr, uint8_t instance)
+void Dualshock4::init(uint8_t player_id, uint8_t dev_addr, uint8_t instance)
 {
+    dualshock4.player_id = player_id;
     // set_leds();
     tuh_hid_receive_report(dev_addr, instance);
 }
@@ -128,8 +129,8 @@ bool Dualshock4::send_fb_data(GamepadOut& gp_out, uint8_t dev_addr, uint8_t inst
 {
     Dualshock4OutReport out_report = {0};
     out_report.set_rumble = 1;
-    out_report.motor_left = gp_out.out_state.lrumble;
-    out_report.motor_right = gp_out.out_state.rrumble;
+    out_report.motor_left = gp_out.state.lrumble;
+    out_report.motor_right = gp_out.state.rrumble;
     
     return tuh_hid_send_report(dev_addr, instance, 5, &out_report, sizeof(out_report));
 }

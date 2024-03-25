@@ -21,7 +21,10 @@
 #define CMD_MODE 0x03
 #define SUBCMD_FULL_REPORT_MODE 0x30
 
-void SwitchPro::init(uint8_t dev_addr, uint8_t instance) {}
+void SwitchPro::init(uint8_t player_id, uint8_t dev_addr, uint8_t instance)
+{
+    switch_pro.player_id = player_id;
+}
 
 void SwitchPro::send_handshake(uint8_t dev_addr, uint8_t instance)
 {
@@ -158,7 +161,7 @@ bool SwitchPro::send_fb_data(GamepadOut& gp_out, uint8_t dev_addr, uint8_t insta
 
     // whoever came up with "hd" rumble is some kind of sick freak, I'm just guessing here 
 
-    if (gp_out.out_state.lrumble > 0) 
+    if (gp_out.state.lrumble > 0) 
     {
         // full on
         // buffer[2] = 0x28;
@@ -167,7 +170,7 @@ bool SwitchPro::send_fb_data(GamepadOut& gp_out, uint8_t dev_addr, uint8_t insta
         // buffer[5] = 0x61;  
 
         // uint8_t amplitude_l = static_cast<uint8_t>((gamepadOut.out_state.lrumble / 255.0) * (0xC0 - 0x40) + 0x40);
-        uint8_t amplitude_l = static_cast<uint8_t>(((gp_out.out_state.lrumble / 255.0f) * 0.8f + 0.5f) * (0xC0 - 0x40) + 0x40);
+        uint8_t amplitude_l = static_cast<uint8_t>(((gp_out.state.lrumble / 255.0f) * 0.8f + 0.5f) * (0xC0 - 0x40) + 0x40);
 
         buffer[2] = amplitude_l;
         buffer[3] = 0x88;
@@ -182,7 +185,7 @@ bool SwitchPro::send_fb_data(GamepadOut& gp_out, uint8_t dev_addr, uint8_t insta
         buffer[5] = 0x40;           
     }
 
-    if (gp_out.out_state.rrumble > 0) 
+    if (gp_out.state.rrumble > 0) 
     {
         // full on
         // buffer[6] = 0x28;
@@ -191,7 +194,7 @@ bool SwitchPro::send_fb_data(GamepadOut& gp_out, uint8_t dev_addr, uint8_t insta
         // buffer[9] = 0x61;
 
         // uint8_t amplitude_r = static_cast<uint8_t>((gamepadOut.out_state.rrumble / 255.0) * (0xC0 - 0x40) + 0x40);
-        uint8_t amplitude_r = static_cast<uint8_t>(((gp_out.out_state.rrumble / 255.0f) * 0.8f + 0.5f) * (0xC0 - 0x40) + 0x40);
+        uint8_t amplitude_r = static_cast<uint8_t>(((gp_out.state.rrumble / 255.0f) * 0.8f + 0.5f) * (0xC0 - 0x40) + 0x40);
 
         buffer[6] = amplitude_r;
         buffer[7] = 0x88;
@@ -214,7 +217,8 @@ bool SwitchPro::send_fb_data(GamepadOut& gp_out, uint8_t dev_addr, uint8_t insta
         {
             report_size = 12;
             buffer[10] = CMD_LED;
-            buffer[11] = 0x01;
+            // buffer[11] = 0x01;
+            buffer[11] = switch_pro.player_id;
             switch_pro.led_set = tuh_hid_send_report(dev_addr, instance, 0, &buffer, report_size);
             return switch_pro.led_set;
         }

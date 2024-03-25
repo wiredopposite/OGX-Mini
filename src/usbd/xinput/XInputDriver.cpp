@@ -6,13 +6,21 @@
 #include "usbd/xinput/XInputDriver.h"
 #include "usbd/shared/driverhelper.h"
 
-#include "Gamepad.h"
+// #include "Gamepad.h"
 
 #define XINPUT_OUT_SIZE 32
 
 uint8_t endpoint_in = 0;
 uint8_t endpoint_out = 0;
 uint8_t xinput_out_buffer[XINPUT_OUT_SIZE] = {};
+
+struct XInputRumble
+{
+	uint8_t left_motor = {0};
+	uint8_t right_motor = {0};
+};
+
+XInputRumble xinput_rumble;
 
 void xinput_process_rumble_data(const uint8_t* outBuffer)
 {
@@ -22,8 +30,8 @@ void xinput_process_rumble_data(const uint8_t* outBuffer)
 
 	if (out_report.report_type == XBOX_REPORT_TYPE_RUMBLE)
 	{
-		gamepadOut.out_state.lrumble = out_report.lrumble;
-		gamepadOut.out_state.rrumble = out_report.rrumble;
+		xinput_rumble.left_motor = out_report.lrumble;
+		xinput_rumble.right_motor = out_report.rrumble;
 	}
 }
 
@@ -94,7 +102,8 @@ static bool xinput_xfer_callback(uint8_t rhport, uint8_t ep_addr, xfer_result_t 
 	return true;
 }
 
-void XInputDriver::initialize() {
+void XInputDriver::initialize() 
+{
 	xinputReport = {
 		.report_id = 0,
 		.report_size = XINPUT_ENDPOINT_SIZE,
@@ -122,7 +131,8 @@ void XInputDriver::initialize() {
 	};
 }
 
-void XInputDriver::process(Gamepad * gamepad, uint8_t * outBuffer) {
+void XInputDriver::process(uint8_t idx, Gamepad * gamepad, uint8_t * outBuffer) 
+{
 	xinputReport.buttons1 = 0
 		| (gamepad->state.up    ? XBOX_MASK_UP    : 0)
 		| (gamepad->state.down  ? XBOX_MASK_DOWN  : 0)
@@ -155,7 +165,8 @@ void XInputDriver::process(Gamepad * gamepad, uint8_t * outBuffer) {
 	// printf("processing rumble\n");
 
 	// compare against previous report and send new
-	if ( memcmp(last_report, &xinputReport, sizeof(XInputReport)) != 0) {
+	if ( memcmp(last_report, &xinputReport, sizeof(XInputReport)) != 0) 
+	{
 		if ( tud_ready() &&											// Is the device ready?
 			(endpoint_in != 0) && (!usbd_edpt_busy(0, endpoint_in)) ) // Is the IN endpoint available?
 		{
@@ -177,7 +188,8 @@ void XInputDriver::process(Gamepad * gamepad, uint8_t * outBuffer) {
 }
 
 // tud_hid_get_report_cb
-uint16_t XInputDriver::get_report(uint8_t report_id, hid_report_type_t report_type, uint8_t *buffer, uint16_t reqlen) {
+uint16_t XInputDriver::get_report(uint8_t report_id, hid_report_type_t report_type, uint8_t *buffer, uint16_t reqlen) 
+{
 	memcpy(buffer, &xinputReport, sizeof(XInputReport));
 	return sizeof(XInputReport);
 }
@@ -186,32 +198,44 @@ uint16_t XInputDriver::get_report(uint8_t report_id, hid_report_type_t report_ty
 void XInputDriver::set_report(uint8_t report_id, hid_report_type_t report_type, uint8_t const *buffer, uint16_t bufsize) {}
 
 // Only XboxOG and Xbox One use vendor control xfer cb
-bool XInputDriver::vendor_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_request_t const *request) {
+bool XInputDriver::vendor_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_request_t const *request) 
+{
     return false;
 }
 
-const uint16_t * XInputDriver::get_descriptor_string_cb(uint8_t index, uint16_t langid) {
+const uint16_t * XInputDriver::get_descriptor_string_cb(uint8_t index, uint16_t langid) 
+{
 	const char *value = (const char *)xinput_string_descriptors[index];
 	return getStringDescriptor(value, index); // getStringDescriptor returns a static array
 }
 
-const uint8_t * XInputDriver::get_descriptor_device_cb() {
+const uint8_t * XInputDriver::get_descriptor_device_cb() 
+{
     return xinput_device_descriptor;
 }
 
-const uint8_t * XInputDriver::get_hid_descriptor_report_cb(uint8_t itf) {
+const uint8_t * XInputDriver::get_hid_descriptor_report_cb(uint8_t itf) 
+{
     return nullptr;
 }
 
-const uint8_t * XInputDriver::get_descriptor_configuration_cb(uint8_t index) {
+const uint8_t * XInputDriver::get_descriptor_configuration_cb(uint8_t index) 
+{
     return xinput_configuration_descriptor;
 }
 
-const uint8_t * XInputDriver::get_descriptor_device_qualifier_cb() {
+const uint8_t * XInputDriver::get_descriptor_device_qualifier_cb() 
+{
 	return nullptr;
 }
 
-uint16_t XInputDriver::GetJoystickMidValue() {
+uint16_t XInputDriver::GetJoystickMidValue() 
+{
 	return 0;
 }
 
+void XInputDriver::update_rumble(uint8_t idx, GamepadOut * gp_out)
+{
+	gp_out->state.lrumble = xinput_rumble.left_motor;
+	gp_out->state.rrumble = xinput_rumble.right_motor; 
+}

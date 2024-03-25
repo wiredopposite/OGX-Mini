@@ -5,8 +5,9 @@
 #include "utilities/scaling.h"
 #include "usbh/n64usb/N64USB.h"
 
-void N64USB::init(uint8_t dev_addr, uint8_t instance)
+void N64USB::init(uint8_t player_id, uint8_t dev_addr, uint8_t instance)
 {
+    n64usb.player_id = player_id;
     tuh_hid_receive_report(dev_addr, instance);
 }
 

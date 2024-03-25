@@ -1,6 +1,8 @@
 #pragma once
 
 #include <stdint.h>
+#include "tusb.h"
+#include "board_config.h"
 
 #define HID_ENDPOINT_SIZE 64
 
@@ -231,46 +233,105 @@ static const uint8_t dinput_hid_descriptor[] =
     0x89, 0x00,  // wDescriptorLength[0] 137
 };
 
-static const uint8_t dinput_configuration_descriptor[] =
-{
-    0x09,        // bLength
-    0x02,        // bDescriptorType (Configuration)
-    0x29, 0x00,  // wTotalLength 41
-    0x01,        // bNumInterfaces 1
-    0x01,        // bConfigurationValue
-    0x00,        // iConfiguration (String Index)
-    0x80,        // bmAttributes
-    0xFA,        // bMaxPower 500mA
+enum { ITF_NUM_HID1, ITF_NUM_HID2, ITF_NUM_HID3, ITF_NUM_HID4, ITF_NUM_TOTAL };
 
-    0x09,        // bLength
-    0x04,        // bDescriptorType (Interface)
-    0x00,        // bInterfaceNumber 0
-    0x00,        // bAlternateSetting
-    0x02,        // bNumEndpoints 2
-    0x03,        // bInterfaceClass
-    0x00,        // bInterfaceSubClass
-    0x00,        // bInterfaceProtocol
-    0x00,        // iInterface (String Index)
+#define CONFIG_TOTAL_LEN                                                       \
+    (TUD_CONFIG_DESC_LEN + (TUD_HID_DESC_LEN * MAX_GAMEPADS))
 
-    0x09,        // bLength
-    0x21,        // bDescriptorType (HID)
-    0x10, 0x01,  // bcdHID 1.10
-    0x00,        // bCountryCode
-    0x01,        // bNumDescriptors
-    0x22,        // bDescriptorType[0] (HID)
-    0x89, 0x00,  // wDescriptorLength[0] 137
+#define EPNUM_HID1 0x81
+#define EPNUM_HID2 0x82
+#define EPNUM_HID3 0x83
+#define EPNUM_HID4 0x84
 
-    0x07,        // bLength
-    0x05,        // bDescriptorType (Endpoint)
-    0x02,        // bEndpointAddress (OUT/H2D)
-    0x03,        // bmAttributes (Interrupt)
-    0x20, 0x00,  // wMaxPacketSize 32
-    0x0A,        // bInterval 10 (unit depends on device speed)
+uint8_t const dinput_configuration_descriptor[] = {
+    // Config number, interface count, string index, total length, attribute, power in mA
+    TUD_CONFIG_DESCRIPTOR(1,
+                        ITF_NUM_TOTAL,
+                        0,
+                        CONFIG_TOTAL_LEN,
+                        TUSB_DESC_CONFIG_ATT_REMOTE_WAKEUP,
+                        500),
 
-    0x07,        // bLength
-    0x05,        // bDescriptorType (Endpoint)
-    0x81,        // bEndpointAddress (IN/D2H)
-    0x03,        // bmAttributes (Interrupt)
-    0x20, 0x00,  // wMaxPacketSize 32
-    0x0A,        // bInterval 10 (unit depends on device speed)
+    // Interface number, string index, protocol, report descriptor len, EP In address, size & polling interval
+    TUD_HID_DESCRIPTOR(ITF_NUM_HID1,
+                    0,
+                    HID_ITF_PROTOCOL_NONE,
+                    sizeof(dinput_report_descriptor),
+                    EPNUM_HID1,
+                    CFG_TUD_HID_EP_BUFSIZE,
+                    1),
+#if (MAX_GAMEPADS > 1)
+    TUD_HID_DESCRIPTOR(ITF_NUM_HID2,
+                    0,
+                    HID_ITF_PROTOCOL_NONE,
+                    sizeof(dinput_report_descriptor),
+                    EPNUM_HID2,
+                    CFG_TUD_HID_EP_BUFSIZE,
+                    1),
+#endif
+#if (MAX_GAMEPADS > 2)
+    TUD_HID_DESCRIPTOR(ITF_NUM_HID3,
+                    0,
+                    HID_ITF_PROTOCOL_NONE,
+                    sizeof(dinput_report_descriptor),
+                    EPNUM_HID3,
+                    CFG_TUD_HID_EP_BUFSIZE,
+                    1),
+#endif
+#if (MAX_GAMEPADS > 3)
+    TUD_HID_DESCRIPTOR(ITF_NUM_HID4,
+                    0,
+                    HID_ITF_PROTOCOL_NONE,
+                    sizeof(dinput_report_descriptor),
+                    EPNUM_HID4,
+                    CFG_TUD_HID_EP_BUFSIZE,
+                    1)
+#endif
 };
+
+//     static const uint8_t dinput_configuration_descriptor[] =
+//     {
+//         0x09,        // bLength
+//         0x02,        // bDescriptorType (Configuration)
+//         0x29, 0x00,  // wTotalLength 41
+//         0x01,        // bNumInterfaces
+//         0x01,        // bConfigurationValue
+//         0x00,        // iConfiguration (String Index)
+//         0x80,        // bmAttributes
+//         0xFA,        // bMaxPower 500mA
+
+//         0x09,        // bLength
+//         0x04,        // bDescriptorType (Interface)
+//         0x00,        // bInterfaceNumber 0
+//         0x00,        // bAlternateSetting
+//         0x02,        // bNumEndpoints 2
+//         0x03,        // bInterfaceClass
+//         0x00,        // bInterfaceSubClass
+//         0x00,        // bInterfaceProtocol
+//         0x00,        // iInterface (String Index)
+
+//         0x09,        // bLength
+//         0x21,        // bDescriptorType (HID)
+//         0x10, 0x01,  // bcdHID 1.10
+//         0x00,        // bCountryCode
+//         0x01,        // bNumDescriptors
+//         0x22,        // bDescriptorType[0] (HID)
+//         0x89, 0x00,  // wDescriptorLength[0] 137
+
+//         0x07,        // bLength
+//         0x05,        // bDescriptorType (Endpoint)
+//         0x02,        // bEndpointAddress (OUT/H2D)
+//         0x03,        // bmAttributes (Interrupt)
+//         0x20, 0x00,  // wMaxPacketSize 32
+//         0x0A,        // bInterval 10 (unit depends on device speed)
+
+//         0x07,        // bLength
+//         0x05,        // bDescriptorType (Endpoint)
+//         0x81,        // bEndpointAddress (IN/D2H)
+//         0x03,        // bmAttributes (Interrupt)
+//         0x20, 0x00,  // wMaxPacketSize 32
+//         0x0A,        // bInterval 10 (unit depends on device speed)
+//     };
+
+
+
