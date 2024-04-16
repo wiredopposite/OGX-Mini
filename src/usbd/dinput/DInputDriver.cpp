@@ -59,59 +59,59 @@ void DInputDriver::initialize()
 // Generate HID report from gamepad and send to TUSB Device
 void DInputDriver::process(uint8_t idx, Gamepad * gamepad, uint8_t * outBuffer) 
 {
-    if (gamepad->state.up) {
-        if (gamepad->state.right) {
+    if (gamepad->buttons.up) {
+        if (gamepad->buttons.right) {
             dinput_report.direction = DINPUT_HAT_UPRIGHT;
-        } else if (gamepad->state.left) {
+        } else if (gamepad->buttons.left) {
             dinput_report.direction = DINPUT_HAT_UPLEFT;
         } else {
             dinput_report.direction = DINPUT_HAT_UP;
         }
-    } else if (gamepad->state.down) {
-        if (gamepad->state.right) {
+    } else if (gamepad->buttons.down) {
+        if (gamepad->buttons.right) {
             dinput_report.direction = DINPUT_HAT_DOWNRIGHT;
-        } else if (gamepad->state.left) {
+        } else if (gamepad->buttons.left) {
             dinput_report.direction = DINPUT_HAT_DOWNLEFT;
         } else {
             dinput_report.direction = DINPUT_HAT_DOWN;
         }
-    } else if (gamepad->state.left) {
+    } else if (gamepad->buttons.left) {
         dinput_report.direction = DINPUT_HAT_LEFT;
-    } else if (gamepad->state.right) {
+    } else if (gamepad->buttons.right) {
         dinput_report.direction = DINPUT_HAT_RIGHT;
     } else {
         dinput_report.direction = DINPUT_HAT_NOTHING;
     }
 
-    dinput_report.cross_btn     = gamepad->state.a      ? 1 : 0;
-    dinput_report.circle_btn    = gamepad->state.b      ? 1 : 0;
-    dinput_report.square_btn    = gamepad->state.x      ? 1 : 0;
-    dinput_report.triangle_btn  = gamepad->state.y      ? 1 : 0;
-    dinput_report.l1_btn        = gamepad->state.lb     ? 1 : 0;
-    dinput_report.r1_btn        = gamepad->state.rb     ? 1 : 0;
-    dinput_report.l2_btn        = gamepad->state.lt > 0 ? 1 : 0;
-    dinput_report.r2_btn        = gamepad->state.rt > 0 ? 1 : 0;
-    dinput_report.select_btn    = gamepad->state.back   ? 1 : 0;
-    dinput_report.start_btn     = gamepad->state.start  ? 1 : 0;
-    dinput_report.l3_btn        = gamepad->state.l3     ? 1 : 0;
-    dinput_report.r3_btn        = gamepad->state.r3     ? 1 : 0;
-    dinput_report.ps_btn        = gamepad->state.sys    ? 1 : 0;
-    dinput_report.tp_btn        = gamepad->state.misc   ? 1 : 0;
+    dinput_report.cross_btn     = gamepad->buttons.a      ? 1 : 0;
+    dinput_report.circle_btn    = gamepad->buttons.b      ? 1 : 0;
+    dinput_report.square_btn    = gamepad->buttons.x      ? 1 : 0;
+    dinput_report.triangle_btn  = gamepad->buttons.y      ? 1 : 0;
+    dinput_report.l1_btn        = gamepad->buttons.lb     ? 1 : 0;
+    dinput_report.r1_btn        = gamepad->buttons.rb     ? 1 : 0;
+    dinput_report.l2_btn        = gamepad->triggers.l > 0 ? 1 : 0;
+    dinput_report.r2_btn        = gamepad->triggers.r > 0 ? 1 : 0;
+    dinput_report.select_btn    = gamepad->buttons.back   ? 1 : 0;
+    dinput_report.start_btn     = gamepad->buttons.start  ? 1 : 0;
+    dinput_report.l3_btn        = gamepad->buttons.l3     ? 1 : 0;
+    dinput_report.r3_btn        = gamepad->buttons.r3     ? 1 : 0;
+    dinput_report.ps_btn        = gamepad->buttons.sys    ? 1 : 0;
+    dinput_report.tp_btn        = gamepad->buttons.misc   ? 1 : 0;
 
-    dinput_report.cross_axis    = gamepad->state.a  ? 0xFF : 0x00;
-    dinput_report.circle_axis   = gamepad->state.b  ? 0xFF : 0x00;
-    dinput_report.square_axis   = gamepad->state.x  ? 0xFF : 0x00;
-    dinput_report.triangle_axis = gamepad->state.y  ? 0xFF : 0x00;
-    dinput_report.l1_axis       = gamepad->state.lb ? 0xFF : 0x00;
-    dinput_report.r1_axis       = gamepad->state.rb ? 0xFF : 0x00;
+    dinput_report.cross_axis    = gamepad->buttons.a  ? 0xFF : 0x00;
+    dinput_report.circle_axis   = gamepad->buttons.b  ? 0xFF : 0x00;
+    dinput_report.square_axis   = gamepad->buttons.x  ? 0xFF : 0x00;
+    dinput_report.triangle_axis = gamepad->buttons.y  ? 0xFF : 0x00;
+    dinput_report.l1_axis       = gamepad->buttons.lb ? 0xFF : 0x00;
+    dinput_report.r1_axis       = gamepad->buttons.rb ? 0xFF : 0x00;
 
-    dinput_report.l2_axis = gamepad->state.lt;
-    dinput_report.r2_axis = gamepad->state.rt;
+    dinput_report.l2_axis = gamepad->triggers.l;
+    dinput_report.r2_axis = gamepad->triggers.r;
 
-    dinput_report.l_x_axis = scale_int16_to_uint8(gamepad->state.lx, false);
-    dinput_report.l_y_axis = scale_int16_to_uint8(gamepad->state.ly, true);
-    dinput_report.r_x_axis = scale_int16_to_uint8(gamepad->state.rx, false);
-    dinput_report.r_y_axis = scale_int16_to_uint8(gamepad->state.ry, true);
+    dinput_report.l_x_axis = scale_int16_to_uint8(gamepad->joysticks.lx, false);
+    dinput_report.l_y_axis = scale_int16_to_uint8(gamepad->joysticks.ly, true);
+    dinput_report.r_x_axis = scale_int16_to_uint8(gamepad->joysticks.rx, false);
+    dinput_report.r_y_axis = scale_int16_to_uint8(gamepad->joysticks.ry, true);
 
 	// Wake up TinyUSB device
 	if (tud_suspended())
@@ -209,7 +209,7 @@ uint16_t DInputDriver::GetJoystickMidValue()
 	return DINPUT_JOYSTICK_MID << 8;
 }
 
-void DInputDriver::update_rumble(uint8_t idx, GamepadOut * gp_out)
+void DInputDriver::update_rumble(uint8_t idx, Gamepad * gamepad)
 {
     
 }

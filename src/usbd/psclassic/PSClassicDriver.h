@@ -22,7 +22,7 @@ public:
     virtual const uint8_t * get_descriptor_configuration_cb(uint8_t index);
     virtual const uint8_t * get_descriptor_device_qualifier_cb();
     virtual uint16_t GetJoystickMidValue();
-    virtual void update_rumble(uint8_t idx, GamepadOut * gp_out);
+    virtual void update_rumble(uint8_t idx, Gamepad * gamepad);
 private:
     uint8_t last_report[CFG_TUD_ENDPOINT0_SIZE] = { };
     PSClassicReport psClassicReport;

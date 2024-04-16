@@ -32,7 +32,7 @@ public:
     virtual const uint8_t * get_descriptor_configuration_cb(uint8_t index) = 0;
     virtual const uint8_t * get_descriptor_device_qualifier_cb() = 0;
     virtual uint16_t GetJoystickMidValue() = 0;
-    virtual void update_rumble(uint8_t idx, GamepadOut * gp_out) = 0;
+    virtual void update_rumble(uint8_t idx, Gamepad * gamepad) = 0;
     const usbd_class_driver_t * get_class_driver() { return &class_driver; }
 protected:
     usbd_class_driver_t class_driver;

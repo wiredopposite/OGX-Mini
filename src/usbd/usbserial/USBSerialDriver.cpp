@@ -119,7 +119,7 @@ uint16_t USBSerialDriver::GetJoystickMidValue()
 	return 0;
 }
 
-void USBSerialDriver::update_rumble(uint8_t idx, GamepadOut * gp_out)
+void USBSerialDriver::update_rumble(uint8_t idx, Gamepad * gamepad)
 {
     
 }

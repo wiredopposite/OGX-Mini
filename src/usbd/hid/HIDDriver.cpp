@@ -54,59 +54,59 @@ void HIDDriver::initialize()
 // Generate HID report from gamepad and send to TUSB Device
 void HIDDriver::process(uint8_t idx, Gamepad * gamepad, uint8_t * outBuffer) 
 {
-   if (gamepad->state.up) {
-        if (gamepad->state.right) {
+   if (gamepad->buttons.up) {
+        if (gamepad->buttons.right) {
             hidReport.direction = HID_HAT_UPRIGHT;
-        } else if (gamepad->state.left) {
+        } else if (gamepad->buttons.left) {
             hidReport.direction = HID_HAT_UPLEFT;
         } else {
             hidReport.direction = HID_HAT_UP;
         }
-    } else if (gamepad->state.down) {
-        if (gamepad->state.right) {
+    } else if (gamepad->buttons.down) {
+        if (gamepad->buttons.right) {
             hidReport.direction = HID_HAT_DOWNRIGHT;
-        } else if (gamepad->state.left) {
+        } else if (gamepad->buttons.left) {
             hidReport.direction = HID_HAT_DOWNLEFT;
         } else {
             hidReport.direction = HID_HAT_DOWN;
         }
-    } else if (gamepad->state.left) {
+    } else if (gamepad->buttons.left) {
         hidReport.direction = HID_HAT_LEFT;
-    } else if (gamepad->state.right) {
+    } else if (gamepad->buttons.right) {
         hidReport.direction = HID_HAT_RIGHT;
     } else {
         hidReport.direction = HID_HAT_NOTHING;
     }
 
-    hidReport.cross_btn     = gamepad->state.a      ? 1 : 0;
-    hidReport.circle_btn    = gamepad->state.b      ? 1 : 0;
-    hidReport.square_btn    = gamepad->state.x      ? 1 : 0;
-    hidReport.triangle_btn  = gamepad->state.y      ? 1 : 0;
-    hidReport.l1_btn        = gamepad->state.lb     ? 1 : 0;
-    hidReport.r1_btn        = gamepad->state.rb     ? 1 : 0;
-    hidReport.l2_btn        = gamepad->state.lt > 0 ? 1 : 0;
-    hidReport.r2_btn        = gamepad->state.rt > 0 ? 1 : 0;
-    hidReport.select_btn    = gamepad->state.back   ? 1 : 0;
-    hidReport.start_btn     = gamepad->state.start  ? 1 : 0;
-    hidReport.l3_btn        = gamepad->state.l3     ? 1 : 0;
-    hidReport.r3_btn        = gamepad->state.r3     ? 1 : 0;
-    hidReport.ps_btn        = gamepad->state.sys    ? 1 : 0;
-    hidReport.tp_btn        = gamepad->state.misc   ? 1 : 0;
+    hidReport.cross_btn     = gamepad->buttons.a      ? 1 : 0;
+    hidReport.circle_btn    = gamepad->buttons.b      ? 1 : 0;
+    hidReport.square_btn    = gamepad->buttons.x      ? 1 : 0;
+    hidReport.triangle_btn  = gamepad->buttons.y      ? 1 : 0;
+    hidReport.l1_btn        = gamepad->buttons.lb     ? 1 : 0;
+    hidReport.r1_btn        = gamepad->buttons.rb     ? 1 : 0;
+    hidReport.l2_btn        = gamepad->triggers.l > 0 ? 1 : 0;
+    hidReport.r2_btn        = gamepad->triggers.r > 0 ? 1 : 0;
+    hidReport.select_btn    = gamepad->buttons.back   ? 1 : 0;
+    hidReport.start_btn     = gamepad->buttons.start  ? 1 : 0;
+    hidReport.l3_btn        = gamepad->buttons.l3     ? 1 : 0;
+    hidReport.r3_btn        = gamepad->buttons.r3     ? 1 : 0;
+    hidReport.ps_btn        = gamepad->buttons.sys    ? 1 : 0;
+    hidReport.tp_btn        = gamepad->buttons.misc   ? 1 : 0;
 
-    hidReport.cross_axis    = gamepad->state.a  ? 0xFF : 0x00;
-    hidReport.circle_axis   = gamepad->state.b  ? 0xFF : 0x00;
-    hidReport.square_axis   = gamepad->state.x  ? 0xFF : 0x00;
-    hidReport.triangle_axis = gamepad->state.y  ? 0xFF : 0x00;
-    hidReport.l1_axis       = gamepad->state.lb ? 0xFF : 0x00;
-    hidReport.r1_axis       = gamepad->state.rb ? 0xFF : 0x00;
+    hidReport.cross_axis    = gamepad->buttons.a  ? 0xFF : 0x00;
+    hidReport.circle_axis   = gamepad->buttons.b  ? 0xFF : 0x00;
+    hidReport.square_axis   = gamepad->buttons.x  ? 0xFF : 0x00;
+    hidReport.triangle_axis = gamepad->buttons.y  ? 0xFF : 0x00;
+    hidReport.l1_axis       = gamepad->buttons.lb ? 0xFF : 0x00;
+    hidReport.r1_axis       = gamepad->buttons.rb ? 0xFF : 0x00;
 
-    hidReport.l2_axis = gamepad->state.lt;
-    hidReport.r2_axis = gamepad->state.rt;
+    hidReport.l2_axis = gamepad->triggers.l;
+    hidReport.r2_axis = gamepad->triggers.r;
 
-    hidReport.l_x_axis = scale_int16_to_uint8(gamepad->state.lx, false);
-    hidReport.l_y_axis = scale_int16_to_uint8(gamepad->state.ly, true);
-    hidReport.r_x_axis = scale_int16_to_uint8(gamepad->state.rx, false);
-    hidReport.r_y_axis = scale_int16_to_uint8(gamepad->state.ry, true);
+    hidReport.l_x_axis = scale_int16_to_uint8(gamepad->joysticks.lx, false);
+    hidReport.l_y_axis = scale_int16_to_uint8(gamepad->joysticks.ly, true);
+    hidReport.r_x_axis = scale_int16_to_uint8(gamepad->joysticks.rx, false);
+    hidReport.r_y_axis = scale_int16_to_uint8(gamepad->joysticks.ry, true);
 
 	// Wake up TinyUSB device
 	if (tud_suspended())
@@ -171,7 +171,7 @@ uint16_t HIDDriver::GetJoystickMidValue()
 	return HID_JOYSTICK_MID << 8;
 }
 
-void HIDDriver::update_rumble(uint8_t idx, GamepadOut * gp_out)
+void HIDDriver::update_rumble(uint8_t idx, Gamepad * gamepad)
 {
     
 }

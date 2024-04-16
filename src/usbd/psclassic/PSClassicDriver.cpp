@@ -22,37 +22,37 @@ void PSClassicDriver::initialize() {
 void PSClassicDriver::process(uint8_t idx, Gamepad * gamepad, uint8_t * outBuffer) {
     psClassicReport.buttons = PSCLASSIC_MASK_CENTER;
 
-    if (gamepad->state.up) {
-        if (gamepad->state.right)
+    if (gamepad->buttons.up) {
+        if (gamepad->buttons.right)
             psClassicReport.buttons = PSCLASSIC_MASK_UP_RIGHT;
-        else if (gamepad->state.left)
+        else if (gamepad->buttons.left)
             psClassicReport.buttons = PSCLASSIC_MASK_UP_LEFT;
         else
             psClassicReport.buttons = PSCLASSIC_MASK_UP;
-    } else if (gamepad->state.down) {
-        if (gamepad->state.right)
+    } else if (gamepad->buttons.down) {
+        if (gamepad->buttons.right)
             psClassicReport.buttons = PSCLASSIC_MASK_DOWN_RIGHT;
-        else if (gamepad->state.left)
+        else if (gamepad->buttons.left)
             psClassicReport.buttons = PSCLASSIC_MASK_DOWN_LEFT;
         else
             psClassicReport.buttons = PSCLASSIC_MASK_DOWN;
-    } else if (gamepad->state.left) {
+    } else if (gamepad->buttons.left) {
         psClassicReport.buttons = PSCLASSIC_MASK_LEFT;
-    } else if (gamepad->state.right) {
+    } else if (gamepad->buttons.right) {
         psClassicReport.buttons = PSCLASSIC_MASK_RIGHT;
     }
 
     psClassicReport.buttons |=
-        (gamepad->state.start ? PSCLASSIC_MASK_START    : 0) |
-        (gamepad->state.back  ? PSCLASSIC_MASK_SELECT   : 0) |
-        (gamepad->state.a     ? PSCLASSIC_MASK_CROSS    : 0) |
-        (gamepad->state.b     ? PSCLASSIC_MASK_CIRCLE   : 0) |
-        (gamepad->state.x     ? PSCLASSIC_MASK_SQUARE   : 0) |
-        (gamepad->state.y     ? PSCLASSIC_MASK_TRIANGLE : 0) |
-        (gamepad->state.lb    ? PSCLASSIC_MASK_L1       : 0) |
-        (gamepad->state.rb    ? PSCLASSIC_MASK_R1       : 0) |
-        (gamepad->state.lt    ? PSCLASSIC_MASK_L2       : 0) |
-        (gamepad->state.rt    ? PSCLASSIC_MASK_R2       : 0);
+        (gamepad->buttons.start ? PSCLASSIC_MASK_START    : 0) |
+        (gamepad->buttons.back  ? PSCLASSIC_MASK_SELECT   : 0) |
+        (gamepad->buttons.a     ? PSCLASSIC_MASK_CROSS    : 0) |
+        (gamepad->buttons.b     ? PSCLASSIC_MASK_CIRCLE   : 0) |
+        (gamepad->buttons.x     ? PSCLASSIC_MASK_SQUARE   : 0) |
+        (gamepad->buttons.y     ? PSCLASSIC_MASK_TRIANGLE : 0) |
+        (gamepad->buttons.lb    ? PSCLASSIC_MASK_L1       : 0) |
+        (gamepad->buttons.rb    ? PSCLASSIC_MASK_R1       : 0) |
+        (gamepad->triggers.l    ? PSCLASSIC_MASK_L2       : 0) |
+        (gamepad->triggers.r    ? PSCLASSIC_MASK_R2       : 0);
 
 	// Wake up TinyUSB device
 	if (tud_suspended())
@@ -108,7 +108,7 @@ uint16_t PSClassicDriver::GetJoystickMidValue() {
 	return 0;
 }
 
-void PSClassicDriver::update_rumble(uint8_t idx, GamepadOut * gp_out)
+void PSClassicDriver::update_rumble(uint8_t idx, Gamepad * gamepad)
 {
     
 }

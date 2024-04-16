@@ -1,12 +1,12 @@
-#ifndef _UART_PASSTHROUGH_DRIVER_H_
-#define _UART_PASSTHROUGH_DRIVER_H_
+#ifndef _UARTBRIDGEDRIVER_H_
+#define _UARTBRIDGEDRIVER_H_
 
 #include "usbd/gpdriver.h"
 
-class USBSerialDriver : public GPDriver {
+class UARTBridgeDriver : public GPDriver {
 public:
     virtual void initialize();
-    virtual void process(uint8_t idx, Gamepad * gamepad, uint8_t * outBuffer);
+    virtual void process(int idx, Gamepad * gamepad, uint8_t * outBuffer);
     virtual uint16_t get_report(uint8_t report_id, hid_report_type_t report_type, uint8_t *buffer, uint16_t reqlen);
     virtual void set_report(uint8_t report_id, hid_report_type_t report_type, uint8_t const *buffer, uint16_t bufsize);
     virtual bool vendor_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_request_t const *request);
@@ -15,9 +15,8 @@ public:
     virtual const uint8_t * get_hid_descriptor_report_cb(uint8_t itf);
     virtual const uint8_t * get_descriptor_configuration_cb(uint8_t index);
     virtual const uint8_t * get_descriptor_device_qualifier_cb();
-    virtual uint16_t GetJoystickMidValue();
-    virtual void update_rumble(uint8_t idx, Gamepad * gamepad);
+    virtual void update_rumble(int idx, Gamepad * gamepad);
 private:
 };
 
-#endif
+#endif // _UARTBRIDGEDRIVER_H_

@@ -1,7 +1,13 @@
 #include "usbd/drivermanager.h"
 
-#include "usbd/hid/HIDDriver.h"
+#if (OGX_TYPE == WIRELESS) && (OGX_MCU != MCU_ESP32S3)
+#include "usbd/uartbridge/UARTBridgeDriver.h"
+#endif
+
+// #include "usbd/hid/HIDDriver.h"
 #include "usbd/dinput/DInputDriver.h"
+// #include "usbd/ps3/PS3Driver.h"
+
 #include "usbd/psclassic/PSClassicDriver.h"
 #include "usbd/switch/SwitchDriver.h"
 #include "usbd/xboxog/XboxOriginalDriver.h"
@@ -16,6 +22,7 @@ void DriverManager::setup(InputMode mode)
         case INPUT_MODE_HID:
             // driver = new HIDDriver();
             driver = new DInputDriver();
+            // driver = new PS3Driver();
             break;
         case INPUT_MODE_PSCLASSIC:
             driver = new PSClassicDriver();
@@ -32,6 +39,11 @@ void DriverManager::setup(InputMode mode)
         case INPUT_MODE_USBSERIAL:
             driver = new USBSerialDriver();
             break;
+        #if (OGX_TYPE == WIRELESS) && (OGX_MCU != MCU_ESP32S3)
+        case INPUT_MODE_UART_BRIDGE:
+            driver = new UARTBridgeDriver();
+            break;
+        #endif
         default:
             return;
     }

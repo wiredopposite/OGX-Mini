@@ -36,33 +36,33 @@ void XboxOriginalDriver::initialize() {
 void XboxOriginalDriver::process(uint8_t idx, Gamepad * gamepad, uint8_t * outBuffer) {
 	// digital buttons
 	xboxOriginalReport.dButtons = 0
-		| (gamepad->state.up    ? XID_DUP    : 0)
-		| (gamepad->state.down  ? XID_DDOWN  : 0)
-		| (gamepad->state.left  ? XID_DLEFT  : 0)
-		| (gamepad->state.right ? XID_DRIGHT : 0)
-		| (gamepad->state.start ? XID_START  : 0)
-		| (gamepad->state.back  ? XID_BACK   : 0)
-		| (gamepad->state.l3    ? XID_LS     : 0)
-		| (gamepad->state.r3    ? XID_RS     : 0)
+		| (gamepad->buttons.up    ? XID_DUP    : 0)
+		| (gamepad->buttons.down  ? XID_DDOWN  : 0)
+		| (gamepad->buttons.left  ? XID_DLEFT  : 0)
+		| (gamepad->buttons.right ? XID_DRIGHT : 0)
+		| (gamepad->buttons.start ? XID_START  : 0)
+		| (gamepad->buttons.back  ? XID_BACK   : 0)
+		| (gamepad->buttons.l3    ? XID_LS     : 0)
+		| (gamepad->buttons.r3    ? XID_RS     : 0)
 	;
 
     // analog buttons - convert to digital
-    xboxOriginalReport.A     = (gamepad->state.a  ? 0xFF : 0);
-    xboxOriginalReport.B     = (gamepad->state.b  ? 0xFF : 0);
-    xboxOriginalReport.X     = (gamepad->state.x  ? 0xFF : 0);
-    xboxOriginalReport.Y     = (gamepad->state.y  ? 0xFF : 0);
-    xboxOriginalReport.BLACK = (gamepad->state.rb ? 0xFF : 0);
-    xboxOriginalReport.WHITE = (gamepad->state.lb ? 0xFF : 0);
+    xboxOriginalReport.A     = (gamepad->buttons.a  ? 0xFF : 0);
+    xboxOriginalReport.B     = (gamepad->buttons.b  ? 0xFF : 0);
+    xboxOriginalReport.X     = (gamepad->buttons.x  ? 0xFF : 0);
+    xboxOriginalReport.Y     = (gamepad->buttons.y  ? 0xFF : 0);
+    xboxOriginalReport.BLACK = (gamepad->buttons.rb ? 0xFF : 0);
+    xboxOriginalReport.WHITE = (gamepad->buttons.lb ? 0xFF : 0);
 
     // analog triggers
-    xboxOriginalReport.L = gamepad->state.lt;
-    xboxOriginalReport.R = gamepad->state.rt;
+    xboxOriginalReport.L = gamepad->triggers.l;
+    xboxOriginalReport.R = gamepad->triggers.r;
 
     // analog sticks
-	xboxOriginalReport.leftStickX = gamepad->state.lx;
-	xboxOriginalReport.leftStickY = gamepad->state.ly;
-	xboxOriginalReport.rightStickX = gamepad->state.rx;
-	xboxOriginalReport.rightStickY = gamepad->state.ry;
+	xboxOriginalReport.leftStickX = gamepad->joysticks.lx;
+	xboxOriginalReport.leftStickY = gamepad->joysticks.ly;
+	xboxOriginalReport.rightStickX = gamepad->joysticks.rx;
+	xboxOriginalReport.rightStickY = gamepad->joysticks.ry;
 
 	if (tud_suspended())
 		tud_remote_wakeup();
@@ -122,8 +122,8 @@ uint16_t XboxOriginalDriver::GetJoystickMidValue() {
 	return 0;
 }
 
-void XboxOriginalDriver::update_rumble(uint8_t idx, GamepadOut * gp_out)
+void XboxOriginalDriver::update_rumble(uint8_t idx, Gamepad * gamepad)
 {
-    gp_out->state.lrumble = xid_rumble.left_motor >> 8;
-    gp_out->state.rrumble = xid_rumble.right_motor >> 8;
+    gamepad->rumble.l = xid_rumble.left_motor >> 8;
+    gamepad->rumble.r = xid_rumble.right_motor >> 8;
 }

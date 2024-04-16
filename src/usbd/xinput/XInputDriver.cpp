@@ -134,33 +134,33 @@ void XInputDriver::initialize()
 void XInputDriver::process(uint8_t idx, Gamepad * gamepad, uint8_t * outBuffer) 
 {
 	xinputReport.buttons1 = 0
-		| (gamepad->state.up    ? XBOX_MASK_UP    : 0)
-		| (gamepad->state.down  ? XBOX_MASK_DOWN  : 0)
-		| (gamepad->state.left  ? XBOX_MASK_LEFT  : 0)
-		| (gamepad->state.right ? XBOX_MASK_RIGHT : 0)
-		| (gamepad->state.start ? XBOX_MASK_START : 0)
-		| (gamepad->state.back  ? XBOX_MASK_BACK  : 0)
-		| (gamepad->state.l3    ? XBOX_MASK_LS    : 0)
-		| (gamepad->state.r3    ? XBOX_MASK_RS    : 0)
+		| (gamepad->buttons.up    ? XBOX_MASK_UP    : 0)
+		| (gamepad->buttons.down  ? XBOX_MASK_DOWN  : 0)
+		| (gamepad->buttons.left  ? XBOX_MASK_LEFT  : 0)
+		| (gamepad->buttons.right ? XBOX_MASK_RIGHT : 0)
+		| (gamepad->buttons.start ? XBOX_MASK_START : 0)
+		| (gamepad->buttons.back  ? XBOX_MASK_BACK  : 0)
+		| (gamepad->buttons.l3    ? XBOX_MASK_LS    : 0)
+		| (gamepad->buttons.r3    ? XBOX_MASK_RS    : 0)
 	;
 
 	xinputReport.buttons2 = 0
-		| (gamepad->state.rb	? XBOX_MASK_RB   : 0)
-		| (gamepad->state.lb	? XBOX_MASK_LB   : 0)
-		| (gamepad->state.sys 	? XBOX_MASK_HOME : 0)
-		| (gamepad->state.a 	? XBOX_MASK_A    : 0)
-		| (gamepad->state.b 	? XBOX_MASK_B    : 0)
-		| (gamepad->state.x 	? XBOX_MASK_X    : 0)
-		| (gamepad->state.y 	? XBOX_MASK_Y    : 0)
+		| (gamepad->buttons.rb	? XBOX_MASK_RB   : 0)
+		| (gamepad->buttons.lb	? XBOX_MASK_LB   : 0)
+		| (gamepad->buttons.sys ? XBOX_MASK_HOME : 0)
+		| (gamepad->buttons.a 	? XBOX_MASK_A    : 0)
+		| (gamepad->buttons.b 	? XBOX_MASK_B    : 0)
+		| (gamepad->buttons.x 	? XBOX_MASK_X    : 0)
+		| (gamepad->buttons.y 	? XBOX_MASK_Y    : 0)
 	;
 
-	xinputReport.lt = gamepad->state.lt;
-	xinputReport.rt = gamepad->state.rt;
+	xinputReport.lt = gamepad->triggers.l;
+	xinputReport.rt = gamepad->triggers.r;
 
-	xinputReport.lx = gamepad->state.lx;
-	xinputReport.ly = gamepad->state.ly;
-	xinputReport.rx = gamepad->state.rx;
-	xinputReport.ry = gamepad->state.ry;
+	xinputReport.lx = gamepad->joysticks.lx;
+	xinputReport.ly = gamepad->joysticks.ly;
+	xinputReport.rx = gamepad->joysticks.rx;
+	xinputReport.ry = gamepad->joysticks.ry;
 	
 	// printf("processing rumble\n");
 
@@ -234,8 +234,8 @@ uint16_t XInputDriver::GetJoystickMidValue()
 	return 0;
 }
 
-void XInputDriver::update_rumble(uint8_t idx, GamepadOut * gp_out)
+void XInputDriver::update_rumble(uint8_t idx, Gamepad * gamepad)
 {
-	gp_out->state.lrumble = xinput_rumble.left_motor;
-	gp_out->state.rrumble = xinput_rumble.right_motor; 
+	gamepad->rumble.l = xinput_rumble.left_motor;
+	gamepad->rumble.r = xinput_rumble.right_motor; 
 }
