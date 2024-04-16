@@ -6,19 +6,10 @@ extern "C" {
 #endif
 
 #include "Gamepad.h"
-
-enum InputMode
-{
-    INPUT_MODE_XINPUT = 0x01,
-    INPUT_MODE_SWITCH = 0x02,
-    INPUT_MODE_HID = 0x03,
-    INPUT_MODE_PSCLASSIC = 0x04,
-    INPUT_MODE_XBOXORIGINAL = 0x05,
-    INPUT_MODE_USBSERIAL = 0x06,
-};
+#include "usbd/inputmodes.h"
 
 enum InputMode get_input_mode();
-bool change_input_mode(Gamepad previous_gamepad_state);
+bool change_input_mode(GamepadButtons buttons);
 
 #ifdef __cplusplus
 }

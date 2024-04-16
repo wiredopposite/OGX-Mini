@@ -4,3 +4,6 @@
 [submodule "lib/tinyusb"]
 	path = lib/tinyusb
 	url = https://github.com/hathach/tinyusb.git
+[submodule "src/usbd"]
+	path = src/usbd
+	url = https://github.com/wiredopposite/usbd.git

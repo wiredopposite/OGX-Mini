@@ -1,26 +1,39 @@
-#include <cstdint>
-
 #include "Gamepad.h"
+#include "board_config.h"
 
-void Gamepad::reset_state() 
+void Gamepad::reset_pad() 
 {
-    state.up = state.down = state.left = state.right = false;
-    state.a = state.b = state.x = state.y = false;
-    state.l3 = state.r3 = state.back = state.start = false;
-    state.rb = state.lb = state.sys = state.misc = false;
-    state.lt = state.rt = 0;
-    state.lx = state.ly = state.rx = state.ry = 0;
+    buttons.up = buttons.down = buttons.left = buttons.right = false;
+    buttons.a  = buttons.b    = buttons.x    = buttons.y     = false;
+    buttons.l3 = buttons.r3   = buttons.back = buttons.start = false;
+    buttons.rb = buttons.lb   = buttons.sys  = buttons.misc  = false;
+
+    triggers.l = triggers.r = 0;
+
+    joysticks.lx = joysticks.ly = joysticks.rx = joysticks.ry = 0;
 }
 
-void GamepadOut::reset_hid_rumble()
+void Gamepad::reset_rumble() 
 {
-    if (state.lrumble != UINT8_MAX)
+    rumble.r = rumble.l = 0;
+}
+
+void Gamepad::reset_hid_rumble()
+{
+    if (rumble.l != UINT8_MAX)
     {
-        state.lrumble = 0;
+        rumble.l = 0;
     }
     
-    if (state.rrumble != UINT8_MAX)
+    if (rumble.r != UINT8_MAX)
     {
-        state.rrumble = 0;
+        rumble.r = 0;
     }
+}
+
+Gamepad& gamepad(int idx)
+{
+    static Gamepad gamepad[MAX_GAMEPADS];
+    
+    return gamepad[idx];
 }

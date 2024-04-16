@@ -31,25 +31,43 @@ add_subdirectory(lib/Pico-PIO-USB)
 add_subdirectory(lib)
 
 file(GLOB_RECURSE SOURCES 
-"src/*" 
-"src/usbh/*"
-"src/usbh/n64/*"
-"src/usbh/ps3/*"
-"src/usbh/ps4/*"
-"src/usbh/ps5/*"
-"src/usbh/psclassic/*"
-"src/usbh/switch/*"
-"src/usbh/xinput/*"
-"src/usbh/shared/*"
-"src/utilities/*"
-"src/usbd/*"
-"src/usbd/hid/*"
-"src/usbd/psclassic/*"
-"src/usbd/shared/*"
-"src/usbd/switch/*"
-"src/usbd/usbserial/"
-"src/usbd/xboxog/*" 
-"src/usbd/xinput/*")
+"src/main.cpp"
+"src/input_mode.cpp"
+"src/Gamepad.cpp"
+
+"src/utilities/log.cpp"
+"src/utilities/scaling.cpp" 
+
+"src/usbh/tusb_host_manager.cpp"
+"src/usbh/tusb_host.cpp"
+"src/usbh/n64usb/N64USB.cpp"
+"src/usbh/ps3/Dualshock3.cpp"
+"src/usbh/ps4/Dualshock4.cpp"
+"src/usbh/ps5/Dualsense.cpp"
+"src/usbh/psclassic/PSClassic.cpp"
+"src/usbh/switch/SwitchPro.cpp"
+"src/usbh/switch/SwitchWired.cpp"
+"src/usbh/xinput/driver/xinput_host.c"
+"src/usbh/xinput/XInput.cpp"
+"src/usbh/shared/hid_class_driver.c"
+
+"src/usbd/usbdriver.cpp"
+"src/usbd/drivermanager.cpp"
+"src/usbd/shared/driverhelper.h"
+"src/usbd/dinput/DInputDriver.cpp"
+# "src/usbd/hid/HIDDriver.cpp"
+# "src/usbd/ps3/PS3Driver.cpp"
+"src/usbd/psclassic/PSClassicDriver.cpp"
+"src/usbd/switch/SwitchDriver.cpp"
+"src/usbd/usbserial/USBSerialDriver.cpp"
+"src/usbd/xinput/XInputDriver.cpp"
+"src/usbd/xboxog/XboxOriginalDriver.cpp"
+"src/usbd/xboxog/xid/xid.c"
+"src/usbd/xboxog/xid/xid_driver.c"
+"src/usbd/xboxog/xid/xid_gamepad.c"
+"src/usbd/xboxog/xid/xid_remote.c"
+"src/usbd/xboxog/xid/xid_steelbattalion.c"
+)
 
 # Firmware
 add_executable(${NAME}

@@ -17,9 +17,6 @@
 #include "input_mode.h"
 #include "board_config.h"
 
-Gamepad gamepad[MAX_GAMEPADS];
-GamepadOut gamepad_out[MAX_GAMEPADS];
-
 int main(void) 
 {
     set_sys_clock_khz(120000, true);
@@ -35,7 +32,7 @@ int main(void)
     multicore_reset_core1();
     multicore_launch_core1(usbh_main);
 
-    Gamepad previous_gamepad = gamepad[0];
+    GamepadButtons prev_gamepad_buttons = gamepad(0).buttons;
     absolute_time_t last_time_gamepad_changed = get_absolute_time();
     absolute_time_t last_time_gamepad_checked = get_absolute_time();
 
@@ -45,22 +42,22 @@ int main(void)
         {
             uint8_t outBuffer[64];
             GPDriver* driver = driverManager.getDriver();
-            driver->process((uint8_t)i, &gamepad[i], outBuffer);
-            driver->update_rumble((uint8_t)i, &gamepad_out[i]);
+            driver->process(i, &gamepad(i), outBuffer);
+            driver->update_rumble(i, &gamepad(i));
         }
 
         if (absolute_time_diff_us(last_time_gamepad_checked, get_absolute_time()) >= 500000) 
         {
-            // check if digital buttons have changed (first 16 bytes of gamepad.state)
-            if (memcmp(&gamepad[0].state, &previous_gamepad.state, 16) != 0)
+            // check if digital buttons have changed
+            if (memcmp(&gamepad(0).buttons, &prev_gamepad_buttons, sizeof(GamepadButtons)) != 0)
             {
-                memcpy(&previous_gamepad.state, &gamepad[0].state, sizeof(gamepad[0].state));
+                memcpy(&prev_gamepad_buttons, &gamepad(0).buttons, sizeof(GamepadButtons));
                 last_time_gamepad_changed = get_absolute_time();
             }
             // haven't changed for 3 seconds
             else if (absolute_time_diff_us(last_time_gamepad_changed, get_absolute_time()) >= 3000000) 
             {
-                if (!change_input_mode(previous_gamepad))
+                if (!change_input_mode(prev_gamepad_buttons))
                 {
                     last_time_gamepad_changed = get_absolute_time();
                 }

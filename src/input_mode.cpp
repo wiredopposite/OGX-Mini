@@ -49,32 +49,32 @@ bool store_input_mode(enum InputMode new_mode)
     // return true;
 }   
 
-bool change_input_mode(Gamepad previous_gamepad)
+bool change_input_mode(GamepadButtons buttons)
 {
-    if (!previous_gamepad.state.start)
+    if (!buttons.start)
     {
         return false;
     }
 
     InputMode new_mode;
 
-    if (previous_gamepad.state.up)
+    if (buttons.up)
     {
         new_mode = INPUT_MODE_XINPUT;
     }
-    else if (previous_gamepad.state.left)
+    else if (buttons.left)
     {
         new_mode = INPUT_MODE_HID;
     }
-    else if (previous_gamepad.state.right)
+    else if (buttons.right)
     {
         new_mode = INPUT_MODE_XBOXORIGINAL;
     }
-    else if (previous_gamepad.state.down)
+    else if (buttons.down)
     {
         new_mode = INPUT_MODE_SWITCH;
     }
-    else if (previous_gamepad.state.a)
+    else if (buttons.a)
     {
         new_mode = INPUT_MODE_PSCLASSIC;
     }
@@ -102,6 +102,8 @@ enum InputMode get_input_mode()
     #if (CDC_DEBUG >= 1)
         return INPUT_MODE_USBSERIAL;
     #endif
+
+    // return INPUT_MODE_HID;
 
     const uint8_t *stored_value = (const uint8_t *)(XIP_BASE + FLASH_SIZE_BYTES - FLASH_SECTOR_SIZE);
 

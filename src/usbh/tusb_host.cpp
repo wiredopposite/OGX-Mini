@@ -13,19 +13,15 @@
 
 void board_setup() 
 {
-    #if (BOARD_ADA_FEATHER_USBH >= 1)
-        // #define NEOPIXEL_PWR_PIN    20
-        // #define NEOPIXEL_CTRL_PIN   21 
-        #define VCC_EN_PIN 18
-
-        gpio_init(VCC_EN_PIN);
-        gpio_set_dir(VCC_EN_PIN, GPIO_OUT);
-        gpio_put(VCC_EN_PIN, 1);
+    #ifdef VCC_EN_PIN
+    gpio_init(VCC_EN_PIN);
+    gpio_set_dir(VCC_EN_PIN, GPIO_OUT);
+    gpio_put(VCC_EN_PIN, 1);
     #endif
 
     gpio_init(LED_INDICATOR_PIN);
     gpio_set_dir(LED_INDICATOR_PIN, GPIO_OUT);
-    gpio_put(LED_INDICATOR_PIN, 0);    
+    gpio_put(LED_INDICATOR_PIN, 0);
 }
 
 void usbh_main()

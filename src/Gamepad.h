@@ -4,12 +4,13 @@
 #define _GAMEPAD_H_
 
 #ifdef __cplusplus
-	extern "C" {
+extern "C" {
 #endif
 
 #include <cstdint>
 
-struct GamepadState{
+struct GamepadButtons
+{
 	bool up 		{false};
 	bool down 		{false};
 	bool left 		{false};
@@ -26,38 +27,45 @@ struct GamepadState{
 	bool lb 		{false};
 	bool sys 		{false};
 	bool misc		{false};
-	uint8_t lt 		{0};
-	uint8_t rt 		{0};
+};
+
+struct GamepadTriggers
+{
+	uint8_t l 		{0};
+	uint8_t r 		{0};
+};
+
+struct GamepadJoysticks
+{
 	int16_t lx 		{0};
 	int16_t ly 		{0};
 	int16_t rx 		{0};
 	int16_t ry 		{0};
 };
 
-struct GamepadOutState{
-	uint8_t lrumble	{0};
-	uint8_t rrumble	{0};
+struct GamepadRumble
+{
+	uint8_t l	{0};
+	uint8_t r	{0};
 };
 
-class Gamepad {
-public:
-    GamepadState state;
+class Gamepad 
+{
+	public:
+		GamepadButtons buttons;
+		GamepadTriggers triggers;
+		GamepadJoysticks joysticks;
+		GamepadRumble rumble;
 
-	void reset_state();
+		void reset_pad();
+		void reset_rumble();
+		void reset_hid_rumble();
 };
 
-class GamepadOut {
-public:
-	GamepadOutState state;
-
-	void reset_hid_rumble();
-};
-
-extern Gamepad gamepad[];
-extern GamepadOut gamepad_out[];
+Gamepad& gamepad(int idx);
 
 #ifdef __cplusplus
-	}
+}
 #endif
 
 #endif // _GAMEPAD_H_

@@ -10,10 +10,6 @@
 
 #define PS3_REPORT_BUFFER_SIZE 48
 
-/* -------------------------------------------- */
-/* this only works for DInput currently, no DS3 */
-/* -------------------------------------------- */
-
 void Dualshock3::init(uint8_t player_id, uint8_t dev_addr, uint8_t instance)
 {
     dualshock3.player_id = player_id;
@@ -61,100 +57,100 @@ void Dualshock3::enable_reports(uint8_t dev_addr, uint8_t instance)
     // }
 }
 
-void Dualshock3::update_gamepad_from_dinput(Gamepad& gp, const DInputReport* dinput_report)
+void Dualshock3::update_gamepad_from_dinput(Gamepad& gamepad, const DInputReport* dinput_report)
 {
-    gp.reset_state();
+    // gamepad.reset_pad();
 
-    switch (dinput_report->direction)
-    {
-        case DINPUT_HAT_UP:
-            gp.state.up = true;
-            break;
-        case DINPUT_HAT_UPRIGHT:
-            gp.state.up = true;
-            gp.state.right = true;
-            break;
-        case DINPUT_HAT_RIGHT:
-            gp.state.right = true;
-            break;
-        case DINPUT_HAT_DOWNRIGHT:
-            gp.state.right = true;
-            gp.state.down = true;
-            break;
-        case DINPUT_HAT_DOWN:
-            gp.state.down = true;
-            break;
-        case DINPUT_HAT_DOWNLEFT:
-            gp.state.down = true;
-            gp.state.left = true;
-            break;
-        case DINPUT_HAT_LEFT:
-            gp.state.left = true;
-            break;
-        case DINPUT_HAT_UPLEFT:
-            gp.state.up = true;
-            gp.state.left = true;
-            break;
-    }
+    // switch (dinput_report->direction)
+    // {
+    //     case DINPUT_HAT_UP:
+    //         gamepad.buttons.up = true;
+    //         break;
+    //     case DINPUT_HAT_UPRIGHT:
+    //         gamepad.buttons.up = true;
+    //         gamepad.buttons.right = true;
+    //         break;
+    //     case DINPUT_HAT_RIGHT:
+    //         gamepad.buttons.right = true;
+    //         break;
+    //     case DINPUT_HAT_DOWNRIGHT:
+    //         gamepad.buttons.right = true;
+    //         gamepad.buttons.down = true;
+    //         break;
+    //     case DINPUT_HAT_DOWN:
+    //         gamepad.buttons.down = true;
+    //         break;
+    //     case DINPUT_HAT_DOWNLEFT:
+    //         gamepad.buttons.down = true;
+    //         gamepad.buttons.left = true;
+    //         break;
+    //     case DINPUT_HAT_LEFT:
+    //         gamepad.buttons.left = true;
+    //         break;
+    //     case DINPUT_HAT_UPLEFT:
+    //         gamepad.buttons.up = true;
+    //         gamepad.buttons.left = true;
+    //         break;
+    // }
 
-    if (dinput_report->square_btn)   gp.state.x = true;
-    if (dinput_report->triangle_btn) gp.state.y = true;
-    if (dinput_report->cross_btn)    gp.state.a = true;
-    if (dinput_report->circle_btn)   gp.state.b = true;
+    // if (dinput_report->square)   gamepad.buttons.x = true;
+    // if (dinput_report->triangle) gamepad.buttons.y = true;
+    // if (dinput_report->cross)    gamepad.buttons.a = true;
+    // if (dinput_report->circle)   gamepad.buttons.b = true;
 
-    if (dinput_report->select_btn)   gp.state.back = true;
-    if (dinput_report->start_btn)    gp.state.start = true;
-    if (dinput_report->ps_btn)       gp.state.sys = true;
+    // if (dinput_report->select)   gamepad.buttons.back = true;
+    // if (dinput_report->start)    gamepad.buttons.start = true;
+    // if (dinput_report->ps)       gamepad.buttons.sys = true;
 
-    if (dinput_report->l3_btn)       gp.state.l3 = true;
-    if (dinput_report->r3_btn)       gp.state.r3 = true;
+    // if (dinput_report->l3)       gamepad.buttons.l3 = true;
+    // if (dinput_report->r3)       gamepad.buttons.r3 = true;
          
-    if (dinput_report->l1_btn)       gp.state.lb = true;
-    if (dinput_report->r1_btn)       gp.state.rb = true;
+    // if (dinput_report->l1)       gamepad.buttons.lb = true;
+    // if (dinput_report->r1)       gamepad.buttons.rb = true;
          
-    if (dinput_report->l2_btn)       gp.state.lt = 0xFF;
-    if (dinput_report->r2_btn)       gp.state.rt = 0xFF;
+    // if (dinput_report->l2)       gamepad.triggers.l = 0xFF;
+    // if (dinput_report->r2)       gamepad.triggers.r = 0xFF;
 
-    gp.state.lx = scale_uint8_to_int16(dinput_report->l_x_axis, false);
-    gp.state.ly = scale_uint8_to_int16(dinput_report->l_y_axis, true);
-    gp.state.rx = scale_uint8_to_int16(dinput_report->r_x_axis, false);
-    gp.state.ry = scale_uint8_to_int16(dinput_report->r_y_axis, true);
+    // gamepad.joysticks.lx = scale_uint8_to_int16(dinput_report->lx_axis, false);
+    // gamepad.joysticks.ly = scale_uint8_to_int16(dinput_report->ly_axis, true);
+    // gamepad.joysticks.rx = scale_uint8_to_int16(dinput_report->rx_axis, false);
+    // gamepad.joysticks.ry = scale_uint8_to_int16(dinput_report->ry_axis, true);
 }
 
-void Dualshock3::update_gamepad_from_ds3(Gamepad& gp, const Dualshock3Report* ds3_data)
+void Dualshock3::update_gamepad_from_ds3(Gamepad& gamepad, const Dualshock3Report* ds3_data)
 {
-    gp.reset_state();
+    gamepad.reset_pad();
 
-    if (ds3_data->up)       gp.state.up =true;
-    if (ds3_data->down)     gp.state.down =true;
-    if (ds3_data->left)     gp.state.left =true;
-    if (ds3_data->right)    gp.state.right =true;
+    if (ds3_data->up)       gamepad.buttons.up =true;
+    if (ds3_data->down)     gamepad.buttons.down =true;
+    if (ds3_data->left)     gamepad.buttons.left =true;
+    if (ds3_data->right)    gamepad.buttons.right =true;
 
-    if (ds3_data->square)   gp.state.x = true;
-    if (ds3_data->triangle) gp.state.y = true;
-    if (ds3_data->cross)    gp.state.a = true;
-    if (ds3_data->circle)   gp.state.b = true;
+    if (ds3_data->square)   gamepad.buttons.x = true;
+    if (ds3_data->triangle) gamepad.buttons.y = true;
+    if (ds3_data->cross)    gamepad.buttons.a = true;
+    if (ds3_data->circle)   gamepad.buttons.b = true;
 
-    if (ds3_data->select)   gp.state.back = true;
-    if (ds3_data->start)    gp.state.start = true;
-    if (ds3_data->ps)       gp.state.sys = true;
+    if (ds3_data->select)   gamepad.buttons.back = true;
+    if (ds3_data->start)    gamepad.buttons.start = true;
+    if (ds3_data->ps)       gamepad.buttons.sys = true;
 
-    if (ds3_data->l3)       gp.state.l3 = true;
-    if (ds3_data->r3)       gp.state.r3 = true;
+    if (ds3_data->l3)       gamepad.buttons.l3 = true;
+    if (ds3_data->r3)       gamepad.buttons.r3 = true;
 
-    if (ds3_data->l1)       gp.state.lb = true;
-    if (ds3_data->r1)       gp.state.rb = true;
+    if (ds3_data->l1)       gamepad.buttons.lb = true;
+    if (ds3_data->r1)       gamepad.buttons.rb = true;
 
-    if (ds3_data->l2)       gp.state.lt = 0xFF;
-    if (ds3_data->r2)       gp.state.rt = 0xFF;
+    if (ds3_data->l2)       gamepad.triggers.l = 0xFF;
+    if (ds3_data->r2)       gamepad.triggers.r = 0xFF;
 
-    gp.state.lx = scale_uint8_to_int16(ds3_data->left_x, false);
-    gp.state.ly = scale_uint8_to_int16(ds3_data->left_y, true);
-    gp.state.rx = scale_uint8_to_int16(ds3_data->right_x, false);
-    gp.state.ry = scale_uint8_to_int16(ds3_data->right_y, true);
+    gamepad.joysticks.lx = scale_uint8_to_int16(ds3_data->left_x, false);
+    gamepad.joysticks.ly = scale_uint8_to_int16(ds3_data->left_y, true);
+    gamepad.joysticks.rx = scale_uint8_to_int16(ds3_data->right_x, false);
+    gamepad.joysticks.ry = scale_uint8_to_int16(ds3_data->right_y, true);
 }
 
-void Dualshock3::process_hid_report(Gamepad& gp, uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len)
+void Dualshock3::process_hid_report(Gamepad& gamepad, uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len)
 {
     if (dualshock3.sixaxis && !dualshock3.reports_enabled)
     {
@@ -175,16 +171,16 @@ void Dualshock3::process_hid_report(Gamepad& gp, uint8_t dev_addr, uint8_t insta
         static Dualshock3Report prev_report = { 0 };
         Dualshock3Report ds3_report;
         memcpy(&ds3_report, report, sizeof(ds3_report));
-        update_gamepad_from_ds3(gp, &ds3_report);
+        update_gamepad_from_ds3(gamepad, &ds3_report);
         prev_report = ds3_report;
     // }
 
     tuh_hid_receive_report(dev_addr, instance);
 }
 
-void Dualshock3::process_xinput_report(Gamepad& gp, uint8_t dev_addr, uint8_t instance, xinputh_interface_t const* report, uint16_t len) {}
+void Dualshock3::process_xinput_report(Gamepad& gamepad, uint8_t dev_addr, uint8_t instance, xinputh_interface_t const* report, uint16_t len) {}
 
-bool Dualshock3::send_fb_data(GamepadOut& gp_out, uint8_t dev_addr, uint8_t instance)
+bool Dualshock3::send_fb_data(const Gamepad& gamepad, uint8_t dev_addr, uint8_t instance)
 {
     if (dualshock3.sixaxis && !dualshock3.reports_enabled)
     {
@@ -196,31 +192,33 @@ bool Dualshock3::send_fb_data(GamepadOut& gp_out, uint8_t dev_addr, uint8_t inst
         return true;
     }
 
-    uint8_t default_report[] = 
-    {
-        0x01, 0xff, 0x00, 0xff, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00,
-        0xff, 0x27, 0x10, 0x00, 0x32,
-        0xff, 0x27, 0x10, 0x00, 0x32,
-        0xff, 0x27, 0x10, 0x00, 0x32,
-        0xff, 0x27, 0x10, 0x00, 0x32,
-        0x00, 0x00, 0x00, 0x00, 0x00
-    };
+    return true;
 
-    struct sixaxis_output_report out_report;
+    // uint8_t default_report[] = 
+    // {
+    //     0x01, 0xff, 0x00, 0xff, 0x00,
+    //     0x00, 0x00, 0x00, 0x00, 0x00,
+    //     0xff, 0x27, 0x10, 0x00, 0x32,
+    //     0xff, 0x27, 0x10, 0x00, 0x32,
+    //     0xff, 0x27, 0x10, 0x00, 0x32,
+    //     0xff, 0x27, 0x10, 0x00, 0x32,
+    //     0x00, 0x00, 0x00, 0x00, 0x00
+    // };
 
-    memcpy(&out_report, default_report, sizeof(out_report));
+    // Dualshock3OutReport out_report = {};
 
-    out_report.leds_bitmap |= 0x1 << (instance+1);
-    out_report.leds_bitmap = 0x02;
-    out_report.led->time_enabled = 0xFF;
-    out_report.led->duty_on = 0xFF;
+    // // memcpy(&out_report, default_report, sizeof(out_report));
 
-    out_report.rumble.right_duration = UINT8_MAX / 2;
-    if (gp_out.state.rrumble > 0) out_report.rumble.right_motor_on = 1;
+    // // out_report.leds_bitmap |= 0x1 << (instance+1);
+    // // out_report.leds_bitmap = 0x02;
+    // // out_report.led->time_enabled = 0xFF;
+    // // out_report.led->duty_on = 0xFF;
 
-    out_report.rumble.left_duration = UINT8_MAX / 2;
-    out_report.rumble.left_motor_force = gp_out.state.lrumble;
+    // // out_report.rumble.right_duration = UINT8_MAX / 2;
+    // // if (gamepad.rumble.r > 0) out_report.rumble.right_motor_on = 1;
 
-    return tuh_hid_send_report(dev_addr, instance, 0x1, &out_report, sizeof(out_report));
+    // // out_report.rumble.left_duration = UINT8_MAX / 2;
+    // // out_report.rumble.left_motor_force = gamepad.rumble.l;
+
+    // return tuh_hid_send_report(dev_addr, instance, 0x1, &out_report, sizeof(Dualshock3OutReport));
 }

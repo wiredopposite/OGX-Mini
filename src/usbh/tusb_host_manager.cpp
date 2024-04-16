@@ -122,7 +122,7 @@ void unmount_gamepad(uint8_t dev_addr, uint8_t instance)
         if (hosted_device[i].class_mounted && hosted_device[i].class_address == dev_addr && hosted_device[i].class_instance == instance)
         {
             hosted_device[i].class_mounted = false;
-            gamepad[i].reset_state();
+            gamepad(i).reset_pad();
             
             if (hosted_device[i].gamepad_driver)
             {
@@ -209,7 +209,7 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
         {
             if (hosted_device[i].gamepad_driver)
             {
-                hosted_device[i].gamepad_driver->process_hid_report(gamepad[i], dev_addr, instance, report, len);
+                hosted_device[i].gamepad_driver->process_hid_report(gamepad(i), dev_addr, instance, report, len);
             }
         }
     }
@@ -246,7 +246,7 @@ void tuh_xinput_report_received_cb(uint8_t dev_addr, uint8_t instance, xinputh_i
         {
             if (hosted_device[i].gamepad_driver)
             {
-                hosted_device[i].gamepad_driver->process_xinput_report(gamepad[i], dev_addr, instance, report, len);
+                hosted_device[i].gamepad_driver->process_xinput_report(gamepad(i), dev_addr, instance, report, len);
             }
         }
     }
@@ -269,13 +269,13 @@ void send_fb_data_to_gamepad()
 
         if (current_time - fb_sent_time[i] >= fb_interval_ms) 
         {
-            if (hosted_device[i].gamepad_driver->send_fb_data(gamepad_out[i], hosted_device[i].class_address, hosted_device[i].class_instance))
+            if (hosted_device[i].gamepad_driver->send_fb_data(gamepad(i), hosted_device[i].class_address, hosted_device[i].class_instance))
             {
                 fb_sent_time[i] = current_time;
 
                 if (hosted_device[i].hid_class)
                 {
-                    gamepad_out[i].reset_hid_rumble(); // reset rumble so it doesn't get stuck on
+                    gamepad(i).reset_hid_rumble(); // reset rumble so it doesn't get stuck on
                 }
             }
         }
