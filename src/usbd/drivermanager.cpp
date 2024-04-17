@@ -1,18 +1,18 @@
 #include "usbd/drivermanager.h"
 
 #if (OGX_TYPE == WIRELESS) && (OGX_MCU != MCU_ESP32S3)
-#include "usbd/uartbridge/UARTBridgeDriver.h"
+#include "usbd/drivers/uartbridge/UARTBridgeDriver.h"
 #endif
 
-// #include "usbd/hid/HIDDriver.h"
-#include "usbd/dinput/DInputDriver.h"
-// #include "usbd/ps3/PS3Driver.h"
+// #include "usbd/drivers/hid/HIDDriver.h"
+#include "usbd/drivers/dinput/DInputDriver.h"
+// #include "usbd/drivers/ps3/PS3Driver.h"
 
-#include "usbd/psclassic/PSClassicDriver.h"
-#include "usbd/switch/SwitchDriver.h"
-#include "usbd/xboxog/XboxOriginalDriver.h"
-#include "usbd/xinput/XInputDriver.h"
-#include "usbd/usbserial/USBSerialDriver.h"
+#include "usbd/drivers/psclassic/PSClassicDriver.h"
+#include "usbd/drivers/switch/SwitchDriver.h"
+#include "usbd/drivers/xboxog/XboxOriginalDriver.h"
+#include "usbd/drivers/xinput/XInputDriver.h"
+#include "usbd/drivers/usbserial/USBSerialDriver.h"
 
 void DriverManager::setup(InputMode mode) 
 {

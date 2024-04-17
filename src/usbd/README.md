@@ -1,3 +1,7 @@
+Gamepad device drivers for TinyUSB, this is being used in several of my projects
+
+This needs a board_config.h file in the project defining the board you're using and the number of gamepads, here's how mine looks
+```
 #ifndef BOARD_CONFIG_H_
 #define BOARD_CONFIG_H_
 
@@ -108,3 +112,4 @@
 #endif
 
 #endif // BOARD_CONFIG_H_
+```

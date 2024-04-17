@@ -6,7 +6,7 @@
 #include <stdint.h>
 
 #include "usbh/GPHostDriver.h"
-#include "descriptors/PSClassicDescriptors.h"
+#include "usbd/descriptors/PSClassicDescriptors.h"
 
 const usb_vid_pid_t psc_devices[] = 
 {

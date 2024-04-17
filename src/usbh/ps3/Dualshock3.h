@@ -6,8 +6,8 @@
 #include <stdint.h>
 
 #include "usbh/GPHostDriver.h"
-#include "descriptors/PS3Descriptors.h"
-#include "descriptors/DInputDescriptors.h"
+#include "usbd/descriptors/PS3Descriptors.h"
+#include "usbd/descriptors/DInputDescriptors.h"
 
 const usb_vid_pid_t ps3_devices[] = 
 {

@@ -1,8 +1,8 @@
 #ifndef _DRIVERMANAGER_H
 #define _DRIVERMANAGER_H
 
-#include "usbd/gpdriver.h"
-#include "input_mode.h"
+#include "usbd/drivers/gpdriver.h"
+#include "usbd/inputmodes.h"
 
 class GPDriver;
 

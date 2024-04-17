@@ -5,7 +5,7 @@
 
 #include <stdint.h>
 
-#include "descriptors/SwitchProDescriptors.h"
+#include "usbd/descriptors/SwitchProDescriptors.h"
 #include "usbh/GPHostDriver.h"
 
 const usb_vid_pid_t switch_pro_devices[] = 

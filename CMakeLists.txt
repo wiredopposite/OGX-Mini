@@ -24,6 +24,8 @@ endif()
 
 set(PICO_PIO_USB_PATH "${CMAKE_CURRENT_LIST_DIR}/lib/Pico-PIO-USB")
 set(PICO_TINYUSB_PATH "${CMAKE_CURRENT_LIST_DIR}/lib/tinyusb")
+set(TUSB_XINPUT_PATH "${CMAKE_CURRENT_LIST_DIR}/lib/tusb_xinput")
+add_subdirectory(${TUSB_XINPUT_PATH} xinput_host)
 
 pico_sdk_init()
 
@@ -47,26 +49,26 @@ file(GLOB_RECURSE SOURCES
 "src/usbh/psclassic/PSClassic.cpp"
 "src/usbh/switch/SwitchPro.cpp"
 "src/usbh/switch/SwitchWired.cpp"
-"src/usbh/xinput/driver/xinput_host.c"
 "src/usbh/xinput/XInput.cpp"
 "src/usbh/shared/hid_class_driver.c"
 
 "src/usbd/usbdriver.cpp"
 "src/usbd/drivermanager.cpp"
-"src/usbd/shared/driverhelper.h"
-"src/usbd/dinput/DInputDriver.cpp"
-# "src/usbd/hid/HIDDriver.cpp"
-# "src/usbd/ps3/PS3Driver.cpp"
-"src/usbd/psclassic/PSClassicDriver.cpp"
-"src/usbd/switch/SwitchDriver.cpp"
-"src/usbd/usbserial/USBSerialDriver.cpp"
-"src/usbd/xinput/XInputDriver.cpp"
-"src/usbd/xboxog/XboxOriginalDriver.cpp"
-"src/usbd/xboxog/xid/xid.c"
-"src/usbd/xboxog/xid/xid_driver.c"
-"src/usbd/xboxog/xid/xid_gamepad.c"
-"src/usbd/xboxog/xid/xid_remote.c"
-"src/usbd/xboxog/xid/xid_steelbattalion.c"
+"src/usbd/drivers/shared/driverhelper.h"
+"src/usbd/drivers/shared/scaling.cpp"
+"src/usbd/drivers/dinput/DInputDriver.cpp"
+# "src/usbd/drivers/hid/HIDDriver.cpp"
+# "src/usbd/drivers/ps3/PS3Driver.cpp"
+"src/usbd/drivers/psclassic/PSClassicDriver.cpp"
+"src/usbd/drivers/switch/SwitchDriver.cpp"
+"src/usbd/drivers/usbserial/USBSerialDriver.cpp"
+"src/usbd/drivers/xinput/XInputDriver.cpp"
+"src/usbd/drivers/xboxog/XboxOriginalDriver.cpp"
+"src/usbd/drivers/xboxog/xid/xid.c"
+"src/usbd/drivers/xboxog/xid/xid_driver.c"
+"src/usbd/drivers/xboxog/xid/xid_gamepad.c"
+"src/usbd/drivers/xboxog/xid/xid_remote.c"
+"src/usbd/drivers/xboxog/xid/xid_steelbattalion.c"
 )
 
 # Firmware
@@ -98,6 +100,7 @@ target_link_libraries(${NAME}
     tinyusb_pico_pio_usb
     CRC32
     cmsis_core
+    xinput_host
 )
 
 pico_add_extra_outputs(${NAME})

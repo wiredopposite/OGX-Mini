@@ -7,7 +7,7 @@
 #include "host/usbh.h" // needed so xinput_host will build
 
 #include "usbh/shared/shared.h"
-#include "usbh/xinput/driver/xinput_host.h"
+#include "xinput_host.h"
 #include "Gamepad.h"
 
 class GPHostDriver 

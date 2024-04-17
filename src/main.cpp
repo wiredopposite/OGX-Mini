@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include "pico/stdlib.h"
 #include "pico/multicore.h"
 
@@ -9,10 +8,8 @@
 #include "bsp/board_api.h"
 
 #include "usbh/tusb_host.h"
-
 #include "usbd/drivermanager.h"
-#include "usbd/gpdriver.h"
-
+#include "usbd/drivers/gpdriver.h"
 #include "Gamepad.h"
 #include "input_mode.h"
 #include "board_config.h"

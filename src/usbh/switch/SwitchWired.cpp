@@ -6,7 +6,7 @@
 #include "usbh/switch/SwitchWired.h"
 
 #include "utilities/scaling.h"
-#include "descriptors/SwitchDescriptors.h"
+#include "usbd/descriptors/SwitchDescriptors.h"
 
 void SwitchWired::init(uint8_t player_id, uint8_t dev_addr, uint8_t instance)
 {
