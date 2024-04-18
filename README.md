@@ -49,7 +49,7 @@ Start + A (Cross for PlayStation and B for Switch gamepads)
 After a new mode is stored, the RP2040 will reset itself so you don't need to unplug it. 
 
 ## Hardware
-I've created an interposer board for the RP2040-Zero so you can make a small form-factor adapter yourself. The gerber files, schematic, and BOM are in Hardware folder.
+I've designed a PCB for the RP2040-Zero so you can make a small form-factor adapter yourself. The gerber files, schematic, and BOM are in Hardware folder.
 
 ![OGX-Mini Boards](images/OGX-Mini-rpzero-int.jpg "OGX-Mini Boards")
 
