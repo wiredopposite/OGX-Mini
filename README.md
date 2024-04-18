@@ -61,11 +61,6 @@ For the Pi Pico, this is a diagram of how you'd connect the extra USB port:
 
 For the [Adafruit Feather USB Host board](https://www.adafruit.com/product/5723), no extra work is needed.
 
-## 2 & 4 Player support (in initial development)
-With v0.4, 2 and 4 player variants of the firmware are included on the Releases page, this is only meant for PlayStation 3 and Nintendo Switch. You can use either a self-powered USB hub or an Xbox 360 wireless adapter to play with 4 controllers. 
-
-As it is right now, the Switch/PS3 will see 2 or 4 controllers no matter how many you're using, but I'm currently working on a way to connect controllers as they're plugged in or synced with a wireless adapter.
-
 ## Adding supported controllers
 If your third party controller isn't working, but the original version is listed above, send me the device's VID and PID and I'll add it so it's recognized properly.
 
