@@ -7,6 +7,3 @@
 [submodule "src/usbd"]
 	path = src/usbd
 	url = https://github.com/wiredopposite/usbd.git
-[submodule "lib/tusb_xinput"]
-	path = lib/tusb_xinput
-	url = https://github.com/wiredopposite/tusb_xinput.git
