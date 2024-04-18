@@ -59,6 +59,8 @@ void XInputHost::process_xinput_report(Gamepad& gamepad, uint8_t dev_addr, uint8
 
 void XInputHost::process_hid_report(Gamepad& gamepad, uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len) {}
 
+void XInputHost::hid_get_report_complete_cb(uint8_t dev_addr, uint8_t instance, uint8_t report_id, uint8_t report_type, uint16_t len) {}
+
 bool XInputHost::send_fb_data(const Gamepad& gamepad, uint8_t dev_addr, uint8_t instance)
 {
     static int report_num = 0;

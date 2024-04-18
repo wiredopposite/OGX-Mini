@@ -4,9 +4,7 @@
 #include "CRC32.h"
 
 #include "usbh/ps4/Dualshock4.h"
-
-#include "utilities/scaling.h"
-#include "Gamepad.h"
+#include "usbh/shared/scaling.h"
 
 #define REPORT_ID_GAMEPAD_STATE 0x11
 
@@ -124,6 +122,8 @@ void Dualshock4::process_hid_report(Gamepad& gamepad, uint8_t dev_addr, uint8_t 
 }
 
 void Dualshock4::process_xinput_report(Gamepad& gamepad, uint8_t dev_addr, uint8_t instance, xinputh_interface_t const* report, uint16_t len) {}
+
+void Dualshock4::hid_get_report_complete_cb(uint8_t dev_addr, uint8_t instance, uint8_t report_id, uint8_t report_type, uint16_t len) {}
 
 bool Dualshock4::send_fb_data(const Gamepad& gamepad, uint8_t dev_addr, uint8_t instance)
 {

@@ -6,7 +6,7 @@
 
 #include "tusb.h"
 
-#include "board_config.h"
+#include "usbd/board_config.h"
 #include "input_mode.h"
 
 #define AIRCR_REG (*((volatile uint32_t *)(0xE000ED0C))) // Address of the AIRCR register
@@ -102,8 +102,6 @@ enum InputMode get_input_mode()
     #if (CDC_DEBUG >= 1)
         return INPUT_MODE_USBSERIAL;
     #endif
-
-    // return INPUT_MODE_HID;
 
     const uint8_t *stored_value = (const uint8_t *)(XIP_BASE + FLASH_SIZE_BYTES - FLASH_SECTOR_SIZE);
 

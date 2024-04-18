@@ -5,119 +5,211 @@
 
 #include "usbh/ps3/Dualshock3.h"
 
-#include "utilities/scaling.h"
-#include "utilities/log.h"
-
-#define PS3_REPORT_BUFFER_SIZE 48
+#include "usbh/shared/scaling.h"
 
 void Dualshock3::init(uint8_t player_id, uint8_t dev_addr, uint8_t instance)
 {
     dualshock3.player_id = player_id;
-    
-    uint16_t vid, pid;
-    tuh_vid_pid_get(dev_addr, &vid, &pid);
+    dualshock3.response_count = 0;
+    dualshock3.reports_enabled = false;
 
-    if (vid == 0x054C && pid == 0x0268) 
+    // tuh_hid_get_report not working correctly?
+    tusb_control_request_t setup_packet = 
     {
-        dualshock3.sixaxis = true;
+        .bmRequestType = 0xA1, 
+        .bRequest = 0x01, // GET_REPORT
+        .wValue = (HID_REPORT_TYPE_FEATURE << 8) | 0xF2, 
+        .wIndex = 0x0000,      
+        .wLength = 17         
+    };
+
+    tuh_xfer_s transfer = 
+    {
+        .daddr = dev_addr,
+        .ep_addr = 0x00,     
+        .setup = &setup_packet, 
+        .buffer = (uint8_t*)&dualshock3.en_buffer,
+        .complete_cb = NULL, 
+        .user_data = 0          
+    };
+
+    if (tuh_control_xfer(&transfer))
+    {
+        get_report_complete_cb(dev_addr, instance);
     }
 
-    enable_reports(dev_addr, instance);
-    tuh_hid_receive_report(dev_addr, instance);
+    // tuh_hid_get_report(dev_addr, instance, 0xF2, HID_REPORT_TYPE_FEATURE, &dualshock3.en_buffer, 17);
 }
 
-void Dualshock3::enable_reports(uint8_t dev_addr, uint8_t instance)
-{
-    uint8_t cmd_buf[4];
-    cmd_buf[0] = 0x42;
-    // cmd_buf[1] = 0x0c;
-    cmd_buf[1] = 0x03;
-    cmd_buf[2] = 0x00;
-    cmd_buf[3] = 0x00;
-
-    if (tuh_hid_send_ready)
+void Dualshock3::get_report_complete_cb(uint8_t dev_addr, uint8_t instance)
+{   
+    if (dualshock3.response_count == 0)
     {
-        dualshock3.reports_enabled = tuh_hid_set_report(dev_addr, instance, 0xF4, HID_REPORT_TYPE_FEATURE, &cmd_buf, sizeof(cmd_buf));
+        tusb_control_request_t setup_packet = 
+        {
+            .bmRequestType = 0xA1,  
+            .bRequest = 0x01, // GET_REPORT
+            .wValue = (HID_REPORT_TYPE_FEATURE << 8) | 0xF2, 
+            .wIndex = 0x0000,    
+            .wLength = 17     
+        };
+
+        tuh_xfer_s transfer = 
+        {
+            .daddr = dev_addr,
+            .ep_addr = 0x00,
+            .setup = &setup_packet, 
+            .buffer = (uint8_t*)&dualshock3.en_buffer,
+            .complete_cb = NULL, 
+            .user_data = 0
+        };
+
+        if (tuh_control_xfer(&transfer))
+        {
+            dualshock3.response_count++;
+            get_report_complete_cb(dev_addr, instance);
+            return;
+        }
     }
+    else if (dualshock3.response_count == 1)
+    {
+        tusb_control_request_t setup_packet = 
+        {
+            .bmRequestType = 0xA1, 
+            .bRequest = 0x01, // GET_REPORT
+            .wValue = (HID_REPORT_TYPE_FEATURE << 8) | 0xF2,
+            .wIndex = 0x0000, 
+            .wLength = 8 
+        };
 
-    // static uint8_t buffer[5] = {};
-    // buffer[0] = 0xF4;
-    // buffer[1] = 0x42;
-    // buffer[2] = 0x03;
-    // buffer[3] = 0x00;
-    // buffer[4] = 0x00;
+        tuh_xfer_s transfer = 
+        {
+            .daddr = dev_addr,
+            .ep_addr = 0x00, 
+            .setup = &setup_packet,
+            .buffer = (uint8_t*)&dualshock3.en_buffer,
+            .complete_cb = NULL, 
+            .user_data = 0          
+        };
 
-    // dualshock3.reports_enabled = tuh_hid_set_report(dev_addr, instance, 0, HID_REPORT_TYPE_FEATURE, buffer, sizeof(buffer));
+        if (tuh_control_xfer(&transfer))
+        {
+            dualshock3.response_count++;
+            get_report_complete_cb(dev_addr, instance);
+            return;
+        }
+    }
+    else if (dualshock3.response_count == 2)
+    {
+        dualshock3.response_count++;
 
-    // dualshock3.reports_enabled = tuh_hid_send_report(dev_addr, instance, 0, cmd_buf, sizeof(cmd_buf));
+        uint8_t default_report[] = 
+        {
+            0x01, 0xff, 0x00, 0xff, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00,
+            0xff, 0x27, 0x10, 0x00, 0x32,
+            0xff, 0x27, 0x10, 0x00, 0x32,
+            0xff, 0x27, 0x10, 0x00, 0x32,
+            0xff, 0x27, 0x10, 0x00, 0x32,
+            0x00, 0x00, 0x00, 0x00, 0x00
+        };
 
-    // if (dualshock3.reports_enabled)
+        memcpy(&dualshock3.out_report, &default_report, sizeof(Dualshock3OutReport));
+
+        dualshock3.out_report.leds_bitmap = 0x1 << (instance + 1);
+        dualshock3.out_report.led[instance].time_enabled = UINT8_MAX;
+
+        tusb_control_request_t setup_packet = 
+        {
+            .bmRequestType = 0x21,
+            .bRequest = 0x09, // SET_REPORT
+            .wValue = 0x0201,
+            .wIndex = 0x0000,   
+            .wLength = sizeof(Dualshock3OutReport)
+        };
+
+        tuh_xfer_s transfer = 
+        {
+            .daddr = dev_addr, 
+            .ep_addr = 0x00, 
+            .setup = &setup_packet, 
+            .buffer = (uint8_t*)&dualshock3.out_report, 
+            .complete_cb = NULL,
+            .user_data = 0 
+        };
+
+        if (tuh_control_xfer(&transfer))
+        {
+            dualshock3.reports_enabled = true;
+            tuh_hid_receive_report(dev_addr, instance);
+        }
+    }
+}
+
+void Dualshock3::hid_get_report_complete_cb(uint8_t dev_addr, uint8_t instance, uint8_t report_id, uint8_t report_type, uint16_t len)
+{   
+    // if (dualshock3.response_count == 0)
     // {
-    //     tuh_hid_receive_report(dev_addr, instance);
+    //     if (tuh_hid_get_report(dev_addr, instance, 0xF2, HID_REPORT_TYPE_FEATURE, &dualshock3.en_buffer, 17))
+    //     {
+    //         dualshock3.response_count++;
+    //     }
+    // }
+    // else if (dualshock3.response_count == 1)
+    // {
+    //     if (tuh_hid_get_report(dev_addr, instance, 0xF5, HID_REPORT_TYPE_FEATURE, &dualshock3.en_buffer, 8))
+    //     {
+    //         dualshock3.response_count++;
+    //     }
+    // }
+    // else if (dualshock3.response_count == 2)
+    // {
+    //     dualshock3.response_count++;
+
+    //     uint8_t default_report[] = 
+    //     {
+    //         0x01, 0xff, 0x00, 0xff, 0x00,
+    //         0x00, 0x00, 0x00, 0x00, 0x00,
+    //         0xff, 0x27, 0x10, 0x00, 0x32,
+    //         0xff, 0x27, 0x10, 0x00, 0x32,
+    //         0xff, 0x27, 0x10, 0x00, 0x32,
+    //         0xff, 0x27, 0x10, 0x00, 0x32,
+    //         0x00, 0x00, 0x00, 0x00, 0x00
+    //     };
+
+    //     memcpy(&dualshock3.out_report, &default_report, sizeof(Dualshock3OutReport));
+
+    //     dualshock3.out_report.leds_bitmap = 0x1 << (instance + 1);
+    //     dualshock3.out_report.led[instance].time_enabled = UINT8_MAX;
+
+    //     tusb_control_request_t setup_packet = 
+    //     {
+    //         .bmRequestType = 0x21,
+    //         .bRequest = 0x09, // SET_REPORT
+    //         .wValue = 0x0201,
+    //         .wIndex = 0x0000,   
+    //         .wLength = sizeof(Dualshock3OutReport)
+    //     };
+
+    //     tuh_xfer_s transfer = 
+    //     {
+    //         .daddr = dev_addr, 
+    //         .ep_addr = 0x00, 
+    //         .setup = &setup_packet, 
+    //         .buffer = (uint8_t*)&dualshock3.out_report, 
+    //         .complete_cb = NULL,
+    //         .user_data = 0 
+    //     };
+
+    //     if (tuh_control_xfer(&transfer))
+    //     {
+    //         dualshock3.reports_enabled = true;
+    //         tuh_hid_receive_report(dev_addr, instance);
+    //     }
     // }
 }
 
-void Dualshock3::update_gamepad_from_dinput(Gamepad& gamepad, const DInputReport* dinput_report)
-{
-    // gamepad.reset_pad();
-
-    // switch (dinput_report->direction)
-    // {
-    //     case DINPUT_HAT_UP:
-    //         gamepad.buttons.up = true;
-    //         break;
-    //     case DINPUT_HAT_UPRIGHT:
-    //         gamepad.buttons.up = true;
-    //         gamepad.buttons.right = true;
-    //         break;
-    //     case DINPUT_HAT_RIGHT:
-    //         gamepad.buttons.right = true;
-    //         break;
-    //     case DINPUT_HAT_DOWNRIGHT:
-    //         gamepad.buttons.right = true;
-    //         gamepad.buttons.down = true;
-    //         break;
-    //     case DINPUT_HAT_DOWN:
-    //         gamepad.buttons.down = true;
-    //         break;
-    //     case DINPUT_HAT_DOWNLEFT:
-    //         gamepad.buttons.down = true;
-    //         gamepad.buttons.left = true;
-    //         break;
-    //     case DINPUT_HAT_LEFT:
-    //         gamepad.buttons.left = true;
-    //         break;
-    //     case DINPUT_HAT_UPLEFT:
-    //         gamepad.buttons.up = true;
-    //         gamepad.buttons.left = true;
-    //         break;
-    // }
-
-    // if (dinput_report->square)   gamepad.buttons.x = true;
-    // if (dinput_report->triangle) gamepad.buttons.y = true;
-    // if (dinput_report->cross)    gamepad.buttons.a = true;
-    // if (dinput_report->circle)   gamepad.buttons.b = true;
-
-    // if (dinput_report->select)   gamepad.buttons.back = true;
-    // if (dinput_report->start)    gamepad.buttons.start = true;
-    // if (dinput_report->ps)       gamepad.buttons.sys = true;
-
-    // if (dinput_report->l3)       gamepad.buttons.l3 = true;
-    // if (dinput_report->r3)       gamepad.buttons.r3 = true;
-         
-    // if (dinput_report->l1)       gamepad.buttons.lb = true;
-    // if (dinput_report->r1)       gamepad.buttons.rb = true;
-         
-    // if (dinput_report->l2)       gamepad.triggers.l = 0xFF;
-    // if (dinput_report->r2)       gamepad.triggers.r = 0xFF;
-
-    // gamepad.joysticks.lx = scale_uint8_to_int16(dinput_report->lx_axis, false);
-    // gamepad.joysticks.ly = scale_uint8_to_int16(dinput_report->ly_axis, true);
-    // gamepad.joysticks.rx = scale_uint8_to_int16(dinput_report->rx_axis, false);
-    // gamepad.joysticks.ry = scale_uint8_to_int16(dinput_report->ry_axis, true);
-}
-
-void Dualshock3::update_gamepad_from_ds3(Gamepad& gamepad, const Dualshock3Report* ds3_data)
+void Dualshock3::update_gamepad(Gamepad& gamepad, const Dualshock3Report* ds3_data)
 {
     gamepad.reset_pad();
 
@@ -141,8 +233,8 @@ void Dualshock3::update_gamepad_from_ds3(Gamepad& gamepad, const Dualshock3Repor
     if (ds3_data->l1)       gamepad.buttons.lb = true;
     if (ds3_data->r1)       gamepad.buttons.rb = true;
 
-    if (ds3_data->l2)       gamepad.triggers.l = 0xFF;
-    if (ds3_data->r2)       gamepad.triggers.r = 0xFF;
+    gamepad.triggers.l = ds3_data->l2_axis;
+    gamepad.triggers.r = ds3_data->r2_axis;
 
     gamepad.joysticks.lx = scale_uint8_to_int16(ds3_data->left_x, false);
     gamepad.joysticks.ly = scale_uint8_to_int16(ds3_data->left_y, true);
@@ -152,28 +244,15 @@ void Dualshock3::update_gamepad_from_ds3(Gamepad& gamepad, const Dualshock3Repor
 
 void Dualshock3::process_hid_report(Gamepad& gamepad, uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len)
 {
-    if (dualshock3.sixaxis && !dualshock3.reports_enabled)
-    {
-        enable_reports(dev_addr, instance);
-        return;
-    }
+    static Dualshock3Report prev_report = { 0 };
+    Dualshock3Report ds3_report;
+    memcpy(&ds3_report, report, sizeof(ds3_report));
 
-    // if (!dualshock3.sixaxis)
-    // {
-    //     static DInputReport prev_report = {0};
-    //     DInputReport dinput_report;
-    //     memcpy(&dinput_report, report, sizeof(dinput_report));
-    //     update_gamepad_from_dinput(gp, &dinput_report);
-    //     prev_report = dinput_report;
-    // }
-    // else
-    // {
-        static Dualshock3Report prev_report = { 0 };
-        Dualshock3Report ds3_report;
-        memcpy(&ds3_report, report, sizeof(ds3_report));
-        update_gamepad_from_ds3(gamepad, &ds3_report);
+    if (memcmp(&ds3_report, &prev_report, sizeof(ds3_report)) != 0)
+    {
+        update_gamepad(gamepad, &ds3_report);
         prev_report = ds3_report;
-    // }
+    }
 
     tuh_hid_receive_report(dev_addr, instance);
 }
@@ -182,43 +261,52 @@ void Dualshock3::process_xinput_report(Gamepad& gamepad, uint8_t dev_addr, uint8
 
 bool Dualshock3::send_fb_data(const Gamepad& gamepad, uint8_t dev_addr, uint8_t instance)
 {
-    if (dualshock3.sixaxis && !dualshock3.reports_enabled)
+    static absolute_time_t next_allowed_time = {0};
+    absolute_time_t current_time = get_absolute_time();
+
+    if (!dualshock3.reports_enabled)
     {
-        enable_reports(dev_addr, instance);
         return false;
     }
-    else if (!dualshock3.sixaxis)
+
+    dualshock3.out_report.rumble.right_duration    = (gamepad.rumble.r > 0) ? 20: 0;
+    dualshock3.out_report.rumble.right_motor_on    = (gamepad.rumble.r > 0) ? 1 : 0;
+
+    dualshock3.out_report.rumble.left_duration     = (gamepad.rumble.l > 0) ? 20 : 0;
+    dualshock3.out_report.rumble.left_motor_force  = gamepad.rumble.l;
+
+    if (gamepad.rumble.l > 0 || gamepad.rumble.r > 0 || 
+        absolute_time_diff_us(current_time, next_allowed_time) < 0) 
     {
-        return true;
+        tusb_control_request_t setup_packet = 
+        {
+            .bmRequestType = 0x21,
+            .bRequest = 0x09,
+            .wValue = 0x0201,
+            .wIndex = 0x0000, 
+            .wLength = sizeof(Dualshock3OutReport)
+        };
+
+        tuh_xfer_s transfer = 
+        {
+            .daddr = dev_addr,
+            .ep_addr = 0x00, 
+            .setup = &setup_packet, 
+            .buffer = (uint8_t*)&dualshock3.out_report,
+            .complete_cb = NULL,       
+            .user_data = 0          
+        };
+
+        if (tuh_control_xfer(&transfer)) 
+        {
+            if (gamepad.rumble.l == 0 && gamepad.rumble.r == 0) 
+            {
+                next_allowed_time = delayed_by_us(get_absolute_time(), 500000);
+            }
+
+            return true;
+        }
     }
 
-    return true;
-
-    // uint8_t default_report[] = 
-    // {
-    //     0x01, 0xff, 0x00, 0xff, 0x00,
-    //     0x00, 0x00, 0x00, 0x00, 0x00,
-    //     0xff, 0x27, 0x10, 0x00, 0x32,
-    //     0xff, 0x27, 0x10, 0x00, 0x32,
-    //     0xff, 0x27, 0x10, 0x00, 0x32,
-    //     0xff, 0x27, 0x10, 0x00, 0x32,
-    //     0x00, 0x00, 0x00, 0x00, 0x00
-    // };
-
-    // Dualshock3OutReport out_report = {};
-
-    // // memcpy(&out_report, default_report, sizeof(out_report));
-
-    // // out_report.leds_bitmap |= 0x1 << (instance+1);
-    // // out_report.leds_bitmap = 0x02;
-    // // out_report.led->time_enabled = 0xFF;
-    // // out_report.led->duty_on = 0xFF;
-
-    // // out_report.rumble.right_duration = UINT8_MAX / 2;
-    // // if (gamepad.rumble.r > 0) out_report.rumble.right_motor_on = 1;
-
-    // // out_report.rumble.left_duration = UINT8_MAX / 2;
-    // // out_report.rumble.left_motor_force = gamepad.rumble.l;
-
-    // return tuh_hid_send_report(dev_addr, instance, 0x1, &out_report, sizeof(Dualshock3OutReport));
+    return false;
 }

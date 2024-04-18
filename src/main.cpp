@@ -12,7 +12,7 @@
 #include "usbd/drivers/gpdriver.h"
 #include "Gamepad.h"
 #include "input_mode.h"
-#include "board_config.h"
+#include "usbd/board_config.h"
 
 int main(void) 
 {

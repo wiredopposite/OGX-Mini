@@ -38,12 +38,12 @@ file(GLOB_RECURSE SOURCES
 "src/Gamepad.cpp"
 
 "src/utilities/log.cpp"
-"src/utilities/scaling.cpp" 
 
 "src/usbh/tusb_host_manager.cpp"
 "src/usbh/tusb_host.cpp"
 "src/usbh/n64usb/N64USB.cpp"
 "src/usbh/ps3/Dualshock3.cpp"
+"src/usbh/ps3/DInput.cpp"
 "src/usbh/ps4/Dualshock4.cpp"
 "src/usbh/ps5/Dualsense.cpp"
 "src/usbh/psclassic/PSClassic.cpp"
@@ -51,6 +51,7 @@ file(GLOB_RECURSE SOURCES
 "src/usbh/switch/SwitchWired.cpp"
 "src/usbh/xinput/XInput.cpp"
 "src/usbh/shared/hid_class_driver.c"
+"src/usbh/shared/scaling.cpp" 
 
 "src/usbd/usbdriver.cpp"
 "src/usbd/drivermanager.cpp"

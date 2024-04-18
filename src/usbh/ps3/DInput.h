@@ -1,29 +1,26 @@
-#pragma once
-
-#ifndef _DUALSHOCK3_H_
-#define _DUALSHOCK3_H_
+#ifndef _DINPUT_H_
+#define _DINPUT_H_
 
 #include <stdint.h>
 
 #include "usbh/GPHostDriver.h"
-#include "usbd/descriptors/PS3Descriptors.h"
 #include "usbd/descriptors/DInputDescriptors.h"
 
-const usb_vid_pid_t ps3_devices[] = 
+const usb_vid_pid_t dinput_devices[] = 
 {
-    {0x054C, 0x0268}, // Sony Batoh (Dualshock 3)
+    {0x044F, 0xB324}, // ThrustMaster Dual Trigger (PS3 mode)
+    {0x0738, 0x8818}, // MadCatz Street Fighter IV Arcade FightStick
+    {0x0810, 0x0003}, // Personal Communication Systems, Inc. Generic
+    {0x146B, 0x0902}, // BigBen Interactive Wired Mini PS3 Game Controller
+    {0x2563, 0x0575}  // SHANWAN 2In1 USB Joystick
 };
 
-struct Dualshock3State
+struct DInputState
 {
-    uint8_t player_id {0};
-    bool reports_enabled {false};
-    uint8_t en_buffer[17];
-    Dualshock3OutReport out_report;
-    int response_count {0};
+    uint8_t player_id = {0};
 };
 
-class Dualshock3 : public GPHostDriver
+class DInput : public GPHostDriver
 {
     public:
         virtual void init(uint8_t player_id, uint8_t dev_addr, uint8_t instance);
@@ -32,9 +29,8 @@ class Dualshock3 : public GPHostDriver
         virtual void hid_get_report_complete_cb(uint8_t dev_addr, uint8_t instance, uint8_t report_id, uint8_t report_type, uint16_t len);
         virtual bool send_fb_data(const Gamepad& gamepad, uint8_t dev_addr, uint8_t instance);
     private:
-        Dualshock3State dualshock3;
-        void update_gamepad(Gamepad& gp, const Dualshock3Report* ds3_data);
-        void get_report_complete_cb(uint8_t dev_addr, uint8_t instance);
+        DInputState dinput;
+        void update_gamepad(Gamepad& gp, const DInputReport* dinput_report);
 };
 
-#endif
+#endif // _DINPUT_H_

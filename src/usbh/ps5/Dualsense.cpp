@@ -4,7 +4,7 @@
 
 #include "usbh/ps5/Dualsense.h"
 
-#include "utilities/scaling.h"
+#include "usbh/shared/scaling.h"
 
 void Dualsense::init(uint8_t player_id, uint8_t dev_addr, uint8_t instance)
 {
@@ -83,6 +83,8 @@ void Dualsense::process_hid_report(Gamepad& gamepad, uint8_t dev_addr, uint8_t i
 }
 
 void Dualsense::process_xinput_report(Gamepad& gp, uint8_t dev_addr, uint8_t instance, xinputh_interface_t const* report, uint16_t len) {}
+
+void Dualsense::hid_get_report_complete_cb(uint8_t dev_addr, uint8_t instance, uint8_t report_id, uint8_t report_type, uint16_t len) {}
 
 bool Dualsense::send_fb_data(const Gamepad& gamepad, uint8_t dev_addr, uint8_t instance)
 {

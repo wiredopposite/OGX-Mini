@@ -1,5 +1,5 @@
 #include "Gamepad.h"
-#include "board_config.h"
+#include "usbd/board_config.h"
 
 void Gamepad::reset_pad() 
 {

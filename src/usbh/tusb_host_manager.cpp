@@ -1,10 +1,12 @@
 #include "hardware/gpio.h"
 #include "tusb.h"
 #include "host/usbh.h"
+#include "class/hid/hid_host.h"
 
 #include "usbh/xinput/XInput.h"
 #include "usbh/n64usb/N64USB.h"
 #include "usbh/psclassic/PSClassic.h"
+#include "usbh/ps3/DInput.h"
 #include "usbh/ps3/Dualshock3.h"
 #include "usbh/ps4/Dualshock4.h"
 #include "usbh/ps5/Dualsense.h"
@@ -14,7 +16,7 @@
 #include "usbh/shared/hid_class_driver.h"
 #include "usbh/tusb_host_manager.h"
 
-#include "board_config.h"
+#include "usbd/board_config.h"
 #include "Gamepad.h"
 
 struct HostedDevice
@@ -40,7 +42,8 @@ const DeviceType device_types[] =
 {
     { n64_devices, sizeof(n64_devices) / sizeof(usb_vid_pid_t), HOST_MODE_HID_N64USB },
     { psc_devices, sizeof(psc_devices) / sizeof(usb_vid_pid_t), HOST_MODE_HID_PSCLASSIC },
-    // { ps3_devices, sizeof(ps3_devices) / sizeof(usb_vid_pid_t), HOST_MODE_HID_PS3 },
+    { dinput_devices, sizeof(dinput_devices) / sizeof(usb_vid_pid_t), HOST_MODE_HID_DINPUT},
+    { ps3_devices, sizeof(ps3_devices) / sizeof(usb_vid_pid_t), HOST_MODE_HID_PS3 },
     { ps4_devices, sizeof(ps4_devices) / sizeof(usb_vid_pid_t), HOST_MODE_HID_PS4 },
     { ps5_devices, sizeof(ps5_devices) / sizeof(usb_vid_pid_t), HOST_MODE_HID_PS5 },
     { switch_wired_devices, sizeof(switch_wired_devices) / sizeof(usb_vid_pid_t), HOST_MODE_HID_SWITCH_WIRED },
@@ -74,6 +77,9 @@ void create_gamepad_driver(HostMode host_mode, int idx)
             break;
         case HOST_MODE_HID_PSCLASSIC:
             hosted_device[idx].gamepad_driver = new PSClassic();
+            break;
+        case HOST_MODE_HID_DINPUT:
+            hosted_device[idx].gamepad_driver = new DInput();
             break;
         case HOST_MODE_HID_PS3:
             hosted_device[idx].gamepad_driver = new Dualshock3();
@@ -136,10 +142,16 @@ void unmount_gamepad(uint8_t dev_addr, uint8_t instance)
 
     for (int i = 0; i < MAX_GAMEPADS; i++)
     {
-        if (!hosted_device[i].gamepad_driver) free_slots++;
+        if (!hosted_device[i].gamepad_driver) 
+        {
+            free_slots++;
+        }
     }
 
-    if (free_slots == MAX_GAMEPADS) led_mounted_indicator(false); 
+    if (free_slots == MAX_GAMEPADS) 
+    {
+        led_mounted_indicator(false); 
+    }
 }
 
 /* ----------- TUSB ----------- */
@@ -193,7 +205,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
         }
     }
 
-    tuh_hid_receive_report(dev_addr, instance);
+    // tuh_hid_receive_report(dev_addr, instance);
 }
 
 void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance)
@@ -205,7 +217,9 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
 {
     for (int i = 0; i < MAX_GAMEPADS; i++)
     {
-        if (hosted_device[i].class_mounted && hosted_device[i].class_address == dev_addr && hosted_device[i].class_instance == instance)
+        if (hosted_device[i].class_mounted && 
+            hosted_device[i].class_address == dev_addr && 
+            hosted_device[i].class_instance == instance)
         {
             if (hosted_device[i].gamepad_driver)
             {
@@ -213,9 +227,22 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
             }
         }
     }
-
-    tuh_hid_receive_report(dev_addr, instance);
 }
+
+// Current version of TinyUSB may be bugged so omitting this for now
+
+// void tuh_hid_get_report_complete_cb(uint8_t dev_addr, uint8_t instance, uint8_t report_id, uint8_t report_type, uint16_t len)
+// {
+//     for (int i = 0; i < MAX_GAMEPADS; i++)
+//     {
+//         if (hosted_device[i].class_mounted && 
+//             hosted_device[i].class_address == dev_addr && 
+//             hosted_device[i].class_instance == instance)
+//         {
+//             hosted_device[i].gamepad_driver->hid_get_report_complete_cb(dev_addr, instance, report_id, report_type, len);
+//         }
+//     }
+// }
 
 /* ----------- XINPUT ----------- */
 

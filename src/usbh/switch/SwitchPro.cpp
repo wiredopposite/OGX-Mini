@@ -122,6 +122,8 @@ void SwitchPro::update_gamepad(Gamepad& gamepad, const SwitchProReport* switch_r
 
 void SwitchPro::process_xinput_report(Gamepad& gamepad, uint8_t dev_addr, uint8_t instance, xinputh_interface_t const* report, uint16_t len) {}
 
+void SwitchPro::hid_get_report_complete_cb(uint8_t dev_addr, uint8_t instance, uint8_t report_id, uint8_t report_type, uint16_t len) {}
+
 bool SwitchPro::send_fb_data(const Gamepad& gamepad, uint8_t dev_addr, uint8_t instance)
 {
     if (!switch_pro.handshake_sent)
