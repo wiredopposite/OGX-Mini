@@ -37,16 +37,16 @@ bool store_input_mode(enum InputMode new_mode)
 
     restore_interrupts(saved_interrupts);
 
-    return true;
-
-    // const uint8_t *flash_target_contents = (const uint8_t *)(XIP_BASE + FLASH_SIZE_BYTES - FLASH_SECTOR_SIZE);
-
-    // if ((uint8_t)saved_mode != *flash_target_contents) 
-    // {
-    //     return false;
-    // }
-
     // return true;
+
+    const uint8_t *flash_target_contents = (const uint8_t *)(XIP_BASE + FLASH_SIZE_BYTES - FLASH_SECTOR_SIZE);
+
+    if ((uint8_t)saved_mode != *flash_target_contents) 
+    {
+        return false;
+    }
+
+    return true;
 }   
 
 bool change_input_mode(GamepadButtons buttons)
