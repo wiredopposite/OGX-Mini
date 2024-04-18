@@ -65,7 +65,7 @@ For the [Adafruit Feather USB Host board](https://www.adafruit.com/product/5723)
 If your third party controller isn't working, but the original version is listed above, send me the device's VID and PID and I'll add it so it's recognized properly.
 
 ## Compiling
-You can compile this for different boards by changing USBD_BOARD in the usbd_config.h file, you can also adjust USBD_MAX_GAMEPADS to enable more controllers on Switch and PlayStation 3.
+You can compile this for different boards by changing USBD_BOARD in the usbd_config.h file, you can also adjust USBD_MAX_GAMEPADS to enable more controllers on PlayStation 3 (this is experimental).
 
 Choosing OGXM_PI_PICO will set the D+ and D- host pins to GPIO 0 and 1. 
 
