@@ -37,8 +37,6 @@ bool store_input_mode(enum InputMode new_mode)
 
     restore_interrupts(saved_interrupts);
 
-    // return true;
-
     const uint8_t *flash_target_contents = (const uint8_t *)(XIP_BASE + FLASH_SIZE_BYTES - FLASH_SECTOR_SIZE);
 
     if ((uint8_t)saved_mode != *flash_target_contents) 
@@ -99,12 +97,22 @@ bool change_input_mode(GamepadButtons buttons)
 
 enum InputMode get_input_mode()
 {
-    #if (CDC_DEBUG >= 1)
+    #if (CDC_DEBUG > 0)
         return INPUT_MODE_USBSERIAL;
     #endif
 
     const uint8_t *stored_value = (const uint8_t *)(XIP_BASE + FLASH_SIZE_BYTES - FLASH_SECTOR_SIZE);
 
+    #if (MAX_GAMEPADS < 1)
+    if ((*stored_value == INPUT_MODE_HID) || (*stored_value == INPUT_MODE_SWITCH))
+    {
+        return(enum InputMode)*stored_value;
+    }
+    else
+    {
+        return INPUT_MODE_HID;
+    }
+    #else
     if (*stored_value >= INPUT_MODE_XINPUT && *stored_value <= INPUT_MODE_XBOXORIGINAL)
     {
         return(enum InputMode)*stored_value;
@@ -113,4 +121,5 @@ enum InputMode get_input_mode()
     {
         return INPUT_MODE_XBOXORIGINAL;
     }
+    #endif
 }
