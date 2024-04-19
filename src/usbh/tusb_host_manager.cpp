@@ -138,17 +138,18 @@ void unmount_gamepad(uint8_t dev_addr, uint8_t instance)
         }
     }
 
-    int free_slots = 0;
+    bool all_free = true;
 
     for (int i = 0; i < MAX_GAMEPADS; i++)
     {
-        if (!hosted_device[i].gamepad_driver) 
+        if (hosted_device[i].gamepad_driver != nullptr)
         {
-            free_slots++;
+            all_free = false;
+            break;
         }
     }
 
-    if (free_slots == MAX_GAMEPADS) 
+    if (all_free) 
     {
         led_mounted_indicator(false); 
     }

@@ -10,6 +10,7 @@
 const usb_vid_pid_t switch_wired_devices[] = 
 {
     {0x20D6, 0xA719}, // PowerA wired
+    {0x20D6, 0xA713}, // PowerA Enhanced wired
     {0x0F0D, 0x0092}  // Hori Pokken wired, I don't have this one so not 100% on if it'll work
 };
 

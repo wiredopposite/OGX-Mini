@@ -7,10 +7,6 @@
 // OGXM_PI_PICO
 // OGXM_ADA_FEATHER_USBH 
 // OGXM_RPZERO_INTERPOSER
-// OGXW_RETAIL_1CH
-// OGXW_RPZERO_1CH
-// OGXW_RPZERO_2CH
-// OGXW_LITE
 
 #define USBD_BOARD        OGXM_RPZERO_INTERPOSER
 #define USBD_MAX_GAMEPADS 1 // This is set by idf.py menuconfig for wireless boards, number here is ignored in that case.
