@@ -7,12 +7,15 @@
 
 void SwitchPro::init(uint8_t player_id, uint8_t dev_addr, uint8_t instance)
 {
+    (void)dev_addr;
+    (void)instance;
+
     switch_pro.player_id = player_id;
 }
 
 void SwitchPro::send_handshake(uint8_t dev_addr, uint8_t instance)
 {
-    if (tuh_hid_send_ready)
+    if (tuh_hid_send_ready(dev_addr, instance))
     {
         uint8_t handshake_command[2] = {CMD_HID, SUBCMD_HANDSHAKE};
         switch_pro.handshake_sent = tuh_hid_send_report(dev_addr, instance, 0, handshake_command, sizeof(handshake_command));
@@ -31,15 +34,17 @@ uint8_t SwitchPro::get_output_sequence_counter()
 
 void SwitchPro::disable_timeout(uint8_t dev_addr, uint8_t instance)
 {
-    if (tuh_hid_send_ready)
+    if (tuh_hid_send_ready(dev_addr, instance))
     {
         uint8_t disable_timeout_cmd[2] = {CMD_HID, SUBCMD_DISABLE_TIMEOUT};
         switch_pro.timeout_disabled = tuh_hid_send_report(dev_addr, instance, 0, disable_timeout_cmd, sizeof(disable_timeout_cmd));
     }
 }
 
-void SwitchPro::process_hid_report(Gamepad& gamepad, uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len)
+void SwitchPro::process_hid_report(Gamepad* gamepad, uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len)
 {
+    (void)len;
+    
     if (!switch_pro.handshake_sent)
     {
         return;
@@ -51,7 +56,7 @@ void SwitchPro::process_hid_report(Gamepad& gamepad, uint8_t dev_addr, uint8_t i
         return;
     }
     
-    static SwitchProReport prev_report = {0};
+    static SwitchProReport prev_report = {};
 
     SwitchProReport switch_report;
     memcpy(&switch_report, report, sizeof(switch_report));
@@ -86,45 +91,59 @@ int16_t SwitchPro::normalize_axes(uint16_t value)
     return (int16_t)normalized_value;   
 }
 
-void SwitchPro::update_gamepad(Gamepad& gamepad, const SwitchProReport* switch_report)
+void SwitchPro::update_gamepad(Gamepad* gamepad, const SwitchProReport* switch_report)
 {
-    gamepad.reset_pad();
+    gamepad->reset_pad(gamepad);
 
-    if (switch_report->up)    gamepad.buttons.up =true;
-    if (switch_report->down)  gamepad.buttons.down =true;
-    if (switch_report->left)  gamepad.buttons.left =true;
-    if (switch_report->right) gamepad.buttons.right =true;
+    if (switch_report->up)    gamepad->buttons.up =true;
+    if (switch_report->down)  gamepad->buttons.down =true;
+    if (switch_report->left)  gamepad->buttons.left =true;
+    if (switch_report->right) gamepad->buttons.right =true;
 
-    if (switch_report->y) gamepad.buttons.x = true;
-    if (switch_report->x) gamepad.buttons.y = true;
-    if (switch_report->b) gamepad.buttons.a = true;
-    if (switch_report->a) gamepad.buttons.b = true;
+    if (switch_report->y) gamepad->buttons.x = true;
+    if (switch_report->x) gamepad->buttons.y = true;
+    if (switch_report->b) gamepad->buttons.a = true;
+    if (switch_report->a) gamepad->buttons.b = true;
 
-    if (switch_report->minus)   gamepad.buttons.back = true;
-    if (switch_report->plus)    gamepad.buttons.start = true;
-    if (switch_report->home)    gamepad.buttons.sys = true;
-    if (switch_report->capture) gamepad.buttons.misc = true;
+    if (switch_report->minus)   gamepad->buttons.back = true;
+    if (switch_report->plus)    gamepad->buttons.start = true;
+    if (switch_report->home)    gamepad->buttons.sys = true;
+    if (switch_report->capture) gamepad->buttons.misc = true;
 
-    if (switch_report->stickL) gamepad.buttons.l3 = true;
-    if (switch_report->stickR) gamepad.buttons.r3 = true;
+    if (switch_report->stickL) gamepad->buttons.l3 = true;
+    if (switch_report->stickR) gamepad->buttons.r3 = true;
 
-    if (switch_report->l) gamepad.buttons.lb = true;
-    if (switch_report->r) gamepad.buttons.rb = true;
+    if (switch_report->l) gamepad->buttons.lb = true;
+    if (switch_report->r) gamepad->buttons.rb = true;
 
-    if (switch_report->zl) gamepad.triggers.l = 0xFF;
-    if (switch_report->zr) gamepad.triggers.r = 0xFF;
+    if (switch_report->zl) gamepad->triggers.l = 0xFF;
+    if (switch_report->zr) gamepad->triggers.r = 0xFF;
 
-    gamepad.joysticks.lx = normalize_axes(switch_report->leftX );
-    gamepad.joysticks.ly = normalize_axes(switch_report->leftY );
-    gamepad.joysticks.rx = normalize_axes(switch_report->rightX);
-    gamepad.joysticks.ry = normalize_axes(switch_report->rightY);
+    gamepad->joysticks.lx = normalize_axes(switch_report->leftX );
+    gamepad->joysticks.ly = normalize_axes(switch_report->leftY );
+    gamepad->joysticks.rx = normalize_axes(switch_report->rightX);
+    gamepad->joysticks.ry = normalize_axes(switch_report->rightY);
 }
 
-void SwitchPro::process_xinput_report(Gamepad& gamepad, uint8_t dev_addr, uint8_t instance, xinputh_interface_t const* report, uint16_t len) {}
+void SwitchPro::process_xinput_report(Gamepad* gamepad, uint8_t dev_addr, uint8_t instance, xinputh_interface_t const* report, uint16_t len) 
+{
+    (void)gamepad;
+    (void)dev_addr;
+    (void)instance;
+    (void)report;
+    (void)len;
+}
 
-void SwitchPro::hid_get_report_complete_cb(uint8_t dev_addr, uint8_t instance, uint8_t report_id, uint8_t report_type, uint16_t len) {}
+void SwitchPro::hid_get_report_complete_cb(uint8_t dev_addr, uint8_t instance, uint8_t report_id, uint8_t report_type, uint16_t len) 
+{
+    (void)dev_addr;
+    (void)instance;
+    (void)report_id;
+    (void)report_type;
+    (void)len;
+}
 
-bool SwitchPro::send_fb_data(const Gamepad& gamepad, uint8_t dev_addr, uint8_t instance)
+bool SwitchPro::send_fb_data(const Gamepad* gamepad, uint8_t dev_addr, uint8_t instance)
 {
     if (!switch_pro.handshake_sent)
     {
@@ -145,9 +164,9 @@ bool SwitchPro::send_fb_data(const Gamepad& gamepad, uint8_t dev_addr, uint8_t i
     report.command = CMD_RUMBLE_ONLY;
     report.sequence_counter = get_output_sequence_counter();
 
-    if (gamepad.rumble.l > 0) 
+    if (gamepad->rumble.l > 0) 
     {
-        uint8_t amplitude_l = static_cast<uint8_t>(((gamepad.rumble.l / 255.0f) * 0.8f + 0.5f) * (0xC0 - 0x40) + 0x40);
+        uint8_t amplitude_l = static_cast<uint8_t>(((gamepad->rumble.l / 255.0f) * 0.8f + 0.5f) * (0xC0 - 0x40) + 0x40);
 
         report.rumble_l[0] = amplitude_l;
         report.rumble_l[1] = 0x88;
@@ -162,9 +181,9 @@ bool SwitchPro::send_fb_data(const Gamepad& gamepad, uint8_t dev_addr, uint8_t i
         report.rumble_l[3] = 0x40;           
     }
 
-    if (gamepad.rumble.r > 0) 
+    if (gamepad->rumble.r > 0) 
     {
-        uint8_t amplitude_r = static_cast<uint8_t>(((gamepad.rumble.r / 255.0f) * 0.8f + 0.5f) * (0xC0 - 0x40) + 0x40);
+        uint8_t amplitude_r = static_cast<uint8_t>(((gamepad->rumble.r / 255.0f) * 0.8f + 0.5f) * (0xC0 - 0x40) + 0x40);
 
         report.rumble_r[0] = amplitude_r;
         report.rumble_r[1] = 0x88;

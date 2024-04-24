@@ -15,53 +15,84 @@ void XInputHost::set_leds(uint8_t dev_addr, uint8_t instance)
     xinput.leds_set = tuh_xinput_set_led(dev_addr, instance, xinput.player_id, true);
 }
 
-void XInputHost::process_xinput_report(Gamepad& gamepad, uint8_t dev_addr, uint8_t instance, xinputh_interface_t const* report, uint16_t len)
+void XInputHost::process_xinput_report(Gamepad* gamepad, uint8_t dev_addr, uint8_t instance, xinputh_interface_t const* report, uint16_t len)
 {   
+    (void)len;
+    
     xinputh_interface_t *xid_itf = (xinputh_interface_t *)report;
     xinput_gamepad_t *xinput_data = &xid_itf->pad;
 
     if (xid_itf->connected && xid_itf->new_pad_data)
     {
-        gamepad.reset_pad();
+        gamepad->reset_pad(gamepad);
 
-        gamepad.buttons.up    = (xinput_data->wButtons & XINPUT_GAMEPAD_DPAD_UP) != 0;
-        gamepad.buttons.down  = (xinput_data->wButtons & XINPUT_GAMEPAD_DPAD_DOWN) != 0;
-        gamepad.buttons.left  = (xinput_data->wButtons & XINPUT_GAMEPAD_DPAD_LEFT) != 0;
-        gamepad.buttons.right = (xinput_data->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) != 0;
+        gamepad->buttons.up    = (xinput_data->wButtons & XINPUT_GAMEPAD_DPAD_UP)    != 0;
+        gamepad->buttons.down  = (xinput_data->wButtons & XINPUT_GAMEPAD_DPAD_DOWN)  != 0;
+        gamepad->buttons.left  = (xinput_data->wButtons & XINPUT_GAMEPAD_DPAD_LEFT)  != 0;
+        gamepad->buttons.right = (xinput_data->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) != 0;
 
-        gamepad.buttons.a     = (xinput_data->wButtons & XINPUT_GAMEPAD_A) != 0;
-        gamepad.buttons.b     = (xinput_data->wButtons & XINPUT_GAMEPAD_B) != 0;
-        gamepad.buttons.x     = (xinput_data->wButtons & XINPUT_GAMEPAD_X) != 0;
-        gamepad.buttons.y     = (xinput_data->wButtons & XINPUT_GAMEPAD_Y) != 0;
+        gamepad->buttons.a     = (xinput_data->wButtons & XINPUT_GAMEPAD_A) != 0;
+        gamepad->buttons.b     = (xinput_data->wButtons & XINPUT_GAMEPAD_B) != 0;
+        gamepad->buttons.x     = (xinput_data->wButtons & XINPUT_GAMEPAD_X) != 0;
+        gamepad->buttons.y     = (xinput_data->wButtons & XINPUT_GAMEPAD_Y) != 0;
 
-        gamepad.buttons.l3    = (xinput_data->wButtons & XINPUT_GAMEPAD_LEFT_THUMB) != 0;
-        gamepad.buttons.r3    = (xinput_data->wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) != 0;
-        gamepad.buttons.back  = (xinput_data->wButtons & XINPUT_GAMEPAD_BACK) != 0;
-        gamepad.buttons.start = (xinput_data->wButtons & XINPUT_GAMEPAD_START) != 0;
+        gamepad->buttons.l3    = (xinput_data->wButtons & XINPUT_GAMEPAD_LEFT_THUMB)  != 0;
+        gamepad->buttons.r3    = (xinput_data->wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) != 0;
+        gamepad->buttons.back  = (xinput_data->wButtons & XINPUT_GAMEPAD_BACK)        != 0;
+        gamepad->buttons.start = (xinput_data->wButtons & XINPUT_GAMEPAD_START)       != 0;
 
-        gamepad.buttons.rb    = (xinput_data->wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER) != 0;
-        gamepad.buttons.lb    = (xinput_data->wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER) != 0;
-        gamepad.buttons.sys   = (xinput_data->wButtons & XINPUT_GAMEPAD_GUIDE) != 0;  
-        gamepad.buttons.misc  = (xinput_data->wButtons & XINPUT_GAMEPAD_SHARE) != 0; 
+        gamepad->buttons.rb    = (xinput_data->wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER) != 0;
+        gamepad->buttons.lb    = (xinput_data->wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER)  != 0;
+        gamepad->buttons.sys   = (xinput_data->wButtons & XINPUT_GAMEPAD_GUIDE) != 0;  
+        gamepad->buttons.misc  = (xinput_data->wButtons & XINPUT_GAMEPAD_SHARE) != 0; 
 
-        gamepad.triggers.l = xinput_data->bLeftTrigger;
-        gamepad.triggers.r = xinput_data->bRightTrigger;
+        if (gamepad->enable_analog_buttons)
+        {
+            gamepad->analog_buttons.up    = (xinput_data->wButtons & XINPUT_GAMEPAD_DPAD_UP)    ? UINT8_MAX : 0;
+            gamepad->analog_buttons.down  = (xinput_data->wButtons & XINPUT_GAMEPAD_DPAD_DOWN)  ? UINT8_MAX : 0;
+            gamepad->analog_buttons.left  = (xinput_data->wButtons & XINPUT_GAMEPAD_DPAD_LEFT)  ? UINT8_MAX : 0;
+            gamepad->analog_buttons.right = (xinput_data->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) ? UINT8_MAX : 0;
 
-        gamepad.joysticks.lx = xinput_data->sThumbLX;
-        gamepad.joysticks.ly = xinput_data->sThumbLY;
+            gamepad->analog_buttons.a = xinput_data->analogButtons.a;
+            gamepad->analog_buttons.b = xinput_data->analogButtons.b;
+            gamepad->analog_buttons.x = xinput_data->analogButtons.x;
+            gamepad->analog_buttons.y = xinput_data->analogButtons.y;
 
-        gamepad.joysticks.rx = xinput_data->sThumbRX;
-        gamepad.joysticks.ry = xinput_data->sThumbRY;
+            gamepad->analog_buttons.lb = xinput_data->analogButtons.white;
+            gamepad->analog_buttons.rb = xinput_data->analogButtons.black;
+        }
+
+        gamepad->triggers.l = xinput_data->bLeftTrigger;
+        gamepad->triggers.r = xinput_data->bRightTrigger;
+
+        gamepad->joysticks.lx = xinput_data->sThumbLX;
+        gamepad->joysticks.ly = xinput_data->sThumbLY;
+        gamepad->joysticks.rx = xinput_data->sThumbRX;
+        gamepad->joysticks.ry = xinput_data->sThumbRY;
     }
 
     tuh_xinput_receive_report(dev_addr, instance);
 }
 
-void XInputHost::process_hid_report(Gamepad& gamepad, uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len) {}
+void XInputHost::process_hid_report(Gamepad* gamepad, uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len) 
+{
+    (void)dev_addr;
+    (void)instance;
+    (void)report;
+    (void)len;
+    (void)gamepad;
+}
 
-void XInputHost::hid_get_report_complete_cb(uint8_t dev_addr, uint8_t instance, uint8_t report_id, uint8_t report_type, uint16_t len) {}
+void XInputHost::hid_get_report_complete_cb(uint8_t dev_addr, uint8_t instance, uint8_t report_id, uint8_t report_type, uint16_t len) 
+{
+    (void)dev_addr;
+    (void)instance;
+    (void)report_id;
+    (void)report_type;
+    (void)len;
+}
 
-bool XInputHost::send_fb_data(const Gamepad& gamepad, uint8_t dev_addr, uint8_t instance)
+bool XInputHost::send_fb_data(const Gamepad* gamepad, uint8_t dev_addr, uint8_t instance)
 {
     static int report_num = 0;
 
@@ -79,5 +110,5 @@ bool XInputHost::send_fb_data(const Gamepad& gamepad, uint8_t dev_addr, uint8_t 
         report_num = 0;
     }
 
-    return tuh_xinput_set_rumble(dev_addr, instance, gamepad.rumble.l, gamepad.rumble.r, true);
+    return tuh_xinput_set_rumble(dev_addr, instance, gamepad->rumble.l, gamepad->rumble.r, true);
 }

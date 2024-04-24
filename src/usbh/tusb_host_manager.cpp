@@ -2,6 +2,7 @@
 #include "tusb.h"
 #include "host/usbh.h"
 #include "class/hid/hid_host.h"
+#include "tusb_gamepad.h"
 
 #include "usbh/xinput/XInput.h"
 #include "usbh/n64usb/N64USB.h"
@@ -16,20 +17,19 @@
 #include "usbh/shared/hid_class_driver.h"
 #include "usbh/tusb_host_manager.h"
 
-#include "usbd/board_config.h"
-#include "Gamepad.h"
+#include "ogxm_config.h"
 
-struct HostedDevice
+struct HostManager
 {
-    bool hid_class = {false};
-    bool class_mounted = {false}; 
-    uint8_t class_address;
-    uint8_t class_instance;
+    bool hid = {false};
+    bool mounted = {false}; 
+    uint8_t address;
+    uint8_t instance;
     const usbh_class_driver_t* class_driver = {&usbh_xinput_driver};
-    GPHostDriver* gamepad_driver = {nullptr};
+    GPHostDriver* gp_host_driver = {nullptr};
 };
 
-HostedDevice hosted_device[MAX_GAMEPADS] = {};
+HostManager host_manager[MAX_GAMEPADS] = {};
 
 typedef struct 
 {
@@ -55,7 +55,7 @@ void led_mounted_indicator(bool mounted)
     gpio_put(LED_INDICATOR_PIN, mounted ? 1 : 0);
 }
 
-bool check_vid_pid(const usb_vid_pid_t* devices, size_t num_devices, HostMode check_mode, uint16_t vid, uint16_t pid) 
+bool check_vid_pid(const usb_vid_pid_t* devices, size_t num_devices, uint16_t vid, uint16_t pid) 
 {
     for (size_t i = 0; i < num_devices; i++) 
     {
@@ -68,42 +68,44 @@ bool check_vid_pid(const usb_vid_pid_t* devices, size_t num_devices, HostMode ch
     return false;
 }
 
-void create_gamepad_driver(HostMode host_mode, int idx)
+void init_gp_host_driver(HostMode host_mode, int idx)
 {
     switch(host_mode)
     {
         case HOST_MODE_XINPUT:
-            hosted_device[idx].gamepad_driver = new XInputHost();
+            host_manager[idx].gp_host_driver = new XInputHost();
             break;
         case HOST_MODE_HID_PSCLASSIC:
-            hosted_device[idx].gamepad_driver = new PSClassic();
+            host_manager[idx].gp_host_driver = new PSClassic();
             break;
         case HOST_MODE_HID_DINPUT:
-            hosted_device[idx].gamepad_driver = new DInput();
+            host_manager[idx].gp_host_driver = new DInput();
             break;
         case HOST_MODE_HID_PS3:
-            hosted_device[idx].gamepad_driver = new Dualshock3();
+            host_manager[idx].gp_host_driver = new Dualshock3();
             break;
         case HOST_MODE_HID_PS4:
-            hosted_device[idx].gamepad_driver = new Dualshock4();
+            host_manager[idx].gp_host_driver = new Dualshock4();
             break;
         case HOST_MODE_HID_PS5:
-            hosted_device[idx].gamepad_driver = new Dualsense();
+            host_manager[idx].gp_host_driver = new Dualsense();
             break;
         case HOST_MODE_HID_SWITCH_PRO:
-            hosted_device[idx].gamepad_driver = new SwitchPro();
+            host_manager[idx].gp_host_driver = new SwitchPro();
             break;
         case HOST_MODE_HID_SWITCH_WIRED:
-            hosted_device[idx].gamepad_driver = new SwitchWired();
+            host_manager[idx].gp_host_driver = new SwitchWired();
             break;
         case HOST_MODE_HID_N64USB:
-            hosted_device[idx].gamepad_driver = new N64USB();
+            host_manager[idx].gp_host_driver = new N64USB();
+            break;
+        default:
             break;
     }
 
-    if (hosted_device[idx].gamepad_driver) 
+    if (host_manager[idx].gp_host_driver) 
     {
-        hosted_device[idx].gamepad_driver->init((uint8_t)idx + 1, hosted_device[idx].class_address, hosted_device[idx].class_instance);
+        host_manager[idx].gp_host_driver->init((uint8_t)idx + 1, host_manager[idx].address, host_manager[idx].instance);
     }
 }
 
@@ -111,9 +113,9 @@ int find_free_slot()
 {
     for (int i = 0; i < MAX_GAMEPADS; i++)
     {
-        if (!hosted_device[i].class_mounted)
+        if (!host_manager[i].mounted)
         {
-            hosted_device[i].class_mounted = true;
+            host_manager[i].mounted = true;
             return i;
         }
     }
@@ -125,15 +127,19 @@ void unmount_gamepad(uint8_t dev_addr, uint8_t instance)
 {
     for (int i = 0; i < MAX_GAMEPADS; i++)
     {
-        if (hosted_device[i].class_mounted && hosted_device[i].class_address == dev_addr && hosted_device[i].class_instance == instance)
+        if (host_manager[i].mounted && 
+            host_manager[i].address == dev_addr && 
+            host_manager[i].instance == instance)
         {
-            hosted_device[i].class_mounted = false;
-            gamepad(i).reset_pad();
+            host_manager[i].mounted = false;
+
+            gamepad(i)->reset_pad(gamepad(i));
+            gamepad(i)->enable_analog_buttons = false;
             
-            if (hosted_device[i].gamepad_driver)
+            if (host_manager[i].gp_host_driver)
             {
-                delete hosted_device[i].gamepad_driver;
-                hosted_device[i].gamepad_driver = nullptr;
+                delete host_manager[i].gp_host_driver;
+                host_manager[i].gp_host_driver = nullptr;
             }
         }
     }
@@ -142,7 +148,7 @@ void unmount_gamepad(uint8_t dev_addr, uint8_t instance)
 
     for (int i = 0; i < MAX_GAMEPADS; i++)
     {
-        if (hosted_device[i].gamepad_driver != nullptr)
+        if (host_manager[i].gp_host_driver != nullptr)
         {
             all_free = false;
             break;
@@ -159,19 +165,21 @@ void unmount_gamepad(uint8_t dev_addr, uint8_t instance)
 
 void tuh_mount_cb(uint8_t daddr)
 {
+    (void)daddr;
+
     led_mounted_indicator(true);
 }
 
 void tuh_umount_cb(uint8_t daddr) 
 {
-
+    (void)daddr;
 }
 
 usbh_class_driver_t const* usbh_app_driver_get_cb(uint8_t* driver_count)
 {
     *driver_count = 1;
 
-    return hosted_device[0].class_driver;
+    return host_manager[0].class_driver;
 }
 
 /* ----------- HID ----------- */
@@ -183,12 +191,11 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
 
     int slot = find_free_slot();
 
-    if (slot < 0) return; // no available slots
+    if (slot < 0) return; // no available slots, shouldn't happen
 
-    hosted_device[slot].class_address = dev_addr;
-    hosted_device[slot].class_instance = instance;
+    host_manager[slot].address = dev_addr;
+    host_manager[slot].instance = instance;
 
-    HostMode host_mode;
     uint16_t vid, pid;
 
     tuh_vid_pid_get(dev_addr, &vid, &pid);
@@ -197,11 +204,18 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
 
     for (size_t i = 0; i < num_device_types; i++) 
     {
-        if (check_vid_pid(device_types[i].devices, device_types[i].num_devices, device_types[i].check_mode, vid, pid)) 
+        if (check_vid_pid(device_types[i].devices, device_types[i].num_devices, vid, pid)) 
         {
-            hosted_device[slot].hid_class = true;
-            host_mode = device_types[i].check_mode;
-            create_gamepad_driver(host_mode, slot);
+            host_manager[slot].hid = true;
+
+            init_gp_host_driver(device_types[i].check_mode, slot);
+
+            if (device_types[i].check_mode == HOST_MODE_HID_DINPUT || 
+                device_types[i].check_mode == HOST_MODE_HID_PS3)
+            {
+                gamepad(slot)->enable_analog_buttons = true;
+            }
+
             break;
         }
     }
@@ -218,13 +232,13 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
 {
     for (int i = 0; i < MAX_GAMEPADS; i++)
     {
-        if (hosted_device[i].class_mounted && 
-            hosted_device[i].class_address == dev_addr && 
-            hosted_device[i].class_instance == instance)
+        if (host_manager[i].mounted && 
+            host_manager[i].address == dev_addr && 
+            host_manager[i].instance == instance)
         {
-            if (hosted_device[i].gamepad_driver)
+            if (host_manager[i].gp_host_driver)
             {
-                hosted_device[i].gamepad_driver->process_hid_report(gamepad(i), dev_addr, instance, report, len);
+                host_manager[i].gp_host_driver->process_hid_report(gamepad(i), dev_addr, instance, report, len);
             }
         }
     }
@@ -236,11 +250,11 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
 // {
 //     for (int i = 0; i < MAX_GAMEPADS; i++)
 //     {
-//         if (hosted_device[i].class_mounted && 
-//             hosted_device[i].class_address == dev_addr && 
-//             hosted_device[i].class_instance == instance)
+//         if (host_manager[i].mounted && 
+//             host_manager[i].address == dev_addr && 
+//             host_manager[i].instance == instance)
 //         {
-//             hosted_device[i].gamepad_driver->hid_get_report_complete_cb(dev_addr, instance, report_id, report_type, len);
+//             host_manager[i].gp_host_driver->hid_get_report_complete_cb(dev_addr, instance, report_id, report_type, len);
 //         }
 //     }
 // }
@@ -249,14 +263,21 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
 
 void tuh_xinput_mount_cb(uint8_t dev_addr, uint8_t instance, const xinputh_interface_t *xinput_itf)
 {
+    (void)xinput_itf;
+
     int slot = find_free_slot();
 
     if (slot < 0) return; // no available slots
 
-    hosted_device[slot].class_address = dev_addr;
-    hosted_device[slot].class_instance = instance;
+    host_manager[slot].address = dev_addr;
+    host_manager[slot].instance = instance;
 
-    create_gamepad_driver(HOST_MODE_XINPUT, slot);
+    init_gp_host_driver(HOST_MODE_XINPUT, slot);
+
+    if (xinput_itf->type == XBOXOG)
+    {
+        gamepad(slot)->enable_analog_buttons = true;
+    }
 
     tuh_xinput_receive_report(dev_addr, instance);
 }
@@ -270,11 +291,11 @@ void tuh_xinput_report_received_cb(uint8_t dev_addr, uint8_t instance, xinputh_i
 {
     for (int i = 0; i < MAX_GAMEPADS; i++)
     {
-        if (hosted_device[i].class_mounted && hosted_device[i].class_address == dev_addr && hosted_device[i].class_instance == instance)
+        if (host_manager[i].mounted && host_manager[i].address == dev_addr && host_manager[i].instance == instance)
         {
-            if (hosted_device[i].gamepad_driver)
+            if (host_manager[i].gp_host_driver)
             {
-                hosted_device[i].gamepad_driver->process_xinput_report(gamepad(i), dev_addr, instance, report, len);
+                host_manager[i].gp_host_driver->process_xinput_report(gamepad(i), dev_addr, instance, report, len);
             }
         }
     }
@@ -284,6 +305,19 @@ void tuh_xinput_report_received_cb(uint8_t dev_addr, uint8_t instance, xinputh_i
 
 /* ----------- SEND FEEDBACK ----------- */
 
+void reset_hid_rumble(Gamepad* gp)
+{
+    if (gp->rumble.l != UINT8_MAX)
+    {
+        gp->rumble.l = 0;
+    }
+    
+    if (gp->rumble.r != UINT8_MAX)
+    {
+        gp->rumble.r = 0;
+    }
+}
+
 void send_fb_data_to_gamepad()
 {
     static const uint8_t fb_interval_ms = 100;
@@ -291,19 +325,19 @@ void send_fb_data_to_gamepad()
     
     for (int i = 0; i < MAX_GAMEPADS; i++)
     {
-        if (!hosted_device[i].class_mounted || !hosted_device[i].gamepad_driver) break;
+        if (!host_manager[i].mounted || !host_manager[i].gp_host_driver) break;
 
         unsigned long current_time = to_ms_since_boot(get_absolute_time());
 
         if (current_time - fb_sent_time[i] >= fb_interval_ms) 
         {
-            if (hosted_device[i].gamepad_driver->send_fb_data(gamepad(i), hosted_device[i].class_address, hosted_device[i].class_instance))
+            if (host_manager[i].gp_host_driver->send_fb_data(gamepad(i), host_manager[i].address, host_manager[i].instance))
             {
                 fb_sent_time[i] = current_time;
 
-                if (hosted_device[i].hid_class)
+                if (host_manager[i].hid)
                 {
-                    gamepad(i).reset_hid_rumble(); // reset rumble so it doesn't get stuck on
+                    reset_hid_rumble(gamepad(i));
                 }
             }
         }

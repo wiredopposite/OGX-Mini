@@ -4,7 +4,6 @@
 #include "class/hid/hid_host.h"
 
 #include "usbh/ps3/Dualshock3.h"
-
 #include "usbh/shared/scaling.h"
 
 void Dualshock3::init(uint8_t player_id, uint8_t dev_addr, uint8_t instance)
@@ -148,6 +147,11 @@ void Dualshock3::get_report_complete_cb(uint8_t dev_addr, uint8_t instance)
 
 void Dualshock3::hid_get_report_complete_cb(uint8_t dev_addr, uint8_t instance, uint8_t report_id, uint8_t report_type, uint16_t len)
 {   
+    (void)dev_addr;
+    (void)instance;
+    (void)report_id;
+    (void)report_type;
+    (void)len;
     // if (dualshock3.response_count == 0)
     // {
     //     if (tuh_hid_get_report(dev_addr, instance, 0xF2, HID_REPORT_TYPE_FEATURE, &dualshock3.en_buffer, 17))
@@ -209,42 +213,57 @@ void Dualshock3::hid_get_report_complete_cb(uint8_t dev_addr, uint8_t instance, 
     // }
 }
 
-void Dualshock3::update_gamepad(Gamepad& gamepad, const Dualshock3Report* ds3_data)
+void Dualshock3::update_gamepad(Gamepad* gamepad, const Dualshock3Report* ds3_data)
 {
-    gamepad.reset_pad();
+    gamepad->reset_pad(gamepad);
 
-    if (ds3_data->up)       gamepad.buttons.up =true;
-    if (ds3_data->down)     gamepad.buttons.down =true;
-    if (ds3_data->left)     gamepad.buttons.left =true;
-    if (ds3_data->right)    gamepad.buttons.right =true;
+    if (ds3_data->up)       gamepad->buttons.up =true;
+    if (ds3_data->down)     gamepad->buttons.down =true;
+    if (ds3_data->left)     gamepad->buttons.left =true;
+    if (ds3_data->right)    gamepad->buttons.right =true;
 
-    if (ds3_data->square)   gamepad.buttons.x = true;
-    if (ds3_data->triangle) gamepad.buttons.y = true;
-    if (ds3_data->cross)    gamepad.buttons.a = true;
-    if (ds3_data->circle)   gamepad.buttons.b = true;
+    if (ds3_data->square)   gamepad->buttons.x = true;
+    if (ds3_data->triangle) gamepad->buttons.y = true;
+    if (ds3_data->cross)    gamepad->buttons.a = true;
+    if (ds3_data->circle)   gamepad->buttons.b = true;
 
-    if (ds3_data->select)   gamepad.buttons.back = true;
-    if (ds3_data->start)    gamepad.buttons.start = true;
-    if (ds3_data->ps)       gamepad.buttons.sys = true;
+    if (ds3_data->select)   gamepad->buttons.back = true;
+    if (ds3_data->start)    gamepad->buttons.start = true;
+    if (ds3_data->ps)       gamepad->buttons.sys = true;
 
-    if (ds3_data->l3)       gamepad.buttons.l3 = true;
-    if (ds3_data->r3)       gamepad.buttons.r3 = true;
+    if (ds3_data->l3)       gamepad->buttons.l3 = true;
+    if (ds3_data->r3)       gamepad->buttons.r3 = true;
 
-    if (ds3_data->l1)       gamepad.buttons.lb = true;
-    if (ds3_data->r1)       gamepad.buttons.rb = true;
+    if (ds3_data->l1)       gamepad->buttons.lb = true;
+    if (ds3_data->r1)       gamepad->buttons.rb = true;
 
-    gamepad.triggers.l = ds3_data->l2_axis;
-    gamepad.triggers.r = ds3_data->r2_axis;
+    gamepad->analog_buttons.up      = ds3_data->up_axis;
+    gamepad->analog_buttons.down    = ds3_data->down_axis;
+    gamepad->analog_buttons.left    = ds3_data->left_axis;
+    gamepad->analog_buttons.right   = ds3_data->right_axis;
 
-    gamepad.joysticks.lx = scale_uint8_to_int16(ds3_data->left_x, false);
-    gamepad.joysticks.ly = scale_uint8_to_int16(ds3_data->left_y, true);
-    gamepad.joysticks.rx = scale_uint8_to_int16(ds3_data->right_x, false);
-    gamepad.joysticks.ry = scale_uint8_to_int16(ds3_data->right_y, true);
+    gamepad->analog_buttons.x = ds3_data->square_axis;
+    gamepad->analog_buttons.y = ds3_data->triangle_axis;
+    gamepad->analog_buttons.a = ds3_data->cross_axis;
+    gamepad->analog_buttons.b = ds3_data->circle_axis;
+
+    gamepad->analog_buttons.lb = ds3_data->l1_axis;
+    gamepad->analog_buttons.rb = ds3_data->r1_axis;
+
+    gamepad->triggers.l = ds3_data->l2_axis;
+    gamepad->triggers.r = ds3_data->r2_axis;
+
+    gamepad->joysticks.lx = scale_uint8_to_int16(ds3_data->left_x, false);
+    gamepad->joysticks.ly = scale_uint8_to_int16(ds3_data->left_y, true);
+    gamepad->joysticks.rx = scale_uint8_to_int16(ds3_data->right_x, false);
+    gamepad->joysticks.ry = scale_uint8_to_int16(ds3_data->right_y, true);
 }
 
-void Dualshock3::process_hid_report(Gamepad& gamepad, uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len)
+void Dualshock3::process_hid_report(Gamepad* gamepad, uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len)
 {
-    static Dualshock3Report prev_report = { 0 };
+    (void)len;
+
+    static Dualshock3Report prev_report = {};
     Dualshock3Report ds3_report;
     memcpy(&ds3_report, report, sizeof(ds3_report));
 
@@ -257,10 +276,19 @@ void Dualshock3::process_hid_report(Gamepad& gamepad, uint8_t dev_addr, uint8_t 
     tuh_hid_receive_report(dev_addr, instance);
 }
 
-void Dualshock3::process_xinput_report(Gamepad& gamepad, uint8_t dev_addr, uint8_t instance, xinputh_interface_t const* report, uint16_t len) {}
-
-bool Dualshock3::send_fb_data(const Gamepad& gamepad, uint8_t dev_addr, uint8_t instance)
+void Dualshock3::process_xinput_report(Gamepad* gamepad, uint8_t dev_addr, uint8_t instance, xinputh_interface_t const* report, uint16_t len) 
 {
+    (void)gamepad;
+    (void)dev_addr;
+    (void)instance;
+    (void)report;
+    (void)len;
+}
+
+bool Dualshock3::send_fb_data(const Gamepad* gamepad, uint8_t dev_addr, uint8_t instance)
+{
+    (void)instance;
+
     static absolute_time_t next_allowed_time = {0};
     absolute_time_t current_time = get_absolute_time();
 
@@ -269,13 +297,13 @@ bool Dualshock3::send_fb_data(const Gamepad& gamepad, uint8_t dev_addr, uint8_t 
         return false;
     }
 
-    dualshock3.out_report.rumble.right_duration    = (gamepad.rumble.r > 0) ? 20: 0;
-    dualshock3.out_report.rumble.right_motor_on    = (gamepad.rumble.r > 0) ? 1 : 0;
+    dualshock3.out_report.rumble.right_duration    = (gamepad->rumble.r > 0) ? 20: 0;
+    dualshock3.out_report.rumble.right_motor_on    = (gamepad->rumble.r > 0) ? 1 : 0;
 
-    dualshock3.out_report.rumble.left_duration     = (gamepad.rumble.l > 0) ? 20 : 0;
-    dualshock3.out_report.rumble.left_motor_force  = gamepad.rumble.l;
+    dualshock3.out_report.rumble.left_duration     = (gamepad->rumble.l > 0) ? 20 : 0;
+    dualshock3.out_report.rumble.left_motor_force  = gamepad->rumble.l;
 
-    if (gamepad.rumble.l > 0 || gamepad.rumble.r > 0 || 
+    if (gamepad->rumble.l > 0 || gamepad->rumble.r > 0 || 
         absolute_time_diff_us(current_time, next_allowed_time) < 0) 
     {
         tusb_control_request_t setup_packet = 
@@ -299,7 +327,7 @@ bool Dualshock3::send_fb_data(const Gamepad& gamepad, uint8_t dev_addr, uint8_t 
 
         if (tuh_control_xfer(&transfer)) 
         {
-            if (gamepad.rumble.l == 0 && gamepad.rumble.r == 0) 
+            if (gamepad->rumble.l == 0 && gamepad->rumble.r == 0) 
             {
                 next_allowed_time = delayed_by_us(get_absolute_time(), 500000);
             }

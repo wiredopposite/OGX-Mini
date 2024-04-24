@@ -6,7 +6,6 @@
 
 #include "tusb.h"
 
-#include "usbd/board_config.h"
 #include "input_mode.h"
 
 #define AIRCR_REG (*((volatile uint32_t *)(0xE000ED0C))) // Address of the AIRCR register
@@ -15,6 +14,8 @@
 
 #define FLASH_TARGET_OFFSET (256 * 1024)
 #define FLASH_SIZE_BYTES (2 * 1024 * 1024)
+
+InputMode current_input_mode;
 
 void system_reset() 
 {
@@ -54,7 +55,7 @@ bool change_input_mode(GamepadButtons buttons)
         return false;
     }
 
-    InputMode new_mode;
+    InputMode new_mode = current_input_mode;
 
     if (buttons.up)
     {
@@ -62,7 +63,7 @@ bool change_input_mode(GamepadButtons buttons)
     }
     else if (buttons.left)
     {
-        new_mode = INPUT_MODE_HID;
+        new_mode = INPUT_MODE_DINPUT;
     }
     else if (buttons.right)
     {
@@ -104,22 +105,24 @@ enum InputMode get_input_mode()
     const uint8_t *stored_value = (const uint8_t *)(XIP_BASE + FLASH_SIZE_BYTES - FLASH_SECTOR_SIZE);
 
     #if (MAX_GAMEPADS < 1)
-    if ((*stored_value == INPUT_MODE_HID) || (*stored_value == INPUT_MODE_SWITCH))
+    if ((*stored_value == INPUT_MODE_DINPUT) || (*stored_value == INPUT_MODE_SWITCH))
     {
-        return(enum InputMode)*stored_value;
+        current_input_mode = (enum InputMode)*stored_value;
     }
     else
     {
-        return INPUT_MODE_HID;
+        current_input_mode = INPUT_MODE_DINPUT;
     }
     #else
     if (*stored_value >= INPUT_MODE_XINPUT && *stored_value <= INPUT_MODE_XBOXORIGINAL)
     {
-        return(enum InputMode)*stored_value;
+        current_input_mode = (enum InputMode)*stored_value;
     } 
     else 
     {
-        return INPUT_MODE_XBOXORIGINAL;
+        current_input_mode = INPUT_MODE_XBOXORIGINAL;
     }
     #endif
+
+    return current_input_mode;
 }

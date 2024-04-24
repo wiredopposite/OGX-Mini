@@ -26,7 +26,9 @@
 #ifndef _TUSB_CONFIG_H_
 #define _TUSB_CONFIG_H_
 
-#include "usbd/board_config.h"
+#include "board_config.h"
+
+#define MAX_GAMEPADS 1
 
 #ifdef __cplusplus
  extern "C" {
@@ -89,7 +91,7 @@
 #define CFG_TUD_ENABLED     1
 
 // CFG_TUSB_DEBUG is defined by compiler in DEBUG build
-// #define CFG_TUSB_DEBUG      1
+#define CFG_TUSB_DEBUG      0
 
 /* USB DMA on some MCUs can only access a specific SRAM region with restriction on alignment.
  * Tinyusb use follows macros to declare transferring memory so that they can be put
@@ -128,7 +130,7 @@
 //--------------------------------------------------------------------
 
 #ifndef CFG_TUD_ENDPOINT0_SIZE
-#define CFG_TUD_ENDPOINT0_SIZE    64
+#define CFG_TUD_ENDPOINT0_SIZE 64
 #endif
 
 #define CFG_TUD_CDC_RX_BUFSIZE 256

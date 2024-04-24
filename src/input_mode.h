@@ -5,8 +5,7 @@
 extern "C" {
 #endif
 
-#include "Gamepad.h"
-#include "usbd/inputmodes.h"
+#include "tusb_gamepad.h"
 
 enum InputMode get_input_mode();
 bool change_input_mode(GamepadButtons buttons);
