@@ -7,3 +7,6 @@
 [submodule "lib/tusb_gamepad"]
 	path = lib/tusb_gamepad
 	url = https://github.com/wiredopposite/tusb_gamepad.git
+[submodule "lib/tusb_xinput"]
+	path = lib/tusb_xinput
+	url = https://github.com/wiredopposite/tusb_xinput.git
