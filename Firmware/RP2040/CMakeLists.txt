@@ -1,0 +1,297 @@
+cmake_minimum_required(VERSION 3.13)
+
+set(FW_NAME "OGX-Mini")
+set(FW_VERSION "v1.0.0-alpha")
+
+set(CMAKE_C_COMPILER ${C_COMPILER})
+set(CMAKE_CXX_COMPILER ${CXX_COMPILER})
+
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+set(SRC ${CMAKE_CURRENT_LIST_DIR}/src)
+set(EXTERNAL_DIR ${CMAKE_CURRENT_LIST_DIR}/../external)
+
+include(${EXTERNAL_DIR}/patch_libs.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/get_pico_sdk.cmake)
+
+apply_lib_patches(${EXTERNAL_DIR})
+get_pico_sdk(${EXTERNAL_DIR})
+
+include(${PICO_SDK_PATH}/pico_sdk_init.cmake)
+message("PICO_SDK_VERSION_STRING: ${PICO_SDK_VERSION_STRING}")
+if (PICO_SDK_VERSION_STRING VERSION_LESS "1.4.0")
+    message(FATAL_ERROR "Raspberry Pi Pico SDK version 1.4.0 (or later) required. Your version is ${PICO_SDK_VERSION_STRING}")
+endif()
+
+project(${FW_NAME} C CXX ASM)
+
+set(PICO_PIO_USB_PATH ${EXTERNAL_DIR}/Pico-PIO-USB)
+set(PICO_TINYUSB_PATH ${EXTERNAL_DIR}/tinyusb)
+set(BLUEPAD32_ROOT ${EXTERNAL_DIR}/bluepad32)
+set(BTSTACK_ROOT ${BLUEPAD32_ROOT}/external/btstack)
+set(PICO_BTSTACK_PATH ${BTSTACK_ROOT})
+
+set(SOURCES_BOARD 
+    ${SRC}/main.cpp
+
+    ${SRC}/OGXMini/OGXMini_Standard.cpp
+    ${SRC}/OGXMini/OGXMini_4Ch.cpp
+    ${SRC}/OGXMini/OGXMini_PicoW.cpp
+    ${SRC}/OGXMini/OGXMini_ESP32.cpp
+
+    ${SRC}/Board/board_api.cpp
+
+    ${SRC}/UserSettings/UserSettings.cpp
+    ${SRC}/UserSettings/UserProfile.cpp
+
+    ${SRC}/USBDevice/tud_callbacks.cpp
+    ${SRC}/USBDevice/DeviceManager.cpp
+    ${SRC}/USBDevice/DeviceDriver/DeviceDriver.cpp
+    ${SRC}/USBDevice/DeviceDriver/PSClassic/PSClassic.cpp
+    ${SRC}/USBDevice/DeviceDriver/PS3/PS3.cpp
+    ${SRC}/USBDevice/DeviceDriver/Switch/Switch.cpp
+    ${SRC}/USBDevice/DeviceDriver/XInput/XInput.cpp
+    ${SRC}/USBDevice/DeviceDriver/XboxOG/XboxOG_GP.cpp
+    ${SRC}/USBDevice/DeviceDriver/XboxOG/XboxOG_SB.cpp
+    ${SRC}/USBDevice/DeviceDriver/XboxOG/XboxOG_XR.cpp
+    ${SRC}/USBDevice/DeviceDriver/DInput/DInput.cpp
+    ${SRC}/USBDevice/DeviceDriver/WebApp/WebApp.cpp
+    ${SRC}/USBDevice/DeviceDriver/XInput/tud_xinput/tud_xinput.cpp
+    ${SRC}/USBDevice/DeviceDriver/XboxOG/tud_xid/tud_xid.cpp
+)
+set(LIBS_BOARD
+    # Base
+    pico_stdlib
+    pico_multicore
+    pico_rand
+    hardware_timer
+    hardware_clocks
+    hardware_flash
+    tinyusb_device
+    tinyusb_board
+    # UART
+    hardware_uart
+    hardware_irq
+)
+set(INC_DIRS_BOARD
+)
+
+# Config options
+# Max gamepads
+set(MAX_GAMEPADS 1 CACHE STRING "Set number of gamepads, 1 to 4")
+if (MAX_GAMEPADS GREATER 4 OR MAX_GAMEPADS LESS 1)
+    message(FATAL_ERROR "MAX_GAMEPADS must be between 1 and 4")
+endif()
+add_definitions(-DMAX_GAMEPADS=${MAX_GAMEPADS})
+
+# Board type
+set(OGXM_BOARD "PI_PICO" CACHE STRING "Set board type, options can be found in src/board_config.h")
+
+set(FLASH_SIZE_MB 2)
+set(PICO_BOARD none)
+
+if (OGXM_BOARD STREQUAL "PI_PICO")
+    set(EN_USB_HOST TRUE)
+
+elseif(OGXM_BOARD STREQUAL "ADA_FEATHER")
+    set(EN_USB_HOST TRUE)
+    set(EN_RGB TRUE)
+    set(FLASH_SIZE_MB 8)
+
+elseif(OGXM_BOARD STREQUAL "RP_ZERO")
+    set(EN_USB_HOST TRUE)
+    set(EN_RGB TRUE)
+
+elseif(OGXM_BOARD STREQUAL "INTERNAL_4CH")
+    set(EN_USB_HOST TRUE)
+    set(EN_4CH TRUE)
+
+elseif(OGXM_BOARD STREQUAL "EXTERNAL_4CH")
+    set(EN_USB_HOST TRUE)
+    set(EN_4CH TRUE)
+    set(EN_RGB TRUE)
+
+elseif(OGXM_BOARD STREQUAL "PI_PICOW")
+    set(EN_BLUETOOTH TRUE)
+    set(PICO_BOARD pico_w)
+
+elseif(OGXM_BOARD STREQUAL "W_ESP32")
+    set(EN_ESP32 TRUE)
+    set(EN_UART_BRIDGE TRUE)
+
+else()
+    message(FATAL_ERROR "Invalid OGXM_BOARD value. See options in src/board_config.h")
+
+endif()
+
+add_definitions(-DOGXM_BOARD=${OGXM_BOARD})
+
+if(EN_USB_HOST)
+    message(STATUS "USB host enabled.")
+    add_compile_definitions(CONFIG_EN_USB_HOST=1)
+    list(APPEND SOURCES_BOARD
+        ${SRC}/USBHost/tuh_callbacks.cpp
+
+        ${SRC}/USBHost/HostDriver/DInput/DInput.cpp
+        ${SRC}/USBHost/HostDriver/PSClassic/PSClassic.cpp
+        ${SRC}/USBHost/HostDriver/SwitchWired/SwitchWired.cpp
+        ${SRC}/USBHost/HostDriver/SwitchPro/SwitchPro.cpp
+        ${SRC}/USBHost/HostDriver/PS5/PS5.cpp
+        ${SRC}/USBHost/HostDriver/PS4/PS4.cpp
+        ${SRC}/USBHost/HostDriver/PS3/PS3.cpp
+        ${SRC}/USBHost/HostDriver/XInput/XboxOG.cpp
+        ${SRC}/USBHost/HostDriver/XInput/XboxOne.cpp
+        ${SRC}/USBHost/HostDriver/XInput/Xbox360.cpp
+        ${SRC}/USBHost/HostDriver/XInput/Xbox360W.cpp
+        ${SRC}/USBHost/HostDriver/N64/N64.cpp
+        ${SRC}/USBHost/HostDriver/XInput/tuh_xinput/tuh_xinput.cpp
+        ${SRC}/USBHost/HostDriver/HIDGeneric/HIDGeneric.cpp
+        ${SRC}/USBHost/HostDriver/tuh_uni/tuh_uni.cpp
+
+        ${SRC}/USBHost/HIDParser/HIDJoystick.cpp
+        ${SRC}/USBHost/HIDParser/HIDReportDescriptor.cpp
+        ${SRC}/USBHost/HIDParser/HIDReportDescriptorElements.cpp
+        ${SRC}/USBHost/HIDParser/HIDReportDescriptorUsages.cpp
+        ${SRC}/USBHost/HIDParser/HIDUtils.cpp
+    )
+    list(APPEND LIBS_BOARD
+        tinyusb_host
+        tinyusb_pico_pio_usb
+    )
+endif()
+
+if(EN_BLUETOOTH)
+    add_compile_definitions(CONFIG_EN_BLUETOOTH=1)
+    message(STATUS "Bluetooth enabled.")
+    list(APPEND SOURCES_BOARD
+        ${SRC}/Bluepad32/Bluepad32.cpp
+    )
+    list(APPEND INC_DIRS_BOARD
+        ${SRC}
+        ${BTSTACK_ROOT}/3rd-party/bluedroid/encoder/include
+        ${BTSTACK_ROOT}/3rd-party/bluedroid/decoder/include
+    )
+    list(APPEND LIBS_BOARD
+        pico_cyw43_arch_none
+        pico_btstack_classic
+        pico_btstack_cyw43
+        bluepad32
+    )
+endif()
+
+if(EN_RGB)
+    add_compile_definitions(CONFIG_EN_RGB=1)
+    message(STATUS "RGB enabled.")
+    list(APPEND SOURCES_BOARD
+        ${SRC}/Board/Pico_WS2812/WS2812.cpp
+    )
+    list(APPEND LIBS_BOARD
+        hardware_pio
+    )
+endif()
+
+if(EN_4CH)
+    add_compile_definitions(CONFIG_EN_4CH=1)
+    message(STATUS "4CH enabled.")
+    list(APPEND SOURCES_BOARD
+        ${SRC}/I2CDriver/i2c_driver_4ch.cpp
+    )
+    list(APPEND LIBS_BOARD
+        hardware_i2c
+        pico_i2c_slave
+    )
+endif()
+
+if(EN_ESP32)
+    add_compile_definitions(CONFIG_EN_ESP32=1)
+    message(STATUS "ESP32 enabled.")
+    list(APPEND SOURCES_BOARD
+        ${SRC}/I2CDriver/i2c_driver_esp32.cpp
+    )
+    list(APPEND LIBS_BOARD
+        hardware_i2c
+        pico_i2c_slave
+    )
+endif()
+
+if(EN_UART_BRIDGE)
+    add_compile_definitions(CONFIG_EN_UART_BRIDGE=1)
+    message(STATUS "UART bridge enabled.")
+    list(APPEND SOURCES_BOARD
+        ${SRC}/USBDevice/DeviceDriver/UARTBridge/UARTBridge.cpp
+        ${SRC}/USBDevice/DeviceDriver/UARTBridge/uart_bridge/uart_bridge.c
+    )
+endif()
+
+add_compile_definitions(PICO_FLASH_SIZE_BYTES=${FLASH_SIZE_MB}*1024*1024)
+add_compile_definitions(FIRMWARE_VERSION="${FW_VERSION}")
+
+# Check for DVD dongle firmware
+if(EXISTS ${SRC}/USBDevice/DeviceDriver/XboxOG/tud_xid/tud_xid_xremote_rom.h)
+    message(STATUS "XRemote ROM available.")
+    add_definitions(-DXREMOTE_ROM_AVAILABLE)
+endif()
+
+if(NOT EN_BLUETOOTH)
+    add_compile_definitions(PICO_BOOT_STAGE2_CHOOSE_GENERIC_03H=1 PICO_XOSC_STARTUP_DELAY_MULTIPLIER=64)
+endif()
+
+pico_sdk_init()
+
+add_executable(${FW_NAME} ${SOURCES_BOARD})
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    pico_enable_stdio_uart(${FW_NAME} 1)
+    add_compile_definitions(LOG=2)
+    target_compile_options(${FW_NAME} PRIVATE
+        -Wall                # Enable most warnings
+        -Wextra              # Enable extra warnings
+        -Wconversion         # Warn on type conversion issues
+        -Wsign-conversion    # Warn on sign conversion issues
+        # -Werror              # Treat warnings as errors
+    )
+
+elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+    add_compile_options(
+        -O2                     # Optimize for speed
+        -mcpu=cortex-m0plus     # Target ARM Cortex-M0+
+        -mthumb                 # Use Thumb instruction set
+        -ffunction-sections     # Place each function in its own section
+        -fdata-sections         # Place each data item in its own section
+        -fomit-frame-pointer    # Omit frame pointers
+        -finline-functions      # Enable inlining
+    )
+
+    add_link_options(
+        -Wl,--gc-sections       # Remove unused sections
+        -flto                   # Link-Time Optimization
+    )
+endif()
+
+pico_set_program_name(${FW_NAME} ${FW_NAME})
+pico_set_program_version(${FW_NAME} ${FW_VERSION})
+
+target_include_directories(${FW_NAME} PRIVATE ${SRC})
+
+if(EN_RGB)
+    pico_generate_pio_header(${FW_NAME} ${SRC}/Board/Pico_WS2812/WS2812.pio)
+endif()
+
+include_directories(${INC_DIRS_BOARD})
+
+if(EN_USB_HOST)
+    add_subdirectory(${PICO_PIO_USB_PATH} ${CMAKE_BINARY_DIR}/Pico-PIO-USB)
+endif()
+
+if(EN_BLUETOOTH)
+    add_subdirectory(${BLUEPAD32_ROOT}/src/components/bluepad32 libbluepad32)
+endif()
+
+target_link_libraries(${FW_NAME} PRIVATE ${LIBS_BOARD})
+
+set(EXE_FILENAME "${FW_NAME}-${FW_VERSION}-${OGXM_BOARD}")
+set_target_properties(${FW_NAME} PROPERTIES OUTPUT_NAME ${EXE_FILENAME})
+
+pico_add_extra_outputs(${FW_NAME})

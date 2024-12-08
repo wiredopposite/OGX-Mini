@@ -1,2 +1,0 @@
-add_subdirectory(CRC32)
-add_subdirectory(hid_parser)

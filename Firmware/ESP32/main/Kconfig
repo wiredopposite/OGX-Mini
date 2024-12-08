@@ -1,0 +1,50 @@
+menu "OGXMini Options"
+
+    config RESET_PIN
+        int "Set reset pin"
+        default 15
+
+    config MULTI_SLAVE_MODE
+        bool "Enable multiple slave devices"
+        default n
+
+    config ENABLE_LED_1
+        bool "Enable LED 1"
+        default y
+
+    config LED_PIN_1
+        int "Set LED 1 pin"
+        default 15
+        depends on ENABLE_LED_1
+
+    config ENABLE_LED_2
+        bool "Enable LED 2"
+        default n
+        depends on ENABLE_LED_1
+
+    config LED_PIN_2
+        int "Set LED 2 pin"
+        default 255
+        depends on ENABLE_LED_2
+
+    config ENABLE_LED_3
+        bool "Enable LED 3"
+        default n
+        depends on ENABLE_LED_2
+
+    config LED_PIN_3
+        int "Set LED 3 pin"
+        default 255
+        depends on ENABLE_LED_3
+
+    config ENABLE_LED_4
+        bool "Enable LED 4"
+        default n
+        depends on ENABLE_LED_3
+
+    config LED_PIN_4
+        int "Set LED 4 pin"
+        default 255
+        depends on ENABLE_LED_4
+    
+endmenu

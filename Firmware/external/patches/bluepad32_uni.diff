@@ -1,0 +1,18 @@
+diff --git a/src/components/bluepad32/include/uni.h b/src/components/bluepad32/include/uni.h
+index 45b24a2..09e323a 100644
+--- a/src/components/bluepad32/include/uni.h
++++ b/src/components/bluepad32/include/uni.h
+@@ -35,6 +35,13 @@ extern "C" {
+ #include "parser/uni_hid_parser_keyboard.h"
+ #include "parser/uni_hid_parser_mouse.h"
+ #include "parser/uni_hid_parser_xboxone.h"
++#include "parser/uni_hid_parser_ds4.h"
++#include "parser/uni_hid_parser_ds3.h"
++#include "parser/uni_hid_parser_switch.h"
++#include "parser/uni_hid_parser_stadia.h"
++#include "parser/uni_hid_parser_psmove.h"
++#include "parser/uni_hid_parser_xboxone.h"
++#include "parser/uni_hid_parser_wii.h"
+ #include "platform/uni_platform.h"
+ #include "uni_circular_buffer.h"
+ #include "uni_console.h"

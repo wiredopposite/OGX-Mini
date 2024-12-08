@@ -1,0 +1,20 @@
+{
+    "configurations": [
+        {
+            "name": "Pico",
+            "includePath": [
+                "${PICO_SDK_PATH}/**"
+            ],
+            "forcedInclude": [
+                "${PICO_SDK_PATH}/src/common/pico_base/include/pico.h",
+                "${workspaceFolder}/build/generated/pico_base/pico/config_autogen.h"
+            ],
+            "defines": [],
+            "compileCommands": "${workspaceFolder}/build/compile_commands.json",
+            "cStandard": "c17",
+            "cppStandard": "c++14",
+            "intelliSenseMode": "linux-gcc-arm"
+        }
+    ],
+    "version": 4
+}

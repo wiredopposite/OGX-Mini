@@ -1,12 +1,12 @@
-[submodule "lib/Pico-PIO-USB"]
-	path = lib/Pico-PIO-USB
-	url = https://github.com/sekigon-gonnoc/Pico-PIO-USB.git
-[submodule "lib/tinyusb"]
-	path = lib/tinyusb
+[submodule "Firmware/external/bluepad32"]
+	path = Firmware/external/bluepad32
+	url = https://github.com/ricardoquesada/bluepad32.git
+[submodule "Firmware/external/tinyusb"]
+	path = Firmware/external/tinyusb
 	url = https://github.com/hathach/tinyusb.git
-[submodule "src/usbd"]
-	path = src/usbd
-	url = https://github.com/wiredopposite/usbd.git
-[submodule "lib/tusb_xinput"]
-	path = lib/tusb_xinput
-	url = https://github.com/Ryzee119/tusb_xinput.git
+[submodule "Firmware/external/Pico-PIO-USB"]
+	path = Firmware/external/Pico-PIO-USB
+	url = https://github.com/sekigon-gonnoc/Pico-PIO-USB.git
+[submodule "Tools/dump-dvd-kit"]
+	path = Tools/dump-dvd-kit
+	url = https://github.com/XboxDev/dump-dvd-kit.git
