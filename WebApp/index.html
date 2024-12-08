@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>OGX-Mini Settings</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>OGX-Mini Settings</h1>
+        <div class="connect-ui" id="connect-ui">
+            <button class="connect" id="connect">Connect</button><br><br>
+            <label>To ensure your adapter is in WebApp mode, hold Start + Left Bumper + Right Bumper for 3 seconds.</label>
+            <div class="error">
+                ⚠️ This browser does not support the WebSerial API. Please try a different browser.
+            </div>
+        </div>
+        <div class="settings-ui" id="settings-ui">
+
+            <div class="settings">
+
+                <!-- <div>
+                    <label>Firmware: <span id="firmwareVersion">v1.0.0</span></label>
+                </div> -->
+                <label>Minimum firmware required: v1.0.0</label>
+                <div>
+                    <h3>Device Mode</h3>
+                </div>
+                <div class="setting-item">
+                    <select id="device-mode"></select>
+                </div>
+
+                <div>
+                    <h3>Current Profile</h3>
+                </div>
+                <div class="setting-item">
+                    <select id="profile-id"></select>
+                </div>
+
+                <h3>Axis Settings</h3>
+                <div class="setting-item">
+                    <label for="invert-joy-l">Invert Y Left</label>
+                    <input type="checkbox" id="invert-joy-l">
+                    <span id="invert-joy-l-value"></span>
+                </div>
+                <div class="setting-item">
+                    <label for="invert-joy-r">Invert Y Right</label>
+                    <input type="checkbox" id="invert-joy-r">
+                    <span id="invert-joy-r-value"></span>
+                </div>
+
+                <div class="deadzone-settings">
+                    <div class="setting-item">
+                        <label for="deadzone-joy-l">Joystick Left Deadzone</label>
+                        <input type="range" id="deadzone-joy-l" min="0" max="100">
+                        <span id="deadzone-joy-l-value"></span>%
+                    </div>
+                    <div class="setting-item">
+                        <label for="deadzone-joy-r">Joystick Right Deadzone</label>
+                        <input type="range" id="deadzone-joy-r" min="0" max="100">
+                        <span id="deadzone-joy-r-value"></span>%
+                    </div>
+                    <div class="setting-item">
+                        <label for="deadzone-trigger-l">Trigger Left Deadzone</label>
+                        <input type="range" id="deadzone-trigger-l" min="0" max="100">
+                        <span id="deadzone-trigger-l-value"></span>%
+                    </div>
+                    <div class="setting-item">
+                        <label for="deadzone-trigger-r">Trigger Right Deadzone</label>
+                        <input type="range" id="deadzone-trigger-r" min="0" max="100">
+                        <span id="deadzone-trigger-r-value"></span>%
+                    </div>
+                </div>
+                <h3>Digital Mappings</h3>
+                <h4>D-Pad</h4>
+                <div class="button-map-settings">
+                    <div class="button-pair">
+                        <div class="button-item">
+                            <label for="mapping-Up">Up:</label>
+                            <select class="button-mapping" id="mapping-Up"></select>
+                        </div>
+                        <div class="button-item">
+                            <label for="mapping-Down">Down:</label>
+                            <select class="button-mapping" id="mapping-Down"></select>
+                        </div>
+                    </div>
+                    <div class="button-pair">
+                        <div class="button-item">
+                            <label for="mapping-Left">Left:</label>
+                            <select class="button-mapping" id="mapping-Left"></select>
+                        </div>
+                        <div class="button-item">
+                            <label for="mapping-Right">Right:</label>
+                            <select class="button-mapping" id="mapping-Right"></select>
+                        </div>
+                    </div>
+                </div>
+                <h4>Buttons</h4>
+                <div class="button-map-settings">
+                    <div class="button-pair">
+                        <div class="button-item">
+                            <label for="mapping-A">A:</label>
+                            <select class="button-mapping" id="mapping-A"></select>
+                        </div>
+                        <div class="button-item">
+                            <label for="mapping-B">B:</label>
+                            <select class="button-mapping" id="mapping-B"></select>
+                        </div>
+                    </div>
+                    <div class="button-pair">
+                        <div class="button-item">
+                            <label for="mapping-X">X:</label>
+                            <select class="button-mapping" id="mapping-X"></select>
+                        </div>
+                        <div class="button-item">
+                            <label for="mapping-Y">Y:</label>
+                            <select class="button-mapping" id="mapping-Y"></select>
+                        </div>
+                    </div>
+                    <div class="button-pair">
+                        <div class="button-item">
+                            <label for="mapping-L3">L3:</label>
+                            <select class="button-mapping" id="mapping-L3"></select>
+                        </div>
+                        <div class="button-item">
+                            <label for="mapping-R3">R3:</label>
+                            <select class="button-mapping" id="mapping-R3"></select>
+                        </div>
+                    </div>
+                    <div class="button-pair">
+                        <div class="button-item">
+                            <label for="mapping-LB">LB:</label>
+                            <select class="button-mapping" id="mapping-LB"></select>
+                        </div>
+                        <div class="button-item">
+                            <label for="mapping-RB">RB:</label>
+                            <select class="button-mapping" id="mapping-RB"></select>
+                        </div>
+                    </div>
+                    <div class="button-pair">
+                        <div class="button-item">
+                            <label for="mapping-Start">Start/Plus/Options:</label>
+                            <select class="button-mapping" id="mapping-Start"></select>
+                        </div>
+                        <div class="button-item">
+                            <label for="mapping-Back">Back/Minus/Share:</label>
+                            <select class="button-mapping" id="mapping-Back"></select>
+                        </div>
+                    </div>
+                    <div class="button-pair">
+                        <div class="button-item">
+                            <label for="mapping-Guide">Guide/Home:</label>
+                            <select class="button-mapping" id="mapping-Guide"></select>
+                        </div>
+                        <div class="button-item">
+                            <label for="mapping-Misc">Misc/Capture/Mic:</label>
+                            <select class="button-mapping" id="mapping-Misc"></select>
+                        </div>
+                    </div>
+                </div>
+
+                <h3>Analog Mappings</h3>
+                <div class="setting-item">
+                    <label for="analog-enabled">Enable Analog Buttons</label>
+                    <input type="checkbox" id="analog-enabled">
+                    <span id="analog-enabled-value"></span>
+                </div>
+
+                <div class="button-map-settings">
+                    <div class="button-pair">
+                        <div class="button-item">
+                            <label for="mapping-analog-Up">Up:</label>
+                            <select class="button-mapping" id="mapping-analog-Up"></select>
+                        </div>
+                        <div class="button-item">
+                            <label for="mapping-analog-Down">Down:</label>
+                            <select class="button-mapping" id="mapping-analog-Down"></select>
+                        </div>
+                    </div>
+                    <div class="button-pair">
+                        <div class="button-item">
+                            <label for="mapping-analog-Left">Left:</label>
+                            <select class="button-mapping" id="mapping-analog-Left"></select>
+                        </div>
+                        <div class="button-item">
+                            <label for="mapping-analog-Right">Right:</label>
+                            <select class="button-mapping" id="mapping-analog-Right"></select>
+                        </div>
+                    </div>
+                    <div class="button-pair">
+                        <div class="button-item">
+                            <label for="mapping-analog-A">A:</label>
+                            <select class="button-mapping" id="mapping-analog-A"></select>
+                        </div>
+                        <div class="button-item">
+                            <label for="mapping-analog-B">B:</label>
+                            <select class="button-mapping" id="mapping-analog-B"></select>
+                        </div>
+                    </div>
+                    <div class="button-pair">
+                        <div class="button-item">
+                            <label for="mapping-analog-X">X:</label>
+                            <select class="button-mapping" id="mapping-analog-X"></select>
+                        </div>
+                        <div class="button-item">
+                            <label for="mapping-analog-Y">Y:</label>
+                            <select class="button-mapping" id="mapping-analog-Y"></select>
+                        </div>
+                    </div>
+                    <div class="button-pair">
+                        <div class="button-item">
+                            <label for="mapping-analog-LB">LB:</label>
+                            <select class="button-mapping" id="mapping-analog-LB"></select>
+                        </div>
+                        <div class="button-item">
+                            <label for="mapping-analog-RB">RB:</label>
+                            <select class="button-mapping" id="mapping-analog-RB"></select>
+                        </div>
+                    </div>
+                </div>
+
+                <label>Saving will reboot your OGX-Mini, the last saved profile will be active.</label><br><br>
+                <button class="settings-button" id="save">Save Profile</button>
+                <button class="settings-button" id="reload">Reload Profile</button>
+                <button class="settings-button" id="load-default">Load Defaults</button>
+                <button class="settings-button" id="disconnect">Disconnect</button>
+
+            </div>
+        </div>
+    </div>
+    <script type="module" src="index.js"></script>
+</body>
+</html>
