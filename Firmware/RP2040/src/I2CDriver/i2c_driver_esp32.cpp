@@ -60,7 +60,7 @@ static constexpr size_t MAX_BUFFER_SIZE = std::max(sizeof(ReportOut), sizeof(Rep
 static constexpr uint8_t I2C_ADDR = 0x01;
 
 std::array<Gamepad*, MAX_GAMEPADS> gamepads_{nullptr};
-std::atomic<bool> pad_connected_ = false;
+// std::atomic<bool> pad_connected_ = false;
 
 inline void process_in_report(ReportIn* report_in)
 {
@@ -174,108 +174,9 @@ void initialize(std::array<Gamepad, MAX_GAMEPADS>& gamepad)
     i2c_slave_init(I2C_PORT, I2C_ADDR, &slave_handler);
 }
 
-bool pad_connected()
-{
-    return pad_connected_.load();
-}
-
-} // namespace i2c_driver_esp
-
-// #include <array>
-// #include <cstring>
-// #include <pico/i2c_slave.h>
-// #include <hardware/gpio.h>
-// #include <hardware/i2c.h>
-
-// #include "Gamepad.h"
-// #include "board_config.h"
-// #include "Board/board_api.h"
-// #include "I2CDriver/I2CDriver_ESP.h"
-
-// namespace i2c_driver_esp {
-
-// #pragma pack(push, 1)
-// struct ReportIn
+// bool pad_connected()
 // {
-//     uint8_t dpad;
-//     uint16_t buttons;
-//     uint8_t trigger_l;
-//     uint8_t trigger_r;
-//     int16_t joystick_lx;
-//     int16_t joystick_ly;
-//     int16_t joystick_rx;
-//     int16_t joystick_ry;
-
-//     ReportIn()
-//     {
-//         std::memset(this, 0, sizeof(ReportIn));
-//     }
-// };
-// static_assert(sizeof(ReportIn) == 13, "i2c_driver_esp::ReportIn size mismatch");
-
-// struct ReportOut
-// {
-//     uint8_t rumble_l;
-//     uint8_t rumble_r;
-
-//     ReportOut()
-//     {
-//         std::memset(this, 0, sizeof(ReportOut));
-//     }
-// };
-// static_assert(sizeof(ReportOut) == 2, "i2c_driver_esp::ReportOut size mismatch");
-// #pragma pack(pop)
-
-// static constexpr uint8_t I2C_ADDR = 0x50;
-
-// Gamepad* gamepad_ = nullptr;
-
-// inline void get_in_report()
-// {
-//     static ReportIn report_in = ReportIn();
-//     int count = i2c_read_timeout_us(I2C_PORT, I2C_ADDR, reinterpret_cast<uint8_t*>(&report_in), sizeof(ReportIn), false, 1000);
-//     if (count > 0)
-//     {
-//         gamepad_->set_buttons(report_in.buttons);
-//         gamepad_->set_dpad(report_in.dpad);
-//         gamepad_->set_trigger_l(report_in.trigger_l);
-//         gamepad_->set_trigger_r(report_in.trigger_r);
-//         gamepad_->set_joystick_lx_int10(report_in.joystick_lx);
-//         gamepad_->set_joystick_ly_int10(report_in.joystick_ly);
-//         gamepad_->set_joystick_rx_int10(report_in.joystick_rx);
-//         gamepad_->set_joystick_ry_int10(report_in.joystick_ry);
-//     }
+//     return pad_connected_.load();
 // }
 
-// inline void set_out_report()
-// {
-//     static ReportOut report_out = ReportOut();
-//     report_out.rumble_l = gamepad_->get_rumble_l().uint8();
-//     report_out.rumble_r = gamepad_->get_rumble_r().uint8();
-//     i2c_write_timeout_us(I2C_PORT, I2C_ADDR, reinterpret_cast<uint8_t*>(&report_out), sizeof(ReportOut), false, 1000);
-// }
-
-// void initialize(std::array<Gamepad, MAX_GAMEPADS>& gamepad)
-// {
-//     gamepad_ = &gamepad[0];
-
-//     i2c_init(I2C_PORT, I2C_BAUDRATE);
-
-//     gpio_init(I2C_SDA_PIN);
-//     gpio_set_function(I2C_SDA_PIN, GPIO_FUNC_I2C);
-//     gpio_pull_up(I2C_SDA_PIN);
-
-//     gpio_init(I2C_SCL_PIN);
-//     gpio_set_function(I2C_SCL_PIN, GPIO_FUNC_I2C);
-//     gpio_pull_up(I2C_SCL_PIN);
-// }
-
-// void task()
-// {
-//     get_in_report();
-//     sleep_us(100);
-//     // set_out_report();
-//     // sleep_us(100);
-// }
-
-// } // namespace i2c_driver_esp
+} // namespace i2c_driver_esp32

@@ -4,9 +4,10 @@
 #include <cstdint>
 
 #include "tusb.h"
+#include "host/usbh.h"
 #include "host/usbh_pvt.h"
 
-/*  This solves a conflict with tinyusb using multiple host class drivers */
+/*  There seems to be a conflict with tinyusb using multiple host class drivers */
 namespace tuh_uni 
 {
     const usbh_class_driver_t* class_driver();

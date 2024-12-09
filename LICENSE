@@ -1,5 +1,11 @@
 MIT License
 
+Note: Wired configurations of this project exclusively contain MIT licensed 
+code, configurations using Bluetooth libraries/functionality are licensed 
+under Apache 2.0 (Bluepad32) and BTStack's proprietary (non-commercial) 
+license. For full details, please refer to the repositories contained in the 
+Firmware/external directory of this project.
+
 Copyright (c) 2024 wiredOpposite (wiredopposite.com)
 Copyright (c) 2024 OpenStickCommunity (gp2040-ce.info)
 Copyright (c) 2021 Jason Skuby (mytechtoybox.com)

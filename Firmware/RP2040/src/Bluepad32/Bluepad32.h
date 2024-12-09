@@ -11,10 +11,9 @@
 /*  NOTE: Everything bluepad32/uni needs to be wrapped
     and kept away from tinyusb due to naming conflicts */
 
-namespace bluepad32 {
-
-    void initialize(std::array<Gamepad, MAX_GAMEPADS>& gamepads);
-    void run_loop();
+namespace bluepad32 
+{
+    void run_task(std::array<Gamepad, MAX_GAMEPADS>& gamepads);
     std::array<bool, MAX_GAMEPADS> get_connected_map();
     bool any_connected();
 

@@ -2,8 +2,6 @@
 #if (OGXM_BOARD == PI_PICOW)
 
 #include <array>
-#include <stdio.h>
-
 #include <pico/multicore.h>
 #include <hardware/gpio.h>
 #include <hardware/clocks.h>
@@ -28,8 +26,7 @@ void core1_task()
         return;
     }
 
-    bluepad32::initialize(gamepads_);
-    bluepad32::run_loop();
+    bluepad32::run_task(gamepads_);
 }
 
 bool gp_check_cb(repeating_timer_t* rt)

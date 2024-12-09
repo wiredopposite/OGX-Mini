@@ -175,14 +175,14 @@ public:
 	{
 		for (auto& host_slot : host_slots_)
 		{
-			// if (host_slot.driver_class == driver_class && host_slot.address == address)
-			// {
-			// 	host_slot.reset();
-			// }
-			if (host_slot.address == address)
+			if (host_slot.driver_class == driver_class && host_slot.address == address)
 			{
 				host_slot.reset();
 			}
+			// if (host_slot.address == address)
+			// {
+			// 	host_slot.reset();
+			// }
 		}
 
 		if (OGXMini::update_tuh_status)

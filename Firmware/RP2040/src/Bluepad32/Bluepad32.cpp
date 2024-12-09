@@ -272,16 +272,13 @@ uni_platform* get_driver()
 
 //Public API
 
-void initialize(std::array<Gamepad, MAX_GAMEPADS>& gamepads)
+void run_task(std::array<Gamepad, MAX_GAMEPADS>& gamepads)
 {
     for (uint8_t i = 0; i < MAX_GAMEPADS; ++i)
     {
         devices_[i].gamepad = &gamepads[i];
     }
-}
 
-void run_loop()
-{
     uni_platform_set_custom(get_driver());
     uni_init(0, nullptr);
 

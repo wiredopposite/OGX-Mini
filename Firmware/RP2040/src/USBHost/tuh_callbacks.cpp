@@ -31,10 +31,6 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
     tuh_vid_pid_get(dev_addr, &vid, &pid);
 
     HostManager& host_manager = HostManager::get_instance();
-    // if (host_manager.setup_driver(HostDriver::Type::HID_GENERIC, dev_addr, instance, desc_report, desc_len))
-    // {
-    // }
-
     if (host_manager.setup_driver(HostManager::get_type({ vid, pid }), dev_addr, instance, desc_report, desc_len))
     {
 #if defined(CONFIG_EN_4CH)

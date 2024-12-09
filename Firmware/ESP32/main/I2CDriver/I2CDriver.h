@@ -8,6 +8,7 @@
 
 #include "Reports.h"
 
+//Will probably refactor this to be event driven
 class I2CDriver 
 {
 public:
@@ -23,6 +24,9 @@ private:
 #else
         true;
 #endif
+    // std::array<ReportIn, CONFIG_BLUEPAD32_MAX_DEVICES> report_in_buffer_{};
+    // std::array<std::atomic<bool>, CONFIG_BLUEPAD32_MAX_DEVICES> new_report_in_{false};
+    // std::array<ReportOut, CONFIG_BLUEPAD32_MAX_DEVICES> report_out_buffer_{};
 
     void initialize_i2c();
 
