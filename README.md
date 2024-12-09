@@ -47,16 +47,16 @@ By default the input mode is set to OG Xbox, you must hold a button combo for 3 
 
 Start = Plus (Switch) = Options (Dualsense/DS4)
 
-### XInput
-Start + Dpad Up 
-### Original Xbox
-Start + Dpad Right
-### Switch
-Start + Dpad Down
-### PlayStation 3
-Start + Dpad Left
-### PlayStation Classic
-Start + A (Cross for PlayStation and B for Switch gamepads)
+- XInput
+    - Start + Dpad Up 
+- Original Xbox
+    - Start + Dpad Right
+- Switch
+    - Start + Dpad Down
+- PlayStation 3
+    - Start + Dpad Left
+- PlayStation Classic
+    - Start + A (Cross for PlayStation and B for Switch gamepads)
 
 After a new mode is stored, the RP2040 will reset itself so you don't need to unplug it. 
 
@@ -66,11 +66,13 @@ After a new mode is stored, the RP2040 will reset itself so you don't need to un
 - 4 channel functionality, connect 4 Picos via I2C and use your Xbox 360 wireless adapter.
 - Delayed USB mount until a controller is plugged in, useful for internal installation. 
 - Generic HID controller support.
+- Dualshock 3 emulation (minus gyros), rumble now works.
 - Steel Battalion controller emulation with a wireless Xbox 360 chatpad.
-- Xbox DVD dongle emulation.
+- Xbox DVD dongle emulation, you must provide or dump your own firmware, see the Tools directory.
+- Analog button support on OG Xbox and PS3.
 
 ## Hardware
-For the Pi Pico, RP2040-Zero, 4 channel, and ESP32 configurations, please see the hardware folder for diagrams.
+For Pi Pico, RP2040-Zero, 4 channel, and ESP32 configurations, please see the hardware folder for diagrams.
 
 I've designed a PCB for the RP2040-Zero so you can make a small form-factor adapter yourself. The gerber files, schematic, and BOM are in Hardware folder.
 
