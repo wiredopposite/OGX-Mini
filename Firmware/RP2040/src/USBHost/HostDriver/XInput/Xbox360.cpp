@@ -21,32 +21,34 @@ void Xbox360Host::process_report(Gamepad& gamepad, uint8_t address, uint8_t inst
         return;
     }
 
-    gamepad.reset_buttons();
+    Gamepad::PadIn gp_in;
 
-    if (in_report_->buttons[0] & XInput::Buttons0::DPAD_UP)    gamepad.set_dpad_up();
-    if (in_report_->buttons[0] & XInput::Buttons0::DPAD_DOWN)  gamepad.set_dpad_down();
-    if (in_report_->buttons[0] & XInput::Buttons0::DPAD_LEFT)  gamepad.set_dpad_left();
-    if (in_report_->buttons[0] & XInput::Buttons0::DPAD_RIGHT) gamepad.set_dpad_right();
+    if (in_report_->buttons[0] & XInput::Buttons0::DPAD_UP)    gp_in.dpad |= gamepad.MAP_DPAD_UP;
+    if (in_report_->buttons[0] & XInput::Buttons0::DPAD_DOWN)  gp_in.dpad |= gamepad.MAP_DPAD_DOWN;
+    if (in_report_->buttons[0] & XInput::Buttons0::DPAD_LEFT)  gp_in.dpad |= gamepad.MAP_DPAD_LEFT;
+    if (in_report_->buttons[0] & XInput::Buttons0::DPAD_RIGHT) gp_in.dpad |= gamepad.MAP_DPAD_RIGHT;
 
-    if (in_report_->buttons[0] & XInput::Buttons0::START)  gamepad.set_button_start();
-    if (in_report_->buttons[0] & XInput::Buttons0::BACK)   gamepad.set_button_back();
-    if (in_report_->buttons[0] & XInput::Buttons0::L3)     gamepad.set_button_l3();
-    if (in_report_->buttons[0] & XInput::Buttons0::R3)     gamepad.set_button_r3();
-    if (in_report_->buttons[1] & XInput::Buttons1::LB)     gamepad.set_button_lb();
-    if (in_report_->buttons[1] & XInput::Buttons1::RB)     gamepad.set_button_rb();
-    if (in_report_->buttons[1] & XInput::Buttons1::HOME)   gamepad.set_button_sys();
-    if (in_report_->buttons[1] & XInput::Buttons1::A)      gamepad.set_button_a();
-    if (in_report_->buttons[1] & XInput::Buttons1::B)      gamepad.set_button_b();
-    if (in_report_->buttons[1] & XInput::Buttons1::X)      gamepad.set_button_x();
-    if (in_report_->buttons[1] & XInput::Buttons1::Y)      gamepad.set_button_y();
+    if (in_report_->buttons[0] & XInput::Buttons0::START)  gp_in.buttons |= gamepad.MAP_BUTTON_START;
+    if (in_report_->buttons[0] & XInput::Buttons0::BACK)   gp_in.buttons |= gamepad.MAP_BUTTON_BACK;
+    if (in_report_->buttons[0] & XInput::Buttons0::L3)     gp_in.buttons |= gamepad.MAP_BUTTON_L3;
+    if (in_report_->buttons[0] & XInput::Buttons0::R3)     gp_in.buttons |= gamepad.MAP_BUTTON_R3;
+    if (in_report_->buttons[1] & XInput::Buttons1::LB)     gp_in.buttons |= gamepad.MAP_BUTTON_LB;
+    if (in_report_->buttons[1] & XInput::Buttons1::RB)     gp_in.buttons |= gamepad.MAP_BUTTON_RB;
+    if (in_report_->buttons[1] & XInput::Buttons1::HOME)   gp_in.buttons |= gamepad.MAP_BUTTON_SYS;
+    if (in_report_->buttons[1] & XInput::Buttons1::A)      gp_in.buttons |= gamepad.MAP_BUTTON_A;
+    if (in_report_->buttons[1] & XInput::Buttons1::B)      gp_in.buttons |= gamepad.MAP_BUTTON_B;
+    if (in_report_->buttons[1] & XInput::Buttons1::X)      gp_in.buttons |= gamepad.MAP_BUTTON_X;
+    if (in_report_->buttons[1] & XInput::Buttons1::Y)      gp_in.buttons |= gamepad.MAP_BUTTON_Y;
 
-    gamepad.set_trigger_l(in_report_->trigger_l);
-    gamepad.set_trigger_r(in_report_->trigger_r);
+    gp_in.trigger_l = in_report_->trigger_l;    
+    gp_in.trigger_r = in_report_->trigger_r;
 
-    gamepad.set_joystick_lx(in_report_->joystick_lx);
-    gamepad.set_joystick_ly(in_report_->joystick_ly, true);
-    gamepad.set_joystick_rx(in_report_->joystick_rx);
-    gamepad.set_joystick_ry(in_report_->joystick_ry, true);
+    gp_in.joystick_lx = in_report_->joystick_lx;
+    gp_in.joystick_ly = Scale::invert_joy(in_report_->joystick_ly);
+    gp_in.joystick_rx = in_report_->joystick_rx;
+    gp_in.joystick_ry = Scale::invert_joy(in_report_->joystick_ry);
+
+    gamepad.set_pad_in(gp_in);
 
     tuh_xinput::receive_report(address, instance);
     std::memcpy(&prev_in_report_, in_report_, sizeof(XInput::InReport));
@@ -54,5 +56,6 @@ void Xbox360Host::process_report(Gamepad& gamepad, uint8_t address, uint8_t inst
 
 bool Xbox360Host::send_feedback(Gamepad& gamepad, uint8_t address, uint8_t instance)
 {
-    return tuh_xinput::set_rumble(address, 0, gamepad.get_rumble_l().uint8(), gamepad.get_rumble_r().uint8(), false);
+    Gamepad::PadOut gp_out = gamepad.get_pad_out();
+    return tuh_xinput::set_rumble(address, 0, gp_out.rumble_l, gp_out.rumble_r, false);
 }

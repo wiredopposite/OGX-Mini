@@ -1,7 +1,8 @@
 #include "board_config.h"
 #if (OGXM_BOARD == PI_PICOW)
 
-#include <array>
+#include <pico/stdlib.h>
+#include <hardware/sync.h>
 #include <pico/multicore.h>
 #include <hardware/gpio.h>
 #include <hardware/clocks.h>
@@ -17,7 +18,7 @@
 
 namespace OGXMini {
 
-std::array<Gamepad, MAX_GAMEPADS> gamepads_;
+Gamepad gamepads_[MAX_GAMEPADS];
 
 void core1_task()
 {
@@ -32,7 +33,7 @@ void core1_task()
 bool gp_check_cb(repeating_timer_t* rt)
 {
     GPCheckContext* gp_check_ctx = static_cast<GPCheckContext*>(rt->user_data);
-    gp_check_ctx->driver_changed = gp_check_ctx->user_settings.check_for_driver_change(gamepads_.front());
+    gp_check_ctx->driver_changed = gp_check_ctx->user_settings.check_for_driver_change(gamepads_[0]);
     return true;
 }
 
@@ -65,7 +66,7 @@ void run_program()
 
     while (true)
     {
-        for (uint8_t i = 0; i < gamepads_.size(); ++i)
+        for (uint8_t i = 0; i < MAX_GAMEPADS; ++i)
         {
             device_driver->process(i, gamepads_[i]);
             tud_task();

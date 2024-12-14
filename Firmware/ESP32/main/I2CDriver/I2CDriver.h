@@ -12,21 +12,17 @@
 class I2CDriver 
 {
 public:
-    I2CDriver() = default;
-    ~I2CDriver() { i2c_driver_delete(I2C_NUM_0); }
-
-    void run_task();
-
-private:
     static constexpr bool MULTI_SLAVE = 
 #if CONFIG_MULTI_SLAVE_MODE == 0
         false;
 #else
         true;
 #endif
-    // std::array<ReportIn, CONFIG_BLUEPAD32_MAX_DEVICES> report_in_buffer_{};
-    // std::array<std::atomic<bool>, CONFIG_BLUEPAD32_MAX_DEVICES> new_report_in_{false};
-    // std::array<ReportOut, CONFIG_BLUEPAD32_MAX_DEVICES> report_out_buffer_{};
+
+    I2CDriver() = default;
+    ~I2CDriver() { i2c_driver_delete(I2C_NUM_0); }
+
+    void run_task();
 
     void initialize_i2c();
 
@@ -61,6 +57,19 @@ private:
         i2c_cmd_link_delete(cmd);
         return ret;
     }
+
+private:
+//     static constexpr bool MULTI_SLAVE = 
+// #if CONFIG_MULTI_SLAVE_MODE == 0
+//         false;
+// #else
+//         true;
+// #endif
+    // std::array<ReportIn, CONFIG_BLUEPAD32_MAX_DEVICES> report_in_buffer_{};
+    // std::array<std::atomic<bool>, CONFIG_BLUEPAD32_MAX_DEVICES> new_report_in_{false};
+    // std::array<ReportOut, CONFIG_BLUEPAD32_MAX_DEVICES> report_out_buffer_{};
+
+
 };
 
 #endif // _I2C_DRIVER_H_

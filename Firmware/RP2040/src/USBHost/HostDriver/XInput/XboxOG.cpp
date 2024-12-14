@@ -21,46 +21,48 @@ void XboxOGHost::process_report(Gamepad& gamepad, uint8_t address, uint8_t insta
         return;
     }
 
-    gamepad.reset_buttons();
+    Gamepad::PadIn gp_in;
 
-    if (in_report->buttons & XboxOG::GP::Buttons::DPAD_UP)    gamepad.set_dpad_up();
-    if (in_report->buttons & XboxOG::GP::Buttons::DPAD_DOWN)  gamepad.set_dpad_down();
-    if (in_report->buttons & XboxOG::GP::Buttons::DPAD_LEFT)  gamepad.set_dpad_left();
-    if (in_report->buttons & XboxOG::GP::Buttons::DPAD_RIGHT) gamepad.set_dpad_right();
+    if (in_report->buttons & XboxOG::GP::Buttons::DPAD_UP)    gp_in.dpad |= gamepad.MAP_DPAD_UP;
+    if (in_report->buttons & XboxOG::GP::Buttons::DPAD_DOWN)  gp_in.dpad |= gamepad.MAP_DPAD_DOWN;
+    if (in_report->buttons & XboxOG::GP::Buttons::DPAD_LEFT)  gp_in.dpad |= gamepad.MAP_DPAD_LEFT;
+    if (in_report->buttons & XboxOG::GP::Buttons::DPAD_RIGHT) gp_in.dpad |= gamepad.MAP_DPAD_RIGHT;
 
-    if (in_report->a) gamepad.set_button_a();
-    if (in_report->b) gamepad.set_button_b();
-    if (in_report->x) gamepad.set_button_x();
-    if (in_report->y) gamepad.set_button_y();
-    if (in_report->black) gamepad.set_button_rb();
-    if (in_report->white) gamepad.set_button_lb();
+    if (in_report->a) gp_in.buttons |= gamepad.MAP_BUTTON_A;
+    if (in_report->b) gp_in.buttons |= gamepad.MAP_BUTTON_B;
+    if (in_report->x) gp_in.buttons |= gamepad.MAP_BUTTON_X;
+    if (in_report->y) gp_in.buttons |= gamepad.MAP_BUTTON_Y;
+    if (in_report->black) gp_in.buttons |= gamepad.MAP_BUTTON_LB;
+    if (in_report->white) gp_in.buttons |= gamepad.MAP_BUTTON_RB;
 
-    if (in_report->buttons & XboxOG::GP::Buttons::START)   gamepad.set_button_start();
-    if (in_report->buttons & XboxOG::GP::Buttons::BACK)    gamepad.set_button_back();
-    if (in_report->buttons & XboxOG::GP::Buttons::L3)      gamepad.set_button_l3();
-    if (in_report->buttons & XboxOG::GP::Buttons::R3)      gamepad.set_button_r3();
+    if (in_report->buttons & XboxOG::GP::Buttons::START)   gp_in.buttons |= gamepad.MAP_BUTTON_START;
+    if (in_report->buttons & XboxOG::GP::Buttons::BACK)    gp_in.buttons |= gamepad.MAP_BUTTON_BACK;
+    if (in_report->buttons & XboxOG::GP::Buttons::L3)      gp_in.buttons |= gamepad.MAP_BUTTON_L3;
+    if (in_report->buttons & XboxOG::GP::Buttons::R3)      gp_in.buttons |= gamepad.MAP_BUTTON_R3;
 
     if (gamepad.analog_enabled())
     {
-        gamepad.set_analog_a(in_report->a);
-        gamepad.set_analog_b(in_report->b);
-        gamepad.set_analog_x(in_report->x);
-        gamepad.set_analog_y(in_report->y);
-        gamepad.set_analog_lb(in_report->black);
-        gamepad.set_analog_rb(in_report->white);
-        gamepad.set_analog_up((in_report->buttons & XboxOG::GP::Buttons::DPAD_UP) ? UINT_8::MAX : UINT_8::MIN);
-        gamepad.set_analog_down((in_report->buttons & XboxOG::GP::Buttons::DPAD_DOWN) ? UINT_8::MAX : UINT_8::MIN);
-        gamepad.set_analog_left((in_report->buttons & XboxOG::GP::Buttons::DPAD_LEFT) ? UINT_8::MAX : UINT_8::MIN);
-        gamepad.set_analog_right((in_report->buttons & XboxOG::GP::Buttons::DPAD_RIGHT) ? UINT_8::MAX : UINT_8::MIN);
+        gp_in.analog[gamepad.MAP_ANALOG_OFF_A]  = in_report->a;
+        gp_in.analog[gamepad.MAP_ANALOG_OFF_B]  = in_report->b;
+        gp_in.analog[gamepad.MAP_ANALOG_OFF_X]  = in_report->x;
+        gp_in.analog[gamepad.MAP_ANALOG_OFF_Y]  = in_report->y;
+        gp_in.analog[gamepad.MAP_ANALOG_OFF_LB] = in_report->black;
+        gp_in.analog[gamepad.MAP_ANALOG_OFF_RB] = in_report->white;
+        gp_in.analog[gamepad.MAP_ANALOG_OFF_UP]    = (in_report->buttons & XboxOG::GP::Buttons::DPAD_UP) ? UINT_8::MAX : UINT_8::MIN;
+        gp_in.analog[gamepad.MAP_ANALOG_OFF_DOWN]  = (in_report->buttons & XboxOG::GP::Buttons::DPAD_DOWN) ? UINT_8::MAX : UINT_8::MIN;
+        gp_in.analog[gamepad.MAP_ANALOG_OFF_LEFT]  = (in_report->buttons & XboxOG::GP::Buttons::DPAD_LEFT) ? UINT_8::MAX : UINT_8::MIN;
+        gp_in.analog[gamepad.MAP_ANALOG_OFF_RIGHT] = (in_report->buttons & XboxOG::GP::Buttons::DPAD_RIGHT) ? UINT_8::MAX : UINT_8::MIN;
     }
 
-    gamepad.set_trigger_l(in_report->trigger_l);
-    gamepad.set_trigger_r(in_report->trigger_r);
+    gp_in.trigger_l = in_report->trigger_l;
+    gp_in.trigger_r = in_report->trigger_r;
 
-    gamepad.set_joystick_lx(in_report->joystick_lx);
-    gamepad.set_joystick_ly(in_report->joystick_ly, true);
-    gamepad.set_joystick_rx(in_report->joystick_rx);
-    gamepad.set_joystick_ry(in_report->joystick_ry, true);
+    gp_in.joystick_lx = in_report->joystick_lx;
+    gp_in.joystick_ly = Scale::invert_joy(in_report->joystick_ly);
+    gp_in.joystick_rx = in_report->joystick_rx;
+    gp_in.joystick_ry = Scale::invert_joy(in_report->joystick_ry);
+
+    gamepad.set_pad_in(gp_in);
 
     tuh_xinput::receive_report(address, instance);
     std::memcpy(&prev_in_report_, in_report, sizeof(XboxOG::GP::InReport));
@@ -68,5 +70,6 @@ void XboxOGHost::process_report(Gamepad& gamepad, uint8_t address, uint8_t insta
 
 bool XboxOGHost::send_feedback(Gamepad& gamepad, uint8_t address, uint8_t instance)
 {
-    return tuh_xinput::set_rumble(address, instance, gamepad.get_rumble_l().uint8(), gamepad.get_rumble_r().uint8(), false);
+    Gamepad::PadOut gp_out = gamepad.get_pad_out();
+    return tuh_xinput::set_rumble(address, instance, gp_out.rumble_l, gp_out.rumble_r, false);
 }

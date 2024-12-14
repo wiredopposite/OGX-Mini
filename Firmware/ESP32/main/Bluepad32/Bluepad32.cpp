@@ -21,12 +21,15 @@
 
 namespace bluepad32 {
 
+// I2CDriver i2c_driver;
+
 static constexpr uint32_t FEEDBACK_TIME_MS = 200;
 static constexpr uint32_t LED_TIME_MS = 500;
 
 struct Device
 {
     std::atomic<bool> connected{false};
+    std::atomic<bool> new_report_in{false};
     std::atomic<ReportIn> report_in{ReportIn()};
     std::atomic<ReportOut> report_out{ReportOut()};
 };
@@ -50,6 +53,13 @@ static inline void send_feedback_cb(btstack_timer_source *ts)
         {
             continue;
         }
+        // ReportOut report_out;
+        // report_out.index = i;
+        // i2c_driver.i2c_read_blocking(i2c_driver.MULTI_SLAVE ? i + 1 : 1, reinterpret_cast<uint8_t*>(&report_out), sizeof(ReportOut));
+        // if (!report_out.rumble_l && !report_out.rumble_r)
+        // {
+        //     continue;
+        // }
         bp_device->report_parser.play_dual_rumble(bp_device, 0, FEEDBACK_TIME_MS, report_out.rumble_l, report_out.rumble_r);
     }
 
@@ -92,7 +102,7 @@ static void init_complete_cb(void)
     // // Based on runtime condition, you can delete or list the stored BT keys.
     // if (1)
     // {
-    //     uni_bt_del_keys_unsafe();
+        uni_bt_del_keys_unsafe();
     // }
     // else
     // {
@@ -187,16 +197,16 @@ static void controller_data_cb(uni_hid_device_t* device, uni_controller_t* contr
         case DPAD_RIGHT:
             report_in.dpad = Gamepad::DPad::RIGHT;
             break;
-        case DPAD_UP | DPAD_RIGHT:
+        case (DPAD_UP | DPAD_RIGHT):
             report_in.dpad = Gamepad::DPad::UP_RIGHT;
             break;
-        case DPAD_DOWN | DPAD_RIGHT:
+        case (DPAD_DOWN | DPAD_RIGHT):
             report_in.dpad = Gamepad::DPad::DOWN_RIGHT;
             break;
-        case DPAD_DOWN | DPAD_LEFT:
+        case (DPAD_DOWN | DPAD_LEFT):
             report_in.dpad = Gamepad::DPad::DOWN_LEFT;
             break;
-        case DPAD_UP | DPAD_LEFT:
+        case (DPAD_UP | DPAD_LEFT):
             report_in.dpad = Gamepad::DPad::UP_LEFT;
             break;
         default:
@@ -225,6 +235,8 @@ static void controller_data_cb(uni_hid_device_t* device, uni_controller_t* contr
     report_in.joystick_ry = static_cast<int16_t>(uni_gp->axis_ry);
 
     devices_[idx].report_in.store(report_in);
+    devices_[idx].new_report_in.store(true);
+    // i2c_driver.i2c_write_blocking(i2c_driver.MULTI_SLAVE ? idx + 1 : 1, reinterpret_cast<const uint8_t*>(&report_in), sizeof(ReportIn));
 
     std::memcpy(uni_gp, &prev_uni_gp[idx], sizeof(uni_gamepad_t));
 }
@@ -256,6 +268,7 @@ uni_platform* get_driver()
 
 ReportIn get_report_in(uint8_t index)
 {
+    devices_[index].new_report_in.store(false);
     return devices_[index].report_in.load();
 }
 
@@ -280,6 +293,8 @@ void run_task()
 
     board_api::init_pins(); 
     
+    // i2c_driver.initialize_i2c();
+    
     btstack_init();
 
     uni_platform_set_custom(get_driver());
@@ -302,7 +317,6 @@ void run_task()
     btstack_run_loop_execute();
 }
 
-//Thread safe
 bool any_connected()
 {
     for (auto& device : devices_)
@@ -318,6 +332,11 @@ bool any_connected()
 bool connected(uint8_t index)
 {
     return devices_[index].connected.load();
+}
+
+bool new_report_in(uint8_t index)
+{
+    return devices_[index].new_report_in.load();
 }
 
 } // namespace bluepad32 

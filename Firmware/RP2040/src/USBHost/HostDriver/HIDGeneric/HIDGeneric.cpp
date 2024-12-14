@@ -32,57 +32,59 @@ void HIDHost::process_report(Gamepad& gamepad, uint8_t address, uint8_t instance
         return;
     }
 
-    gamepad.reset_pad();
+    Gamepad::PadIn gp_in;   
 
     switch (hid_joystick_data_.hat_switch)
     {
         case HIDJoystickHatSwitch::UP:
-            gamepad.set_dpad_up();
+            gp_in.dpad |= gamepad.MAP_DPAD_UP;
             break;
         case HIDJoystickHatSwitch::UP_RIGHT:
-            gamepad.set_dpad_up_right();
+            gp_in.dpad |= gamepad.MAP_DPAD_UP_RIGHT;
             break;
         case HIDJoystickHatSwitch::RIGHT:
-            gamepad.set_dpad_right();
+            gp_in.dpad |= gamepad.MAP_DPAD_RIGHT;
             break;
         case HIDJoystickHatSwitch::DOWN_RIGHT:
-            gamepad.set_dpad_down_right();
+            gp_in.dpad |= gamepad.MAP_DPAD_DOWN_RIGHT;
             break;
         case HIDJoystickHatSwitch::DOWN:
-            gamepad.set_dpad_down();
+            gp_in.dpad |= gamepad.MAP_DPAD_DOWN;
             break;
         case HIDJoystickHatSwitch::DOWN_LEFT:
-            gamepad.set_dpad_down_left();
+            gp_in.dpad |= gamepad.MAP_DPAD_DOWN_LEFT;
             break;
         case HIDJoystickHatSwitch::LEFT:
-            gamepad.set_dpad_left();
+            gp_in.dpad |= gamepad.MAP_DPAD_LEFT;
             break;
         case HIDJoystickHatSwitch::UP_LEFT:
-            gamepad.set_dpad_up_left();
+            gp_in.dpad |= gamepad.MAP_DPAD_UP_LEFT;
             break;
         default:
             break;
     }
 
-    gamepad.set_joystick_lx(hid_joystick_data_.X);
-    gamepad.set_joystick_ly(hid_joystick_data_.Y);
-    gamepad.set_joystick_rx(hid_joystick_data_.Z);
-    gamepad.set_joystick_ry(hid_joystick_data_.Rz);
+    gp_in.joystick_lx = hid_joystick_data_.X;
+    gp_in.joystick_ly = hid_joystick_data_.Y;
+    gp_in.joystick_rx = hid_joystick_data_.Z;
+    gp_in.joystick_ry = hid_joystick_data_.Rz;
 
-    if (hid_joystick_data_.buttons[1])  gamepad.set_button_x();
-    if (hid_joystick_data_.buttons[2])  gamepad.set_button_a();
-    if (hid_joystick_data_.buttons[3])  gamepad.set_button_b();
-    if (hid_joystick_data_.buttons[4])  gamepad.set_button_y();
-    if (hid_joystick_data_.buttons[5])  gamepad.set_button_lb();
-    if (hid_joystick_data_.buttons[6])  gamepad.set_button_rb();
-    if (hid_joystick_data_.buttons[7])  gamepad.set_trigger_l(UINT_8::MAX);
-    if (hid_joystick_data_.buttons[8])  gamepad.set_trigger_r(UINT_8::MAX);
-    if (hid_joystick_data_.buttons[9])  gamepad.set_button_back();
-    if (hid_joystick_data_.buttons[10]) gamepad.set_button_start();
-    if (hid_joystick_data_.buttons[11]) gamepad.set_button_l3();
-    if (hid_joystick_data_.buttons[12]) gamepad.set_button_r3();
-    if (hid_joystick_data_.buttons[13]) gamepad.set_button_sys();
-    if (hid_joystick_data_.buttons[14]) gamepad.set_button_misc();
+    if (hid_joystick_data_.buttons[1])  gp_in.buttons |= gamepad.MAP_BUTTON_X;
+    if (hid_joystick_data_.buttons[2])  gp_in.buttons |= gamepad.MAP_BUTTON_A;
+    if (hid_joystick_data_.buttons[3])  gp_in.buttons |= gamepad.MAP_BUTTON_B;
+    if (hid_joystick_data_.buttons[4])  gp_in.buttons |= gamepad.MAP_BUTTON_Y;
+    if (hid_joystick_data_.buttons[5])  gp_in.buttons |= gamepad.MAP_BUTTON_LB;
+    if (hid_joystick_data_.buttons[6])  gp_in.buttons |= gamepad.MAP_BUTTON_RB;
+    if (hid_joystick_data_.buttons[7])  gp_in.trigger_l = UINT_8::MAX;
+    if (hid_joystick_data_.buttons[8])  gp_in.trigger_r = UINT_8::MAX;
+    if (hid_joystick_data_.buttons[9])  gp_in.buttons |= gamepad.MAP_BUTTON_BACK;
+    if (hid_joystick_data_.buttons[10]) gp_in.buttons |= gamepad.MAP_BUTTON_START;
+    if (hid_joystick_data_.buttons[11]) gp_in.buttons |= gamepad.MAP_BUTTON_L3;
+    if (hid_joystick_data_.buttons[12]) gp_in.buttons |= gamepad.MAP_BUTTON_R3;
+    if (hid_joystick_data_.buttons[13]) gp_in.buttons |= gamepad.MAP_BUTTON_SYS;
+    if (hid_joystick_data_.buttons[14]) gp_in.buttons |= gamepad.MAP_BUTTON_MISC;
+
+    gamepad.set_pad_in(gp_in);
 
     tuh_hid_receive_report(address, instance);
 }

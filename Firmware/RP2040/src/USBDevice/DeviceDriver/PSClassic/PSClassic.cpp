@@ -20,30 +20,36 @@ void PSClassicDevice::initialize()
 
 void PSClassicDevice::process(const uint8_t idx, Gamepad& gamepad)
 {
-    switch (gamepad.get_dpad_buttons())
+    if (!gamepad.new_pad_in())
     {
-        case Gamepad::DPad::UP:
+        return;
+    }
+
+    Gamepad::PadIn gp_in = gamepad.get_pad_in();
+    switch (gp_in.dpad)
+    {
+        case Gamepad::DPAD_UP:
             in_report_.buttons = PSClassic::Buttons::UP;
             break;
-        case Gamepad::DPad::DOWN:
+        case Gamepad::DPAD_DOWN:
             in_report_.buttons = PSClassic::Buttons::DOWN;
             break;
-        case Gamepad::DPad::LEFT:
+        case Gamepad::DPAD_LEFT:
             in_report_.buttons = PSClassic::Buttons::LEFT;
             break;
-        case Gamepad::DPad::RIGHT:
+        case Gamepad::DPAD_RIGHT:
             in_report_.buttons = PSClassic::Buttons::RIGHT;
             break;
-        case Gamepad::DPad::UP_LEFT:
+        case Gamepad::DPAD_UP_LEFT:
             in_report_.buttons = PSClassic::Buttons::UP_LEFT;
             break;
-        case Gamepad::DPad::UP_RIGHT:
+        case Gamepad::DPAD_UP_RIGHT:
             in_report_.buttons = PSClassic::Buttons::UP_RIGHT;
             break;
-        case Gamepad::DPad::DOWN_LEFT:
+        case Gamepad::DPAD_DOWN_LEFT:
             in_report_.buttons = PSClassic::Buttons::DOWN_LEFT;
             break;
-        case Gamepad::DPad::DOWN_RIGHT:
+        case Gamepad::DPAD_DOWN_RIGHT:
             in_report_.buttons = PSClassic::Buttons::DOWN_RIGHT;
             break;
         default:
@@ -51,10 +57,10 @@ void PSClassicDevice::process(const uint8_t idx, Gamepad& gamepad)
             break;
     }
 
-    int16_t joy_lx = gamepad.get_joystick_lx().int16();
-    int16_t joy_ly = gamepad.get_joystick_ly().int16(true);
-    int16_t joy_rx = gamepad.get_joystick_rx().int16();
-    int16_t joy_ry = gamepad.get_joystick_ry().int16(true);
+    int16_t joy_lx = gp_in.joystick_lx;
+    int16_t joy_ly = Scale::invert_joy(gp_in.joystick_ly);
+    int16_t joy_rx = gp_in.joystick_rx;
+    int16_t joy_ry = Scale::invert_joy(gp_in.joystick_ry);
 
     if (meets_pos_threshold(joy_lx, joy_rx))
     {
@@ -95,30 +101,25 @@ void PSClassicDevice::process(const uint8_t idx, Gamepad& gamepad)
         in_report_.buttons = PSClassic::Buttons::UP;
     }
 
-    uint16_t gamepad_buttons = gamepad.get_buttons();
-
-    if (gamepad_buttons & Gamepad::Button::A) in_report_.buttons |= PSClassic::Buttons::CROSS;
-    if (gamepad_buttons & Gamepad::Button::B) in_report_.buttons |= PSClassic::Buttons::CIRCLE;
-    if (gamepad_buttons & Gamepad::Button::X) in_report_.buttons |= PSClassic::Buttons::SQUARE;
-    if (gamepad_buttons & Gamepad::Button::Y) in_report_.buttons |= PSClassic::Buttons::TRIANGLE;
-    if (gamepad_buttons & Gamepad::Button::LB)    in_report_.buttons |= PSClassic::Buttons::L1;
-    if (gamepad_buttons & Gamepad::Button::RB)    in_report_.buttons |= PSClassic::Buttons::R1;
-    if (gamepad_buttons & Gamepad::Button::BACK)  in_report_.buttons |= PSClassic::Buttons::SELECT;
-    if (gamepad_buttons & Gamepad::Button::START) in_report_.buttons |= PSClassic::Buttons::START;
+    if (gp_in.buttons & Gamepad::BUTTON_A) in_report_.buttons |= PSClassic::Buttons::CROSS;
+    if (gp_in.buttons & Gamepad::BUTTON_B) in_report_.buttons |= PSClassic::Buttons::CIRCLE;
+    if (gp_in.buttons & Gamepad::BUTTON_X) in_report_.buttons |= PSClassic::Buttons::SQUARE;
+    if (gp_in.buttons & Gamepad::BUTTON_Y) in_report_.buttons |= PSClassic::Buttons::TRIANGLE;
+    if (gp_in.buttons & Gamepad::BUTTON_LB)    in_report_.buttons |= PSClassic::Buttons::L1;
+    if (gp_in.buttons & Gamepad::BUTTON_RB)    in_report_.buttons |= PSClassic::Buttons::R1;
+    if (gp_in.buttons & Gamepad::BUTTON_BACK)  in_report_.buttons |= PSClassic::Buttons::SELECT;
+    if (gp_in.buttons & Gamepad::BUTTON_START) in_report_.buttons |= PSClassic::Buttons::START;
     
-    if (gamepad.get_trigger_l().uint8()) in_report_.buttons |= PSClassic::Buttons::L2;
-    if (gamepad.get_trigger_r().uint8()) in_report_.buttons |= PSClassic::Buttons::R2;
+    if (gp_in.trigger_l) in_report_.buttons |= PSClassic::Buttons::L2;
+    if (gp_in.trigger_r) in_report_.buttons |= PSClassic::Buttons::R2;
 
     if (tud_suspended())
     {
         tud_remote_wakeup();
     }
-
-    if (tud_hid_n_ready(idx) &&
-        std::memcmp(&in_report_, &prev_in_report_, sizeof(PSClassic::InReport)) != 0 &&
-        tud_hid_n_report(idx, 0, reinterpret_cast<uint8_t*>(&in_report_), sizeof(PSClassic::InReport)))
+    if (tud_hid_n_ready(idx))
     {
-        std::memcpy(&prev_in_report_, &in_report_, sizeof(PSClassic::InReport));
+        tud_hid_n_report(idx, 0, reinterpret_cast<uint8_t*>(&in_report_), sizeof(PSClassic::InReport));
     }
 }
 

@@ -23,7 +23,6 @@ public:
 
 private:
     PS3::InReport in_report_;
-    PS3::InReport prev_in_report_;
     PS3::OutReport out_report_;
     PS3::BTInfo bt_info_;
     uint8_t ef_byte_;

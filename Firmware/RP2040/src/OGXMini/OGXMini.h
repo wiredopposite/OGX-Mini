@@ -8,20 +8,13 @@
 namespace OGXMini
 {
     enum class TUDStatus { INIT, DEINIT, NOCHANGE };
-    
-    struct GPCheckContext
-    {
-        bool driver_changed;
-        UserSettings& user_settings;
-    };
 
-    static constexpr int32_t FEEDBACK_DELAY_MS = 100;
+    static constexpr int32_t FEEDBACK_DELAY_MS = 150;
     static constexpr int32_t TUD_CHECK_DELAY_MS = 500;
 
     void run_program();
+    void update_tud_status(bool host_mounted);
 
-    // Callback to notify main loop of tuh mounted
-    void update_tuh_status(bool mounted) __attribute__((weak));
-}
+} // namespace OGXMini
 
 #endif // _OGX_MINI_H_

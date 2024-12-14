@@ -10,6 +10,7 @@
 
 void app_main(void) 
 {
+    // run_bluepad32();
     xTaskCreatePinnedToCore(
         run_bluepad32,
         "bp32",

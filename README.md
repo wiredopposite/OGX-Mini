@@ -7,7 +7,7 @@ Firmware for the RP2040, capable of emulating gamepads for several game consoles
 - Original Xbox
 - Playstation 3
 - Nintendo Switch (docked)
-- XInput (use [UsbdSecPatch](https://github.com/InvoxiPlayGames/UsbdSecPatch) for Xbox 360)
+- XInput (use [UsbdSecPatch](https://github.com/InvoxiPlayGames/UsbdSecPatch) for Xbox 360, or select the patch in J-Runner while flashing your NAND)
 - Playstation Classic
 
 ## Supported devices
@@ -22,12 +22,12 @@ Firmware for the RP2040, capable of emulating gamepads for several game consoles
 - Nintendo 64 Generic USB
 - Playstation Classic
 - Generic DInput
-- Generic HID (Limited)
+- Generic HID (mappings may need to be editted in the web app)
 
 Note: There are some third party controllers that can change their VID/PID, these might not work correctly.
 
 ### Wireless adapters
-- Xbox 360 PC adapter (Microsoft or clones, syncs 1 controller)
+- Xbox 360 PC adapter (Microsoft or clones)
 - 8Bitdo v1 and v2 Bluetooth adapters (set to XInput mode)
 - Most wireless adapters that present themselves as Switch/XInput/PlayStation controllers should work
 
@@ -40,34 +40,35 @@ Note: Bluetooth functionality is in early testing, some may have quirks.
 - Switch Pro
 - Steam
 - Stadia
-Please visit [this page](https://bluepad32.readthedocs.io/en/latest/supported_gamepads/) for a more comprehensive list of supported controllers.
+- And more
+Please visit [this page](https://bluepad32.readthedocs.io/en/latest/supported_gamepads/) for a more comprehensive list of supported controllers and Bluetooth pairing instructions.
 
-## Changing input mode
-By default the input mode is set to OG Xbox, you must hold a button combo for 3 seconds to change which platform you want to play on. Your chosen input mode will persist after powering off the device. 
+## Changing platforms
+By default the OGX-Mini will emulate an OG Xbox controller, you must hold a button combo for 3 seconds to change which platform you want to play on. Your chosen mode will persist after powering off the device. 
 
 Start = Plus (Switch) = Options (Dualsense/DS4)
 
 - XInput
-    - Start + Dpad Up 
+    Start + Dpad Up 
 - Original Xbox
-    - Start + Dpad Right
+    Start + Dpad Right
 - Original Xbox Steel Battalion
-    - Start + Dpad Right + Right Bumper
+    Start + Dpad Right + Right Bumper
 - Original Xbox DVD Remote
-    - Start + Dpad Right + Left Bumper
+    Start + Dpad Right + Left Bumper
 - Switch
-    - Start + Dpad Down
+    Start + Dpad Down
 - PlayStation 3
-    - Start + Dpad Left
+    Start + Dpad Left
 - PlayStation Classic
-    - Start + A (Cross for PlayStation and B for Switch gamepads)
+    Start + A (Cross for PlayStation and B for Switch gamepads)
 - Web Application Mode
-    - Start + Left Bumper + Right Bumper
+    Start + Left Bumper + Right Bumper
 
-After a new mode is stored, the RP2040 will reset itself so you don't need to unplug it. 
+After a new mode is stored, the RP2040 will reset itself so you don't need to unplug it.
 
 ## Features new to v1.0.0
-- Web application for configuring deadzones and buttons mappings, supports up to 8 saved configurations.
+- Web application for configuring deadzones and buttons mappings, supports up to 8 saved profiles.
 - Bluetooth functionality for the Pico W and ESP32 (in combination with an RP2040).
 - 4 channel functionality, connect 4 Picos via I2C and use your Xbox 360 wireless adapter.
 - Delayed USB mount until a controller is plugged in, useful for internal installation. 
@@ -76,6 +77,21 @@ After a new mode is stored, the RP2040 will reset itself so you don't need to un
 - Steel Battalion controller emulation with a wireless Xbox 360 chatpad.
 - Xbox DVD dongle emulation, you must provide or dump your own firmware, see the Tools directory.
 - Analog button support on OG Xbox and PS3.
+- RGB LED support for RP2040-Zero and Adafruit Feather boards.
+
+## Planned additions
+- Bluetooth web application
+- Deadzone scaling
+- Anti-deadzone settings
+- More accurate report parser for unknown HID controllers
+- Hardware design for internal OG Xbox install
+- Hardware design for 4 channel adapter
+- Wired Xbox 360 chatpad support
+- Wired Xbox One chatpad support
+- Switch (as input) rumble support
+- OG Xbox communicator support (in some form, will probably require custom hardware)
+- Generic bluetooth dongle support
+- Removal of some abstraction between TinyUSB class drivers and the rest of the app for decreased memory usage and (possible) speed improvement
 
 ## Hardware
 For Pi Pico, RP2040-Zero, 4 channel, and ESP32 configurations, please see the hardware folder for diagrams.
@@ -89,9 +105,22 @@ If you would like a prebuilt unit, you can purchase one, with cable and Xbox ada
 ## Adding supported controllers
 If your third party controller isn't working, but the original version is listed above, send me the device's VID and PID and I'll add it so it's recognized properly.
 
-## Compiling
-You can compile this for different boards with CMake arguments while configuring the project.
+## Build
+### RP2040
+You can compile this for different boards with the CMake argument ```OGXM_BOARD``` while configuring the project. The options are:
+```PI_PICO``` ```RP_ZERO``` ```ADA_FEATHER``` ```PI_PICOW``` ```W_ESP32``` ```EXTERNAL_4CH```
+You can also set ```MAX_GAMEPADS``` which, if greater than one, will only support DInput (PS3) and Switch.
 
-Choosing OGXM_PI_PICO will set the D+ and D- host pins to GPIO 0 and 1. 
+You'll need CMake, Ninja and the GCC ARM toolchain installed. Here's an example on Windows:
+```
+git clone --recursive https://github.com/wiredopposite/OGX-Mini.git
+cd OGX-Mini/Firmware/RP2040
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DOGXM_BOARD=PI_PICOW -DMAX_GAMEPADS=1
+cmake --build build
+```
+Or just install the GCC ARM toolchain and use the CMake Tools extension in VSCode.
 
-You can also choose OGXM_RPZERO_INTERPOSER for the RP2040-Zero and that will set D+ and D- to GPIO 10 and 11, so connecting a USB port is easier. You can still use the Pi Pico firmware on the RP2040-Zero (the other way around has not been tested though).
+CMake scripts will patch some files in TinyUSB, Bluepad32 and BTStack. If the patches fail, it's because of a text encoding issue, so open each .diff file in ```OGX-Mini/Firmware/external/patches``` in Notepad++. At the top of the window, click Encoding > UTF-8 and save. They should work after that. 
+
+### ESP32
+You will need ESP-IDF v5.1 and esptools installed. If you use VSCode you can install the ESP-IDF extension and configure the project for v5.1, it'll download everything for you and then you just click the build button at the bottom of the window.

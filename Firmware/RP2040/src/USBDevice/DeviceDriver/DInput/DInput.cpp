@@ -18,16 +18,14 @@ bool DInputDevice::control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_r
 
 void DInputDevice::initialize() 
 {
-    std::memset(&in_report_, 0, sizeof(DInput::InReport));
-    in_report_.dpad = DInput::DPad::CENTER;
-    in_report_.joystick_lx = DInput::AXIS_MID;
-    in_report_.joystick_ly = DInput::AXIS_MID;
-    in_report_.joystick_rx = DInput::AXIS_MID;
-    in_report_.joystick_ry = DInput::AXIS_MID;
-
-    for (auto& prev_in_report : prev_in_reports_)
+    for (auto& in_report : in_reports_)
     {
-        std::memcpy(&prev_in_report, &in_report_, sizeof(DInput::InReport));
+        std::memset(&in_report, 0, sizeof(DInput::InReport));
+        in_report.dpad = DInput::DPad::CENTER;
+        in_report.joystick_lx = DInput::AXIS_MID;
+        in_report.joystick_ly = DInput::AXIS_MID;
+        in_report.joystick_rx = DInput::AXIS_MID;
+        in_report.joystick_ry = DInput::AXIS_MID;
     }
 
 	class_driver_ = {
@@ -45,95 +43,102 @@ void DInputDevice::initialize()
 
 void DInputDevice::process(const uint8_t idx, Gamepad& gamepad)
 {
-    switch (gamepad.get_dpad_buttons())
+    if (!gamepad.new_pad_in())
     {
-        case Gamepad::DPad::UP:
-            in_report_.dpad = DInput::DPad::UP;
+        return;
+    }
+    Gamepad::PadIn gp_in = gamepad.get_pad_in();
+    DInput::InReport& in_report = in_reports_[idx];
+
+    switch (gp_in.dpad)
+    {
+        case Gamepad::DPAD_UP:
+            in_report.dpad = DInput::DPad::UP;
             break;
-        case Gamepad::DPad::DOWN:
-            in_report_.dpad = DInput::DPad::DOWN;
+        case Gamepad::DPAD_DOWN:
+            in_report.dpad = DInput::DPad::DOWN;
             break;
-        case Gamepad::DPad::LEFT:
-            in_report_.dpad = DInput::DPad::LEFT;
+        case Gamepad::DPAD_LEFT:
+            in_report.dpad = DInput::DPad::LEFT;
             break;
-        case Gamepad::DPad::RIGHT:
-            in_report_.dpad = DInput::DPad::RIGHT;
+        case Gamepad::DPAD_RIGHT:
+            in_report.dpad = DInput::DPad::RIGHT;
             break;
-        case Gamepad::DPad::UP_LEFT:
-            in_report_.dpad = DInput::DPad::UP_LEFT;
+        case Gamepad::DPAD_UP_LEFT:
+            in_report.dpad = DInput::DPad::UP_LEFT;
             break;
-        case Gamepad::DPad::UP_RIGHT:
-            in_report_.dpad = DInput::DPad::UP_RIGHT;
+        case Gamepad::DPAD_UP_RIGHT:
+            in_report.dpad = DInput::DPad::UP_RIGHT;
             break;
-        case Gamepad::DPad::DOWN_LEFT:
-            in_report_.dpad = DInput::DPad::DOWN_LEFT;
+        case Gamepad::DPAD_DOWN_LEFT:
+            in_report.dpad = DInput::DPad::DOWN_LEFT;
             break;
-        case Gamepad::DPad::DOWN_RIGHT:
-            in_report_.dpad = DInput::DPad::DOWN_RIGHT;
+        case Gamepad::DPAD_DOWN_RIGHT:
+            in_report.dpad = DInput::DPad::DOWN_RIGHT;
             break;
         default:
-            in_report_.dpad = DInput::DPad::CENTER;
+            in_report.dpad = DInput::DPad::CENTER;
             break;
     }
 
-    std::memset(in_report_.buttons, 0, sizeof(in_report_.buttons));
+    std::memset(in_report.buttons, 0, sizeof(in_report.buttons));
 
-    uint16_t gamepad_buttons = gamepad.get_buttons();
+    if (gp_in.buttons & Gamepad::BUTTON_A)   in_report.buttons[0] |= DInput::Buttons0::CROSS;
+    if (gp_in.buttons & Gamepad::BUTTON_B)   in_report.buttons[0] |= DInput::Buttons0::CIRCLE;
+    if (gp_in.buttons & Gamepad::BUTTON_X)   in_report.buttons[0] |= DInput::Buttons0::SQUARE;
+    if (gp_in.buttons & Gamepad::BUTTON_Y)   in_report.buttons[0] |= DInput::Buttons0::TRIANGLE;
+    if (gp_in.buttons & Gamepad::BUTTON_LB)  in_report.buttons[0] |= DInput::Buttons0::L1;
+    if (gp_in.buttons & Gamepad::BUTTON_RB)  in_report.buttons[0] |= DInput::Buttons0::R1;
 
-    if (gamepad_buttons & Gamepad::Button::A)   in_report_.buttons[0] |= DInput::Buttons0::CROSS;
-    if (gamepad_buttons & Gamepad::Button::B)   in_report_.buttons[0] |= DInput::Buttons0::CIRCLE;
-    if (gamepad_buttons & Gamepad::Button::X)   in_report_.buttons[0] |= DInput::Buttons0::SQUARE;
-    if (gamepad_buttons & Gamepad::Button::Y)   in_report_.buttons[0] |= DInput::Buttons0::TRIANGLE;
-    if (gamepad_buttons & Gamepad::Button::LB)  in_report_.buttons[0] |= DInput::Buttons0::L1;
-    if (gamepad_buttons & Gamepad::Button::RB)  in_report_.buttons[0] |= DInput::Buttons0::R1;
-
-    if (gamepad_buttons & Gamepad::Button::L3)    in_report_.buttons[1] |= DInput::Buttons1::L3;
-    if (gamepad_buttons & Gamepad::Button::R3)    in_report_.buttons[1] |= DInput::Buttons1::R3;
-    if (gamepad_buttons & Gamepad::Button::BACK)  in_report_.buttons[1] |= DInput::Buttons1::SELECT;
-    if (gamepad_buttons & Gamepad::Button::START) in_report_.buttons[1] |= DInput::Buttons1::START;
-    if (gamepad_buttons & Gamepad::Button::SYS)   in_report_.buttons[1] |= DInput::Buttons1::PS;
-    if (gamepad_buttons & Gamepad::Button::MISC)  in_report_.buttons[1] |= DInput::Buttons1::TP;
+    if (gp_in.buttons & Gamepad::BUTTON_L3)    in_report.buttons[1] |= DInput::Buttons1::L3;
+    if (gp_in.buttons & Gamepad::BUTTON_R3)    in_report.buttons[1] |= DInput::Buttons1::R3;
+    if (gp_in.buttons & Gamepad::BUTTON_BACK)  in_report.buttons[1] |= DInput::Buttons1::SELECT;
+    if (gp_in.buttons & Gamepad::BUTTON_START) in_report.buttons[1] |= DInput::Buttons1::START;
+    if (gp_in.buttons & Gamepad::BUTTON_SYS)   in_report.buttons[1] |= DInput::Buttons1::PS;
+    if (gp_in.buttons & Gamepad::BUTTON_MISC)  in_report.buttons[1] |= DInput::Buttons1::TP;
 
     if (gamepad.analog_enabled())
     {
-        in_report_.up_axis = gamepad.get_analog_up();
-        in_report_.down_axis = gamepad.get_analog_down();
-        in_report_.right_axis = gamepad.get_analog_right();
-        in_report_.left_axis = gamepad.get_analog_left();
+        in_report.up_axis    = gp_in.analog[Gamepad::ANALOG_OFF_UP];
+        in_report.down_axis  = gp_in.analog[Gamepad::ANALOG_OFF_DOWN];
+        in_report.right_axis = gp_in.analog[Gamepad::ANALOG_OFF_RIGHT];
+        in_report.left_axis  = gp_in.analog[Gamepad::ANALOG_OFF_LEFT];
 
-        in_report_.triangle_axis = gamepad.get_analog_y();
-        in_report_.circle_axis = gamepad.get_analog_x();
-        in_report_.cross_axis = gamepad.get_analog_b();
-        in_report_.square_axis = gamepad.get_analog_a();
+        in_report.triangle_axis = gp_in.analog[Gamepad::ANALOG_OFF_Y];
+        in_report.circle_axis   = gp_in.analog[Gamepad::ANALOG_OFF_X];
+        in_report.cross_axis    = gp_in.analog[Gamepad::ANALOG_OFF_B];
+        in_report.square_axis   = gp_in.analog[Gamepad::ANALOG_OFF_A];
 
-        in_report_.r1_axis = gamepad.get_analog_rb();
-        in_report_.l1_axis = gamepad.get_analog_lb();
+        in_report.r1_axis = gp_in.analog[Gamepad::ANALOG_OFF_RB];
+        in_report.l1_axis = gp_in.analog[Gamepad::ANALOG_OFF_LB];
     }
 
-    in_report_.joystick_lx = gamepad.get_joystick_lx().uint8();
-    in_report_.joystick_ly = gamepad.get_joystick_ly().uint8();
-    in_report_.joystick_rx = gamepad.get_joystick_rx().uint8();
-    in_report_.joystick_ry = gamepad.get_joystick_ry().uint8();
+    in_report.joystick_lx = Scale::int16_to_uint8(gp_in.joystick_lx);
+    in_report.joystick_ly = Scale::int16_to_uint8(gp_in.joystick_ly);
+    in_report.joystick_rx = Scale::int16_to_uint8(gp_in.joystick_rx);
+    in_report.joystick_ry = Scale::int16_to_uint8(gp_in.joystick_ry);
 
-    in_report_.l2_axis = gamepad.get_trigger_l().uint8();
-    in_report_.r2_axis = gamepad.get_trigger_r().uint8();
+    in_report.l2_axis = gp_in.trigger_l;
+    in_report.r2_axis = gp_in.trigger_r;
 
     if (tud_suspended())
     {
         tud_remote_wakeup();
     }
 
-    if (tud_hid_n_ready(idx) &&
-        // std::memcmp(&in_report_, &prev_in_reports_[idx], sizeof(DInput::InReport)) != 0 && 
-        tud_hid_n_report(idx, 0, reinterpret_cast<void*>(&in_report_), sizeof(DInput::InReport)))
+    if (tud_hid_n_ready(idx))
     {
-        std::memcpy(&prev_in_reports_[idx], &in_report_, sizeof(DInput::InReport));
+        tud_hid_n_report(idx, 0, reinterpret_cast<void*>(&in_report), sizeof(DInput::InReport));
     }
 }
 
 uint16_t DInputDevice::get_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t report_type, uint8_t *buffer, uint16_t reqlen)
 {
-    std::memcpy(buffer, &in_report_, sizeof(DInput::InReport));
+    if (report_type != HID_REPORT_TYPE_INPUT || itf >= MAX_GAMEPADS)
+    {
+        return 0;
+    }
+    std::memcpy(buffer, &in_reports_[itf], sizeof(DInput::InReport));
     return sizeof(DInput::InReport);
 }
 

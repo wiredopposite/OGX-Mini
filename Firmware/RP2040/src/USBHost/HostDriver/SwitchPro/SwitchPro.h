@@ -17,24 +17,26 @@ public:
     bool send_feedback(Gamepad& gamepad, uint8_t address, uint8_t instance) override;
 
 private:
-    struct State
+    enum class InitState
     {
-        bool handshake_sent{false};
-        bool timeout_disabled{false};
-        bool full_report_enabled{false};
-        bool led_set{false};
-        bool led_home_set{false};
-        bool imu_enabled{false};
-        bool commands_sent{false};
-        uint8_t sequence_counter{0};        
+        HANDSHAKE,
+        TIMEOUT,
+        FULL_REPORT,
+        LED,
+        LED_HOME,
+        IMU,
+        DONE
     };
 
-    State state_{};
+    InitState init_state_{InitState::HANDSHAKE};
+    uint8_t sequence_counter_{0};
+
     SwitchPro::InReport prev_in_report_{};
     SwitchPro::OutReport out_report_{};
 
-    bool send_handshake(uint8_t address, uint8_t instance);
-    bool disable_timeout(uint8_t address, uint8_t instance);
+    void init_switch_host(Gamepad& gamepad, uint8_t address, uint8_t instance);
+    // bool send_handshake(uint8_t address, uint8_t instance);
+    // bool disable_timeout(uint8_t address, uint8_t instance);
     uint8_t get_output_sequence_counter();
 
     static inline int16_t normalize_axis(uint16_t value)

@@ -39,9 +39,9 @@ private:
     XboxOG::SB::InReport prev_in_report_;
     XboxOG::SB::OutReport out_report_;
 
-    static inline bool chatpad_pressed(const Gamepad::Chatpad& chatpad_array, const uint16_t keycode)
+    static inline bool chatpad_pressed(const uint8_t* chatpad_array, const uint16_t keycode)
     {
-        if (std::accumulate(chatpad_array.data(), chatpad_array.data() + sizeof(Gamepad::Chatpad), 0) == 0) 
+        if (std::accumulate(chatpad_array, chatpad_array + 3, 0) == 0) 
         {
             return false;
         }

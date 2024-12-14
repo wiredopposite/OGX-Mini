@@ -28,7 +28,7 @@ public:
     };
 
     virtual void initialize() = 0;
-    virtual void process(const uint8_t idx, Gamepad& gamepad) = 0;
+    virtual void process(const uint8_t idx, Gamepad& gamepad)  = 0;
     virtual uint16_t get_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t report_type, uint8_t* buffer, uint16_t req_len) = 0;
     virtual void set_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t report_type, uint8_t const* buffer, uint16_t buffer_size) = 0;
     virtual bool vendor_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_request_t const* request) = 0;

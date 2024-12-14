@@ -41,13 +41,16 @@ void I2CDriver::run_task()
                 continue;
             }
 
-            report_in = bluepad32::get_report_in(i);
-            if (i2c_write_blocking(MULTI_SLAVE ? (i + 1) : 0x01, reinterpret_cast<const uint8_t*>(&report_in), sizeof(ReportIn)) != ESP_OK)
+            if (bluepad32::new_report_in(i))
             {
-                continue;
+                report_in = bluepad32::get_report_in(i);
+                if (i2c_write_blocking(MULTI_SLAVE ? (i + 1) : 0x01, reinterpret_cast<const uint8_t*>(&report_in), sizeof(ReportIn)) != ESP_OK)
+                {
+                    continue;
+                }
             }
 
-            vTaskDelay(1);
+            // vTaskDelay(1);
 
             if (i2c_read_blocking(MULTI_SLAVE ? (i + 1) : 0x01, reinterpret_cast<uint8_t*>(&report_out), sizeof(ReportOut)) != ESP_OK)
             {

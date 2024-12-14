@@ -29,7 +29,6 @@ private:
     static constexpr int16_t JOY_POS_45_THRESHOLD = JOY_POS_THRESHOLD * 2;
     static constexpr int16_t JOY_NEG_45_THRESHOLD = JOY_NEG_THRESHOLD * 2;
 
-    PSClassic::InReport prev_in_report_{0};
     PSClassic::InReport in_report_{0};
 
     inline bool meets_pos_threshold(int16_t joy_l, int16_t joy_r) { return (joy_l >= JOY_POS_THRESHOLD) || (joy_r >= JOY_POS_THRESHOLD); }

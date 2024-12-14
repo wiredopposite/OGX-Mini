@@ -1,3 +1,5 @@
+/* This is too messy I'll clean it up at some point */
+
 #include <pico/stdlib.h>
 #include <pico/mutex.h>
 #include <hardware/gpio.h>
@@ -48,8 +50,6 @@ void init_gpio()
         gpio_set_dir(RGB_PWR_PIN, GPIO_OUT);
         gpio_put(RGB_PWR_PIN, 1);
     #endif
-
-    set_led(false);
 
 #elif defined(CONFIG_EN_BLUETOOTH)
     //

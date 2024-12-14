@@ -4,6 +4,7 @@
 
 #include <cstring>
 
+#include "Board/board_api.h"
 #include "USBHost/HostDriver/XInput/tuh_xinput/tuh_xinput.h"
 #include "USBHost/HostDriver/XInput/tuh_xinput/tuh_xinput_cmd.h"
 
@@ -11,76 +12,93 @@ namespace tuh_xinput {
 
 static constexpr uint8_t MAX_INTERFACES = CFG_TUH_XINPUT * 2;
 static constexpr uint8_t MAX_DEVICES = CFG_TUH_DEVICE_MAX;
-static constexpr uint32_t KEEPALIVE_MS = 1000;
+static constexpr uint8_t INVALID_IDX = 0xFF;
 
 struct Device
 {
-    std::array<Interface, MAX_INTERFACES> interfaces;
-
-    Device()
-    {
-        interfaces.fill(Interface());
-    }
+    std::array<Interface, MAX_INTERFACES> interfaces{Interface()};
 };
 
 std::array<Device, MAX_DEVICES> devices_;
 
-TU_ATTR_ALWAYS_INLINE static inline Device* get_device_by_addr(uint8_t dev_addr)
-{
-    TU_VERIFY((dev_addr <= devices_.size() && dev_addr > 0), nullptr);
-    return &devices_[dev_addr - 1];
-}
+// TU_ATTR_ALWAYS_INLINE static inline Device* get_device_by_addr(uint8_t dev_addr)
+// {
+//     TU_VERIFY((dev_addr <= devices_.size() && dev_addr > 0), nullptr);
+//     return &devices_[dev_addr - 1];
+// }
 
-TU_ATTR_ALWAYS_INLINE static inline Interface* get_itf_by_instance(uint8_t dev_addr, uint8_t instance)
-{
-    Device* device = get_device_by_addr(dev_addr);
-    TU_VERIFY(device != nullptr, nullptr);
-    TU_VERIFY(instance < device->interfaces.size(), nullptr);
-    return &device->interfaces[instance];
-}
+// TU_ATTR_ALWAYS_INLINE static inline Interface* get_itf_by_instance(uint8_t dev_addr, uint8_t instance)
+// {
+//     Device* device = get_device_by_addr(dev_addr);
+//     TU_VERIFY(device != nullptr, nullptr);
+//     TU_VERIFY(instance < device->interfaces.size(), nullptr);
+//     return &device->interfaces[instance];
+// }
 
-TU_ATTR_ALWAYS_INLINE static inline Interface* get_free_interface(uint8_t dev_addr)
-{
-    Device* device = get_device_by_addr(dev_addr);
-    TU_VERIFY(device != nullptr, nullptr);
+// TU_ATTR_ALWAYS_INLINE static inline Interface* get_free_interface(uint8_t dev_addr)
+// {
+//     Device* device = get_device_by_addr(dev_addr);
+//     TU_VERIFY(device != nullptr, nullptr);
 
-    for (auto& interface : device->interfaces)
-    {
-        if (interface.itf_num == 0xFF)
-        {
-            return &interface;
-        }
-    }
-    return nullptr;
+//     for (auto& interface : device->interfaces)
+//     {
+//         if (interface.itf_num == 0xFF)
+//         {
+//             return &interface;
+//         }
+//     }
+//     return nullptr;
+// }
+
+TU_ATTR_ALWAYS_INLINE static inline uint8_t get_device_idx_by_addr(uint8_t dev_addr)
+{
+    TU_VERIFY((dev_addr <= devices_.size() && dev_addr > 0), INVALID_IDX);
+    return dev_addr - 1;
 }
 
 TU_ATTR_ALWAYS_INLINE static inline uint8_t get_instance_by_itf_num(uint8_t dev_addr, uint8_t itf_num)
 {
-    Device* device = get_device_by_addr(dev_addr);
-    TU_VERIFY(device != nullptr, 0xFF);
+    uint8_t dev_idx = get_device_idx_by_addr(dev_addr);
+    TU_VERIFY(dev_idx != INVALID_IDX, INVALID_IDX);
 
-    for (uint8_t i = 0; i < device->interfaces.size(); ++i)
+    for (uint8_t i = 0; i < devices_[dev_idx].interfaces.size(); ++i)
     {
-        if (device->interfaces[i].itf_num == itf_num)
+        if (devices_[dev_idx].interfaces[i].itf_num == itf_num)
         {
             return i;
         }
     }
-    return 0xFF;
+    return INVALID_IDX;
 }
 
 TU_ATTR_ALWAYS_INLINE static inline uint8_t get_instance_by_ep(uint8_t dev_addr, uint8_t ep_addr)
 {
-    Device* device = get_device_by_addr(dev_addr);
-    TU_VERIFY(device != nullptr, 0xFF);
-    for (uint8_t i = 0; i < device->interfaces.size(); ++i)
+    uint8_t dev_idx = get_device_idx_by_addr(dev_addr);
+    TU_VERIFY(dev_idx != INVALID_IDX, INVALID_IDX);
+
+    for (uint8_t i = 0; i < devices_[dev_idx].interfaces.size(); ++i)
     {
-        if (device->interfaces[i].ep_in == ep_addr || device->interfaces[i].ep_out == ep_addr)
+        if (devices_[dev_idx].interfaces[i].ep_in == ep_addr || devices_[dev_idx].interfaces[i].ep_out == ep_addr)
         {
             return i;
         }
     }
-    return 0xFF;
+    return INVALID_IDX;
+}
+
+TU_ATTR_ALWAYS_INLINE static inline uint8_t get_free_itf_idx(uint8_t dev_addr)
+{
+    uint8_t dev_idx = get_device_idx_by_addr(dev_addr);
+    TU_VERIFY(dev_idx != INVALID_IDX, INVALID_IDX);
+
+    for (uint8_t i = 0; i < devices_[dev_idx].interfaces.size(); ++i)
+    {
+        if (devices_[dev_idx].interfaces[i].itf_num == INVALID_IDX)
+        {
+            return i;
+        }
+    }
+    return INVALID_IDX;
 }
 
 static void wait_for_tx_complete(uint8_t dev_addr, uint8_t ep_addr)
@@ -125,40 +143,44 @@ static void xbox360w_chatpad_init(Interface *interface, uint8_t address, uint8_t
     interface->chatpad_stage = ChatpadStage::KEEPALIVE_1;
 }
 
-static bool xbox360_chatpad_keepalive_cb(repeating_timer_t* rt)
-{    
-    Interface* interface = static_cast<Interface*>(rt->user_data);
-    uint8_t instance = get_instance_by_ep(interface->dev_addr, interface->ep_in);
+bool xbox360_chatpad_keepalive(uint8_t address, uint8_t instance)
+{   
+    uint8_t dev_idx = get_device_idx_by_addr(address);
+    uint8_t itf_idx = get_instance_by_itf_num(address, instance);
+    TU_VERIFY(dev_idx != INVALID_IDX && itf_idx != INVALID_IDX, false);
 
-    switch (interface->chatpad_stage)
+    Interface& interface = devices_[dev_idx].interfaces[itf_idx];
+    TU_VERIFY(interface.connected, false);
+
+    switch (interface.chatpad_stage)
     {
         case ChatpadStage::KEEPALIVE_1:
-            switch (interface->dev_type)
+            switch (interface.dev_type)
             {
                 case DevType::XBOX360:
-                    send_ctrl_xfer(interface->dev_addr, &Xbox360::Chatpad::KEEPALIVE_1, nullptr, nullptr, 0);
+                    send_ctrl_xfer(interface.dev_addr, &Xbox360::Chatpad::KEEPALIVE_1, nullptr, nullptr, 0);
                     break;
                 case DevType::XBOX360W:
-                    send_report(interface->dev_addr, instance, Xbox360W::Chatpad::KEEPALIVE_1, sizeof(Xbox360W::Chatpad::KEEPALIVE_1));
+                    send_report(interface.dev_addr, instance, Xbox360W::Chatpad::KEEPALIVE_1, sizeof(Xbox360W::Chatpad::KEEPALIVE_1));
                     break;
                 default:
                     break;
             }
-            interface->chatpad_stage = ChatpadStage::KEEPALIVE_2;
+            interface.chatpad_stage = ChatpadStage::KEEPALIVE_2;
             break;
         case ChatpadStage::KEEPALIVE_2:
-            switch (interface->dev_type)
+            switch (interface.dev_type)
             {
                 case DevType::XBOX360:
-                    send_ctrl_xfer(interface->dev_addr, &Xbox360::Chatpad::KEEPALIVE_2, nullptr, nullptr, 0);
+                    send_ctrl_xfer(interface.dev_addr, &Xbox360::Chatpad::KEEPALIVE_2, nullptr, nullptr, 0);
                     break;
                 case DevType::XBOX360W:
-                    send_report(interface->dev_addr, instance, Xbox360W::Chatpad::KEEPALIVE_2, sizeof(Xbox360W::Chatpad::KEEPALIVE_2));
+                    send_report(interface.dev_addr, instance, Xbox360W::Chatpad::KEEPALIVE_2, sizeof(Xbox360W::Chatpad::KEEPALIVE_2));
                     break;
                 default:
                     break;
             }
-            interface->chatpad_stage = ChatpadStage::KEEPALIVE_1;
+            interface.chatpad_stage = ChatpadStage::KEEPALIVE_1;
             break;
     }
     return true;
@@ -194,16 +216,14 @@ static void xboxone_init(Interface *interface, uint8_t dev_addr, uint8_t instanc
 
 static bool init()
 {
+    TU_LOG2("XInput Init\r\n");
     devices_.fill(Device());
-    for (auto& device : devices_)
-    {
-        device.interfaces.fill(Interface());
-    }
     return true;
 } 
 
 static bool open(uint8_t rhport, uint8_t dev_addr, tusb_desc_interface_t const *desc_itf, uint16_t max_len)
 {
+    TU_LOG2("XInput Open\r\n");
     TU_VERIFY(desc_itf->bNumEndpoints > 0);
 
     DevType dev_type = DevType::UNKNOWN;
@@ -232,8 +252,11 @@ static bool open(uint8_t rhport, uint8_t dev_addr, tusb_desc_interface_t const *
 
     TU_VERIFY(dev_type != DevType::UNKNOWN);
 
-    Interface* interface = get_free_interface(dev_addr);
-    TU_VERIFY(interface != nullptr);
+    uint8_t dev_idx = get_device_idx_by_addr(dev_addr);
+    uint8_t itf_idx = get_free_itf_idx(dev_addr);
+    TU_VERIFY(itf_idx != INVALID_IDX && dev_idx != INVALID_IDX);
+
+    Interface& interface = devices_[dev_idx].interfaces[itf_idx];
 
     const uint8_t *p_desc = reinterpret_cast<const uint8_t*>(desc_itf);
     int endpoint = 0;
@@ -252,20 +275,20 @@ static bool open(uint8_t rhport, uint8_t dev_addr, tusb_desc_interface_t const *
         TU_ASSERT(TUSB_DESC_ENDPOINT == desc_ep->bDescriptorType);
         TU_ASSERT(tuh_edpt_open(dev_addr, desc_ep));
 
-        interface->itf_num = desc_itf->bInterfaceNumber;
-        interface->itf_type = itf_type;
-        interface->dev_type = dev_type;
-        interface->dev_addr = dev_addr;
+        interface.itf_num = desc_itf->bInterfaceNumber;
+        interface.itf_type = itf_type;
+        interface.dev_type = dev_type;
+        interface.dev_addr = dev_addr;
 
         if (tu_edpt_dir(desc_ep->bEndpointAddress) == TUSB_DIR_OUT)
         {
-            interface->ep_out = desc_ep->bEndpointAddress;
-            interface->ep_out_size = tu_edpt_packet_size(desc_ep);
+            interface.ep_out = desc_ep->bEndpointAddress;
+            interface.ep_out_size = tu_edpt_packet_size(desc_ep);
         }
         else
         {
-            interface->ep_in = desc_ep->bEndpointAddress;
-            interface->ep_in_size = tu_edpt_packet_size(desc_ep);
+            interface.ep_in = desc_ep->bEndpointAddress;
+            interface.ep_in_size = tu_edpt_packet_size(desc_ep);
         }
 
         endpoint++;
@@ -279,20 +302,21 @@ static bool open(uint8_t rhport, uint8_t dev_addr, tusb_desc_interface_t const *
 static bool set_config(uint8_t dev_addr, uint8_t itf_num)
 {
     uint8_t instance = get_instance_by_itf_num(dev_addr, itf_num);
-    Interface* interface = get_itf_by_instance(dev_addr, instance);
-    TU_VERIFY(interface != nullptr);
+    uint8_t dev_idx = get_device_idx_by_addr(dev_addr);
+    TU_VERIFY(instance != INVALID_IDX && dev_idx != INVALID_IDX);
+    Interface& interface = devices_[dev_idx].interfaces[instance];
 
-    interface->connected = true;
+    interface.connected = true;
 
-    switch (interface->dev_type)
+    switch (interface.dev_type)
     {
         case DevType::XBOX360W:
-            interface->connected = false;
+            interface.connected = false;
             send_report(dev_addr, instance, Xbox360W::INQUIRE_PRESENT, sizeof(Xbox360W::INQUIRE_PRESENT));
-            wait_for_tx_complete(dev_addr, interface->ep_out);
+            wait_for_tx_complete(dev_addr, interface.ep_out);
             break;
         case DevType::XBOXONE:
-            xboxone_init(interface, dev_addr, instance);
+            xboxone_init(&interface, dev_addr, instance);
             break;
         default:
             break;
@@ -300,38 +324,40 @@ static bool set_config(uint8_t dev_addr, uint8_t itf_num)
 
     if (mount_cb)
     {
-        mount_cb(dev_addr, instance, interface);
+        mount_cb(dev_addr, instance, &interface);
     }
 
-    usbh_driver_set_config_complete(dev_addr, interface->itf_num);
+    usbh_driver_set_config_complete(dev_addr, interface.itf_num);
     return true;
 }
 
 static bool xfer_cb(uint8_t dev_addr, uint8_t ep_addr, xfer_result_t result, uint32_t xferred_bytes)
 {
     const uint8_t dir = tu_edpt_dir(ep_addr);
-    const uint8_t instance = get_instance_by_ep(dev_addr, ep_addr);
-    Interface* interface = get_itf_by_instance(dev_addr, instance);
-    TU_VERIFY(interface != nullptr);
+    uint8_t dev_idx = get_device_idx_by_addr(dev_addr);
+    uint8_t instance = get_instance_by_ep(dev_addr, ep_addr);
+    TU_VERIFY(dev_idx != INVALID_IDX && instance != INVALID_IDX);
+
+    Interface& interface = devices_[dev_idx].interfaces[instance];
 
     if (result != XFER_RESULT_SUCCESS)
     {
         if (dir == TUSB_DIR_IN)
         {
-            report_received_cb(dev_addr, instance, interface->ep_in_buffer.data(), static_cast<uint16_t>(interface->ep_in_size));
+            report_received_cb(dev_addr, instance, interface.ep_in_buffer.data(), static_cast<uint16_t>(interface.ep_in_size));
         }
         else if (report_sent_cb)
         {
-            report_sent_cb(dev_addr, instance, interface->ep_out_buffer.data(), static_cast<uint16_t>(interface->ep_out_size));
+            report_sent_cb(dev_addr, instance, interface.ep_out_buffer.data(), static_cast<uint16_t>(interface.ep_out_size));
         }
     }
 
     if (dir == TUSB_DIR_IN)
     {
         bool new_pad_data = false;
-        uint8_t* in_buffer = interface->ep_in_buffer.data();
+        uint8_t* in_buffer = interface.ep_in_buffer.data();
 
-        switch (interface->dev_type)
+        switch (interface.dev_type)
         {
             case DevType::XBOX360:
                 if (in_buffer[1] == 0x14)
@@ -342,22 +368,21 @@ static bool xfer_cb(uint8_t dev_addr, uint8_t ep_addr, xfer_result_t result, uin
             case DevType::XBOX360W:
                 if (in_buffer[0] & 0x08)
                 {
-                    if (in_buffer[1] != 0x00 && !interface->connected)
+                    if (in_buffer[1] != 0x00 && !interface.connected)
                     {
-                        interface->connected = true;
-                        xbox360w_chatpad_init(interface, dev_addr, instance);
+                        interface.connected = true;
+                        // xbox360w_chatpad_init(interface, dev_addr, instance);
                         send_report(dev_addr, instance, Xbox360W::RUMBLE_ENABLE, sizeof(Xbox360W::RUMBLE_ENABLE));
-                        add_repeating_timer_ms(KEEPALIVE_MS, xbox360_chatpad_keepalive_cb, interface, &interface->keepalive_timer);
                         if (xbox360w_connect_cb)
                         {
                             xbox360w_connect_cb(dev_addr, instance);
                         }
                     }
-                    else if (in_buffer[1] == 0x00 && interface->connected)
+                    else if (in_buffer[1] == 0x00 && interface.connected)
                     {
-                        interface->connected = false;
-                        interface->chatpad_inited = false;
-                        cancel_repeating_timer(&interface->keepalive_timer);
+                        interface.connected = false;
+                        interface.chatpad_inited = false;
+
                         if (xbox360w_disconnect_cb)
                         {
                             xbox360w_disconnect_cb(dev_addr, instance);
@@ -388,7 +413,7 @@ static bool xfer_cb(uint8_t dev_addr, uint8_t ep_addr, xfer_result_t result, uin
                         }
                         break;
                     case XboxOne::GIP_CMD_ANNOUNCE:
-                        xboxone_init(interface, dev_addr, instance);
+                        xboxone_init(&interface, dev_addr, instance);
                         break;
                 }
                 break;
@@ -414,57 +439,70 @@ static bool xfer_cb(uint8_t dev_addr, uint8_t ep_addr, xfer_result_t result, uin
     {
         if (report_sent_cb)
         {
-            report_sent_cb(dev_addr, instance, interface->ep_out_buffer.data(), static_cast<uint16_t>(xferred_bytes));
+            report_sent_cb(dev_addr, instance, interface.ep_out_buffer.data(), static_cast<uint16_t>(xferred_bytes));
         }
     }
     return true;
 }
 
-void close(uint8_t dev_addr)
+bool deinit()
 {
-    Device* device = get_device_by_addr(dev_addr);
-    TU_VERIFY(device != nullptr, );
-
-    for (uint8_t i = 0; i < device->interfaces.size(); ++i)
-    {
-        if (device->interfaces[i].itf_num != 0xFF && unmount_cb)
-        {
-            unmount_cb(dev_addr, i, &device->interfaces[i]);
-        }
-        cancel_repeating_timer(&device->interfaces[i].keepalive_timer);
-    }
-
-    *device = Device();
+    TU_LOG2("XInput deinit\r\n");
+    return true;
 }
 
-const usbh_class_driver_t class_driver_ =
+void close(uint8_t dev_addr)
 {
-    .init       = init,
-    .open       = open,
-    .set_config = set_config,
-    .xfer_cb    = xfer_cb,
-    .close      = close
-};
+    TU_LOG2("XInput close\r\n");
+    uint8_t dev_idx = get_device_idx_by_addr(dev_addr);
+    TU_VERIFY(dev_idx != INVALID_IDX, );
+    TU_LOG2("XInput dev addr verified\r\n");
+    Device& device = devices_[dev_idx];
+
+    for (uint8_t i = 0; i < device.interfaces.size(); ++i)
+    {
+        if (device.interfaces[i].itf_num != 0xFF && unmount_cb)
+        {
+            TU_LOG2("XInput unmounting\r\n");
+            unmount_cb(dev_addr, i, &device.interfaces[i]);
+            TU_LOG2("XInput unmount\r\n");
+            device.interfaces[i].itf_num = 0xFF;
+            device.interfaces[i].connected = false;
+        }
+    }
+    // device = Device();
+}
 
 //Public API
 
 const usbh_class_driver_t* class_driver()
 {
-    return &class_driver_;
+    static const usbh_class_driver_t class_driver =
+    {
+        .init       = init,
+        .deinit     = deinit,
+        .open       = open,
+        .set_config = set_config,
+        .xfer_cb    = xfer_cb,
+        .close      = close
+    };
+    return &class_driver;
 }
 
 bool send_report(uint8_t dev_addr, uint8_t instance, const uint8_t *buffer, uint16_t len)
 {
-    Interface *interface = get_itf_by_instance(dev_addr, instance);
-    TU_VERIFY(interface != nullptr);
-    TU_ASSERT(len <= interface->ep_out_size);
-    TU_VERIFY(usbh_edpt_claim(dev_addr, interface->ep_out));
+    uint8_t dev_idx = get_device_idx_by_addr(dev_addr);
+    TU_VERIFY(dev_idx != INVALID_IDX && instance < MAX_INTERFACES, false);
 
-    std::memcpy(interface->ep_out_buffer.data(), buffer, len);
+    Interface& interface = devices_[dev_idx].interfaces[instance];
 
-    if (!usbh_edpt_xfer(dev_addr, interface->ep_out, interface->ep_out_buffer.data(), len))
+    TU_VERIFY(usbh_edpt_claim(dev_addr, interface.ep_out));
+
+    std::memcpy(interface.ep_out_buffer.data(), buffer, len);
+
+    if (!usbh_edpt_xfer(dev_addr, interface.ep_out, interface.ep_out_buffer.data(), len))
     {
-        usbh_edpt_release(dev_addr, interface->ep_out);
+        usbh_edpt_release(dev_addr, interface.ep_out);
         return false;
     }
     return true;
@@ -472,12 +510,14 @@ bool send_report(uint8_t dev_addr, uint8_t instance, const uint8_t *buffer, uint
 
 bool receive_report(uint8_t dev_addr, uint8_t instance)
 {
-    Interface* interface = get_itf_by_instance(dev_addr, instance);
-    TU_VERIFY(interface != nullptr);
+    uint8_t dev_idx = get_device_idx_by_addr(dev_addr);
+    TU_VERIFY(dev_idx != INVALID_IDX && instance < MAX_INTERFACES, false);
 
-    if (!usbh_edpt_xfer(dev_addr, interface->ep_in, interface->ep_in_buffer.data(), interface->ep_in_size))
+    Interface& interface = devices_[dev_idx].interfaces[instance];
+
+    if (!usbh_edpt_xfer(dev_addr, interface.ep_in, interface.ep_in_buffer.data(), interface.ep_in_size))
     {
-        usbh_edpt_release(dev_addr, interface->ep_in);
+        usbh_edpt_release(dev_addr, interface.ep_in);
         return false;
     }
     return true;
@@ -485,13 +525,15 @@ bool receive_report(uint8_t dev_addr, uint8_t instance)
 
 bool set_led(uint8_t dev_addr, uint8_t instance, uint8_t quadrant, bool block)
 {
-    Interface* interface = get_itf_by_instance(dev_addr, instance);
-    TU_VERIFY(interface != nullptr);
+    uint8_t dev_idx = get_device_idx_by_addr(dev_addr);
+    TU_VERIFY(dev_idx != INVALID_IDX && instance < MAX_INTERFACES, false);
+    
+    Interface& interface = devices_[dev_idx].interfaces[instance];
 
     uint8_t buffer[32];
     uint16_t len;
 
-    switch (interface->dev_type)
+    switch (interface.dev_type)
     {
         case DevType::XBOX360W:
             std::memcpy(buffer, Xbox360W::LED, sizeof(Xbox360W::LED));
@@ -510,20 +552,22 @@ bool set_led(uint8_t dev_addr, uint8_t instance, uint8_t quadrant, bool block)
     bool ret = send_report(dev_addr, instance, buffer, len);
     if (block && ret)
     {
-        wait_for_tx_complete(dev_addr, interface->ep_out);
+        wait_for_tx_complete(dev_addr, interface.ep_out);
     }
     return ret;
 }
 
 bool set_rumble(uint8_t dev_addr, uint8_t instance, uint8_t rumble_l, uint8_t rumble_r, bool block)
 {
-    Interface* interface = get_itf_by_instance(dev_addr, instance);
-    TU_VERIFY(interface != nullptr);
+    uint8_t dev_idx = get_device_idx_by_addr(dev_addr);
+    TU_VERIFY(dev_idx != INVALID_IDX && instance < MAX_INTERFACES, false);
+
+    Interface& interface = devices_[dev_idx].interfaces[instance];
 
     uint8_t buffer[32];
     uint16_t len;
 
-    switch (interface->dev_type)
+    switch (interface.dev_type)
     {
         case DevType::XBOX360W:
             std::memcpy(buffer, Xbox360W::RUMBLE, sizeof(Xbox360W::RUMBLE));
@@ -558,7 +602,7 @@ bool set_rumble(uint8_t dev_addr, uint8_t instance, uint8_t rumble_l, uint8_t ru
     bool ret = send_report(dev_addr, instance, buffer, len);
     if (block && ret)
     {
-        wait_for_tx_complete(dev_addr, interface->ep_out);
+        wait_for_tx_complete(dev_addr, interface.ep_out);
     }
     return true;
 }

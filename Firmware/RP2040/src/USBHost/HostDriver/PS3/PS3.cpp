@@ -102,46 +102,48 @@ void PS3Host::process_report(Gamepad& gamepad, uint8_t address, uint8_t instance
         return;
     }
 
-    gamepad.reset_buttons();
+    Gamepad::PadIn gp_in;   
 
-    if (in_report->buttons[0] & PS3::Buttons0::DPAD_UP)    gamepad.set_dpad_up();
-    if (in_report->buttons[0] & PS3::Buttons0::DPAD_DOWN)  gamepad.set_dpad_down();
-    if (in_report->buttons[0] & PS3::Buttons0::DPAD_LEFT)  gamepad.set_dpad_left();
-    if (in_report->buttons[0] & PS3::Buttons0::DPAD_RIGHT) gamepad.set_dpad_right();
+    if (in_report->buttons[0] & PS3::Buttons0::DPAD_UP)    gp_in.dpad |= gamepad.MAP_DPAD_UP;
+    if (in_report->buttons[0] & PS3::Buttons0::DPAD_DOWN)  gp_in.dpad |= gamepad.MAP_DPAD_DOWN;
+    if (in_report->buttons[0] & PS3::Buttons0::DPAD_LEFT)  gp_in.dpad |= gamepad.MAP_DPAD_LEFT;
+    if (in_report->buttons[0] & PS3::Buttons0::DPAD_RIGHT) gp_in.dpad |= gamepad.MAP_DPAD_RIGHT;
 
-    if (in_report->buttons[0] & PS3::Buttons0::SELECT)      gamepad.set_button_back();
-    if (in_report->buttons[0] & PS3::Buttons0::START)       gamepad.set_button_start();
-    if (in_report->buttons[0] & PS3::Buttons0::L3)          gamepad.set_button_l3();
-    if (in_report->buttons[0] & PS3::Buttons0::R3)          gamepad.set_button_r3();
-    if (in_report->buttons[1] & PS3::Buttons1::L1)          gamepad.set_button_lb();
-    if (in_report->buttons[1] & PS3::Buttons1::R1)          gamepad.set_button_rb();
-    if (in_report->buttons[1] & PS3::Buttons1::TRIANGLE)    gamepad.set_button_y();
-    if (in_report->buttons[1] & PS3::Buttons1::CIRCLE)      gamepad.set_button_b();
-    if (in_report->buttons[1] & PS3::Buttons1::CROSS)       gamepad.set_button_a();
-    if (in_report->buttons[1] & PS3::Buttons1::SQUARE)      gamepad.set_button_x(); 
-    if (in_report->buttons[2] & PS3::Buttons2::PS)          gamepad.set_button_sys();
+    if (in_report->buttons[0] & PS3::Buttons0::SELECT)      gp_in.buttons |= gamepad.MAP_BUTTON_BACK;
+    if (in_report->buttons[0] & PS3::Buttons0::START)       gp_in.buttons |= gamepad.MAP_BUTTON_START;
+    if (in_report->buttons[0] & PS3::Buttons0::L3)          gp_in.buttons |= gamepad.MAP_BUTTON_L3;
+    if (in_report->buttons[0] & PS3::Buttons0::R3)          gp_in.buttons |= gamepad.MAP_BUTTON_R3;
+    if (in_report->buttons[1] & PS3::Buttons1::L1)          gp_in.buttons |= gamepad.MAP_BUTTON_LB;
+    if (in_report->buttons[1] & PS3::Buttons1::R1)          gp_in.buttons |= gamepad.MAP_BUTTON_RB;
+    if (in_report->buttons[1] & PS3::Buttons1::TRIANGLE)    gp_in.buttons |= gamepad.MAP_BUTTON_Y;
+    if (in_report->buttons[1] & PS3::Buttons1::CIRCLE)      gp_in.buttons |= gamepad.MAP_BUTTON_B;
+    if (in_report->buttons[1] & PS3::Buttons1::CROSS)       gp_in.buttons |= gamepad.MAP_BUTTON_A;
+    if (in_report->buttons[1] & PS3::Buttons1::SQUARE)      gp_in.buttons |= gamepad.MAP_BUTTON_X;
+    if (in_report->buttons[2] & PS3::Buttons2::PS)          gp_in.buttons |= gamepad.MAP_BUTTON_SYS;
 
     if (gamepad.analog_enabled())
     {
-        gamepad.set_analog_up(in_report->up_axis);
-        gamepad.set_analog_down(in_report->down_axis);
-        gamepad.set_analog_left(in_report->left_axis);
-        gamepad.set_analog_right(in_report->right_axis);
-        gamepad.set_analog_a(in_report->cross_axis);
-        gamepad.set_analog_b(in_report->circle_axis);
-        gamepad.set_analog_x(in_report->square_axis);
-        gamepad.set_analog_y(in_report->triangle_axis);
-        gamepad.set_analog_lb(in_report->l1_axis);
-        gamepad.set_analog_rb(in_report->r1_axis);
+        gp_in.analog[gamepad.MAP_ANALOG_OFF_UP]    = in_report->up_axis;
+        gp_in.analog[gamepad.MAP_ANALOG_OFF_DOWN]  = in_report->down_axis;
+        gp_in.analog[gamepad.MAP_ANALOG_OFF_LEFT]  = in_report->left_axis;
+        gp_in.analog[gamepad.MAP_ANALOG_OFF_RIGHT] = in_report->right_axis;
+        gp_in.analog[gamepad.MAP_ANALOG_OFF_A]  = in_report->cross_axis;
+        gp_in.analog[gamepad.MAP_ANALOG_OFF_B]  = in_report->circle_axis;
+        gp_in.analog[gamepad.MAP_ANALOG_OFF_X]  = in_report->square_axis;
+        gp_in.analog[gamepad.MAP_ANALOG_OFF_Y]  = in_report->triangle_axis;
+        gp_in.analog[gamepad.MAP_ANALOG_OFF_LB] = in_report->l1_axis;
+        gp_in.analog[gamepad.MAP_ANALOG_OFF_RB] = in_report->r1_axis;
     }
 
-    gamepad.set_trigger_l(in_report->l2_axis);
-    gamepad.set_trigger_r(in_report->r2_axis);
+    gp_in.trigger_l = in_report->l2_axis;
+    gp_in.trigger_r = in_report->r2_axis;
 
-    gamepad.set_joystick_lx(in_report->joystick_lx);
-    gamepad.set_joystick_ly(in_report->joystick_ly);
-    gamepad.set_joystick_rx(in_report->joystick_rx);
-    gamepad.set_joystick_ry(in_report->joystick_ry);
+    gp_in.joystick_lx = Scale::uint8_to_int16(in_report->joystick_lx);
+    gp_in.joystick_ly = Scale::uint8_to_int16(in_report->joystick_ly);
+    gp_in.joystick_rx = Scale::uint8_to_int16(in_report->joystick_rx);
+    gp_in.joystick_ry = Scale::uint8_to_int16(in_report->joystick_ry);
+
+    gamepad.set_pad_in(gp_in);
 
     tuh_hid_receive_report(address, instance);
     std::memcpy(&prev_in_report_, in_report, sizeof(PS3::InReport));
@@ -150,19 +152,19 @@ void PS3Host::process_report(Gamepad& gamepad, uint8_t address, uint8_t instance
 bool PS3Host::send_feedback(Gamepad& gamepad, uint8_t address, uint8_t instance)
 {
     static uint32_t last_rumble_ms = 0;
+
     uint32_t current_ms = time_us_32() / 1000;
+    Gamepad::PadOut gp_out = gamepad.get_pad_out();
     
+    //Spamming control xfers doesn't work, limit the rate
     if (init_state_.reports_enabled &&
         current_ms - last_rumble_ms >= 300)
     {
-        uint8_t rumble_l = gamepad.get_rumble_l().uint8();
-        uint8_t rumble_r = gamepad.get_rumble_r().uint8();
+        out_report_.rumble.right_duration    = (gp_out.rumble_r > 0) ? 20 : 0;
+        out_report_.rumble.right_motor_on    = (gp_out.rumble_r > 0) ? 1  : 0;
 
-        out_report_.rumble.right_duration    = (rumble_r > 0) ? 20 : 0;
-        out_report_.rumble.right_motor_on    = (rumble_r > 0) ? 1  : 0;
-
-        out_report_.rumble.left_duration     = (rumble_l > 0) ? 20 : 0;
-        out_report_.rumble.left_motor_force  = rumble_l;
+        out_report_.rumble.left_duration     = (gp_out.rumble_l > 0) ? 20 : 0;
+        out_report_.rumble.left_motor_force  = gp_out.rumble_l;
 
         last_rumble_ms = current_ms;
 

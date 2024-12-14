@@ -16,7 +16,7 @@ class UserSettings
 {
 public:
     static constexpr uint8_t MAX_PROFILES = 8;
-    static constexpr int32_t GP_CHECK_DELAY_MS = 500;
+    static constexpr int32_t GP_CHECK_DELAY_MS = 600;
 
     UserSettings() = default;
     ~UserSettings() = default;

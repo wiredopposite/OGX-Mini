@@ -19,49 +19,51 @@ void PSClassicHost::process_report(Gamepad& gamepad, uint8_t address, uint8_t in
         return;
     }
 
-    gamepad.reset_buttons();
+    Gamepad::PadIn gp_in;
 
     switch (in_report->buttons & PSClassic::DPAD_MASK)
     {
         case PSClassic::Buttons::UP:
-            gamepad.set_dpad_up();
+            gp_in.dpad |= gamepad.MAP_DPAD_UP;
             break;
         case PSClassic::Buttons::DOWN:
-            gamepad.set_dpad_down();
+            gp_in.dpad |= gamepad.MAP_DPAD_DOWN;
             break;
         case PSClassic::Buttons::LEFT:
-            gamepad.set_dpad_left();
+            gp_in.dpad |= gamepad.MAP_DPAD_LEFT;
             break;
         case PSClassic::Buttons::RIGHT: 
-            gamepad.set_dpad_right();
+            gp_in.dpad |= gamepad.MAP_DPAD_RIGHT;
             break;
         case PSClassic::Buttons::UP_RIGHT:
-            gamepad.set_dpad_up_right();
+            gp_in.dpad |= gamepad.MAP_DPAD_UP_RIGHT;
             break;
         case PSClassic::Buttons::DOWN_RIGHT:
-            gamepad.set_dpad_down_right();
+            gp_in.dpad |= gamepad.MAP_DPAD_DOWN_RIGHT;
             break;
         case PSClassic::Buttons::DOWN_LEFT:
-            gamepad.set_dpad_down_left();
+            gp_in.dpad |= gamepad.MAP_DPAD_DOWN_LEFT;
             break;
         case PSClassic::Buttons::UP_LEFT:
-            gamepad.set_dpad_up_left();
+            gp_in.dpad |= gamepad.MAP_DPAD_UP_LEFT;
             break;
         default:
             break;
     }
 
-    if (in_report->buttons & PSClassic::Buttons::SQUARE)   gamepad.set_button_x();
-    if (in_report->buttons & PSClassic::Buttons::CROSS)    gamepad.set_button_a();
-    if (in_report->buttons & PSClassic::Buttons::CIRCLE)   gamepad.set_button_b();
-    if (in_report->buttons & PSClassic::Buttons::TRIANGLE) gamepad.set_button_y();
-    if (in_report->buttons & PSClassic::Buttons::L1)       gamepad.set_button_lb();
-    if (in_report->buttons & PSClassic::Buttons::R1)       gamepad.set_button_rb();
-    if (in_report->buttons & PSClassic::Buttons::SELECT)   gamepad.set_button_back();
-    if (in_report->buttons & PSClassic::Buttons::START)    gamepad.set_button_start();
+    if (in_report->buttons & PSClassic::Buttons::SQUARE)   gp_in.buttons |= gamepad.MAP_BUTTON_X;
+    if (in_report->buttons & PSClassic::Buttons::CROSS)    gp_in.buttons |= gamepad.MAP_BUTTON_A;
+    if (in_report->buttons & PSClassic::Buttons::CIRCLE)   gp_in.buttons |= gamepad.MAP_BUTTON_B;
+    if (in_report->buttons & PSClassic::Buttons::TRIANGLE) gp_in.buttons |= gamepad.MAP_BUTTON_Y;
+    if (in_report->buttons & PSClassic::Buttons::L1)       gp_in.buttons |= gamepad.MAP_BUTTON_LB;
+    if (in_report->buttons & PSClassic::Buttons::R1)       gp_in.buttons |= gamepad.MAP_BUTTON_RB;
+    if (in_report->buttons & PSClassic::Buttons::SELECT)   gp_in.buttons |= gamepad.MAP_BUTTON_BACK;
+    if (in_report->buttons & PSClassic::Buttons::START)    gp_in.buttons |= gamepad.MAP_BUTTON_START;
 
-    gamepad.set_trigger_l(in_report->buttons);
-    gamepad.set_trigger_r(in_report->buttons);
+    gp_in.trigger_l = (in_report->buttons & PSClassic::Buttons::L2) ? UINT_8::MAX : UINT_8::MIN;
+    gp_in.trigger_r = (in_report->buttons & PSClassic::Buttons::R2) ? UINT_8::MAX : UINT_8::MIN;
+
+    gamepad.set_pad_in(gp_in);
 
     tuh_hid_receive_report(address, instance);
     std::memcpy(&prev_in_report_, &in_report, sizeof(PSClassic::InReport));

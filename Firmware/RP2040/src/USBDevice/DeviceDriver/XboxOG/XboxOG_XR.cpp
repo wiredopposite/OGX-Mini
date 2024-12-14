@@ -21,48 +21,42 @@ void XboxOGXRDevice::process(const uint8_t idx, Gamepad& gamepad)
         return;
     }
 
-    uint8_t index = tud_xid::get_index_by_type(0, tud_xid::Type::XREMOTE);
     uint32_t time_elapsed = to_ms_since_boot(get_absolute_time()) - ms_timer_;
+    uint8_t index = tud_xid::get_index_by_type(0, tud_xid::Type::XREMOTE);
 
-    if (tud_suspended())
-    {
-        tud_remote_wakeup();
-    }
-
-    if (!tud_xid::send_report_ready(index) || time_elapsed < 64)
+    if (index == 0xFF || !gamepad.new_pad_in() || time_elapsed < 64)
     {
         return;
     }
 
+    Gamepad::PadIn gp_in = gamepad.get_pad_in();
+
     in_report_.buttonCode = 0;
 
-    uint16_t gp_buttons = gamepad.get_buttons();
-    uint8_t gp_dpad = gamepad.get_dpad_buttons();
+    if (gp_in.dpad & Gamepad::DPAD_UP)    in_report_.buttonCode |= XboxOG::XR::ButtonCode::UP   ;
+    if (gp_in.dpad & Gamepad::DPAD_DOWN)  in_report_.buttonCode |= XboxOG::XR::ButtonCode::DOWN ;
+    if (gp_in.dpad & Gamepad::DPAD_LEFT)  in_report_.buttonCode |= XboxOG::XR::ButtonCode::LEFT ;
+    if (gp_in.dpad & Gamepad::DPAD_RIGHT) in_report_.buttonCode |= XboxOG::XR::ButtonCode::RIGHT;
 
-    if (gp_dpad & Gamepad::DPad::UP)    in_report_.buttonCode |= XboxOG::XR::ButtonCode::UP   ;
-    if (gp_dpad & Gamepad::DPad::DOWN)  in_report_.buttonCode |= XboxOG::XR::ButtonCode::DOWN ;
-    if (gp_dpad & Gamepad::DPad::LEFT)  in_report_.buttonCode |= XboxOG::XR::ButtonCode::LEFT ;
-    if (gp_dpad & Gamepad::DPad::RIGHT) in_report_.buttonCode |= XboxOG::XR::ButtonCode::RIGHT;
+    if (gp_in.buttons & Gamepad::BUTTON_SYS)   in_report_.buttonCode |= XboxOG::XR::ButtonCode::DISPLAY;
+    if (gp_in.buttons & Gamepad::BUTTON_START) in_report_.buttonCode |= XboxOG::XR::ButtonCode::PLAY   ;
+    if (gp_in.buttons & Gamepad::BUTTON_BACK)  in_report_.buttonCode |= XboxOG::XR::ButtonCode::STOP   ;
 
-    if (gp_buttons & Gamepad::Button::SYS)   in_report_.buttonCode |= XboxOG::XR::ButtonCode::DISPLAY;
-    if (gp_buttons & Gamepad::Button::START) in_report_.buttonCode |= XboxOG::XR::ButtonCode::PLAY   ;
-    if (gp_buttons & Gamepad::Button::BACK)  in_report_.buttonCode |= XboxOG::XR::ButtonCode::STOP   ;
+    if (gp_in.buttons & Gamepad::BUTTON_L3 && !(gp_in.buttons & Gamepad::BUTTON_R3)) in_report_.buttonCode |= XboxOG::XR::ButtonCode::TITLE;
+    if (gp_in.buttons & Gamepad::BUTTON_R3 && !(gp_in.buttons & Gamepad::BUTTON_L3)) in_report_.buttonCode |= XboxOG::XR::ButtonCode::MENU;
+    if (gp_in.buttons & (Gamepad::BUTTON_L3 | Gamepad::BUTTON_R3)) in_report_.buttonCode |= XboxOG::XR::ButtonCode::INFO;
 
-    if (gp_buttons & Gamepad::Button::L3 && !(gp_buttons & Gamepad::Button::R3)) in_report_.buttonCode |= XboxOG::XR::ButtonCode::TITLE;
-    if (gp_buttons & Gamepad::Button::R3 && !(gp_buttons & Gamepad::Button::L3)) in_report_.buttonCode |= XboxOG::XR::ButtonCode::MENU;
-    if (gp_buttons & (Gamepad::Button::L3 | Gamepad::Button::R3)) in_report_.buttonCode |= XboxOG::XR::ButtonCode::INFO;
+    if (gp_in.buttons & Gamepad::BUTTON_A) in_report_.buttonCode |= XboxOG::XR::ButtonCode::SELECT ;
+    if (gp_in.buttons & Gamepad::BUTTON_Y) in_report_.buttonCode |= XboxOG::XR::ButtonCode::PAUSE  ;
+    if (gp_in.buttons & Gamepad::BUTTON_X) in_report_.buttonCode |= XboxOG::XR::ButtonCode::DISPLAY;
+    if (gp_in.buttons & Gamepad::BUTTON_B) in_report_.buttonCode |= XboxOG::XR::ButtonCode::BACK   ;
 
-    if (gp_buttons & Gamepad::Button::A) in_report_.buttonCode |= XboxOG::XR::ButtonCode::SELECT ;
-    if (gp_buttons & Gamepad::Button::Y) in_report_.buttonCode |= XboxOG::XR::ButtonCode::PAUSE  ;
-    if (gp_buttons & Gamepad::Button::X) in_report_.buttonCode |= XboxOG::XR::ButtonCode::DISPLAY;
-    if (gp_buttons & Gamepad::Button::B) in_report_.buttonCode |= XboxOG::XR::ButtonCode::BACK   ;
+    if (gp_in.buttons & Gamepad::BUTTON_LB && !(gp_in.buttons & Gamepad::BUTTON_RB)) in_report_.buttonCode |= XboxOG::XR::ButtonCode::SKIP_MINUS;
+    if (gp_in.buttons & Gamepad::BUTTON_RB && !(gp_in.buttons & Gamepad::BUTTON_LB)) in_report_.buttonCode |= XboxOG::XR::ButtonCode::SKIP_PLUS ;
+    if (gp_in.buttons & (Gamepad::BUTTON_LB | Gamepad::BUTTON_RB)) in_report_.buttonCode |= XboxOG::XR::ButtonCode::DISPLAY;
 
-    if (gp_buttons & Gamepad::Button::LB && !(gp_buttons & Gamepad::Button::RB)) in_report_.buttonCode |= XboxOG::XR::ButtonCode::SKIP_MINUS;
-    if (gp_buttons & Gamepad::Button::RB && !(gp_buttons & Gamepad::Button::LB)) in_report_.buttonCode |= XboxOG::XR::ButtonCode::SKIP_PLUS ;
-    if (gp_buttons & (Gamepad::Button::LB | Gamepad::Button::RB)) in_report_.buttonCode |= XboxOG::XR::ButtonCode::DISPLAY;
-
-    if (gamepad.get_trigger_l().uint8() >= 100) in_report_.buttonCode |= XboxOG::XR::ButtonCode::REVERSE;
-    if (gamepad.get_trigger_r().uint8() >= 100) in_report_.buttonCode |= XboxOG::XR::ButtonCode::FORWARD;
+    if (gp_in.trigger_l >= 100) in_report_.buttonCode |= XboxOG::XR::ButtonCode::REVERSE;
+    if (gp_in.trigger_r >= 100) in_report_.buttonCode |= XboxOG::XR::ButtonCode::FORWARD;
 
     if (in_report_.buttonCode == 0x0000)
     {
@@ -70,8 +64,13 @@ void XboxOGXRDevice::process(const uint8_t idx, Gamepad& gamepad)
     }
 
     in_report_.timeElapsed = static_cast<uint16_t>(time_elapsed);
-    
-    if (tud_xid::send_report(index, reinterpret_cast<uint8_t*>(&in_report_), sizeof(XboxOG::XR::InReport)))
+
+    if (tud_suspended())
+    {
+        tud_remote_wakeup();
+    }
+    if (tud_xid::send_report_ready(index) &&
+        tud_xid::send_report(index, reinterpret_cast<uint8_t*>(&in_report_), sizeof(XboxOG::XR::InReport)))
     {
         ms_timer_ = to_ms_since_boot(get_absolute_time());
     }

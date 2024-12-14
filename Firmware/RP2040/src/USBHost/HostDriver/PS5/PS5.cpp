@@ -27,58 +27,60 @@ void PS5Host::process_report(Gamepad& gamepad, uint8_t address, uint8_t instance
         return;
     }
 
-    gamepad.reset_buttons();
+    Gamepad::PadIn gp_in;   
 
     switch (in_report_.buttons[0] & PS5::DPAD_MASK)
     {
         case PS5::Buttons0::DPAD_UP:
-            gamepad.set_dpad_up();
+            gp_in.dpad |= gamepad.MAP_DPAD_UP;
             break;
         case PS5::Buttons0::DPAD_UP_RIGHT:
-            gamepad.set_dpad_up_right();
+            gp_in.dpad |= gamepad.MAP_DPAD_UP_RIGHT;
             break;
         case PS5::Buttons0::DPAD_RIGHT:
-            gamepad.set_dpad_right();
+            gp_in.dpad |= gamepad.MAP_DPAD_RIGHT;
             break;
         case PS5::Buttons0::DPAD_RIGHT_DOWN:
-            gamepad.set_dpad_down_right();
+            gp_in.dpad |= gamepad.MAP_DPAD_DOWN_RIGHT;
             break;
         case PS5::Buttons0::DPAD_DOWN:
-            gamepad.set_dpad_down();
+            gp_in.dpad |= gamepad.MAP_DPAD_DOWN;
             break;
         case PS5::Buttons0::DPAD_DOWN_LEFT:
-            gamepad.set_dpad_down_left();
+            gp_in.dpad |= gamepad.MAP_DPAD_DOWN_LEFT;
             break;
         case PS5::Buttons0::DPAD_LEFT:
-            gamepad.set_dpad_left();
+            gp_in.dpad |= gamepad.MAP_DPAD_LEFT;
             break;
         case PS5::Buttons0::DPAD_LEFT_UP:
-            gamepad.set_dpad_up_left();
+            gp_in.dpad |= gamepad.MAP_DPAD_UP_LEFT;
             break;
         default:
             break;
     }
 
-    if (in_report_.buttons[0] & PS5::Buttons0::SQUARE)   gamepad.set_button_x();
-    if (in_report_.buttons[0] & PS5::Buttons0::CROSS)    gamepad.set_button_a();
-    if (in_report_.buttons[0] & PS5::Buttons0::CIRCLE)   gamepad.set_button_b();
-    if (in_report_.buttons[0] & PS5::Buttons0::TRIANGLE) gamepad.set_button_y();
-    if (in_report_.buttons[1] & PS5::Buttons1::L1)       gamepad.set_button_lb();
-    if (in_report_.buttons[1] & PS5::Buttons1::R1)       gamepad.set_button_rb();
-    if (in_report_.buttons[1] & PS5::Buttons1::L3)       gamepad.set_button_l3();
-    if (in_report_.buttons[1] & PS5::Buttons1::R3)       gamepad.set_button_r3();
-    if (in_report_.buttons[1] & PS5::Buttons1::SHARE)    gamepad.set_button_back();
-    if (in_report_.buttons[1] & PS5::Buttons1::OPTIONS)  gamepad.set_button_start();
-    if (in_report_.buttons[2] & PS5::Buttons2::PS)       gamepad.set_button_sys();
-    if (in_report_.buttons[2] & PS5::Buttons2::MUTE)     gamepad.set_button_misc();
-    
-    gamepad.set_trigger_l(in_report_.trigger_l);
-    gamepad.set_trigger_r(in_report_.trigger_r);
+    if (in_report_.buttons[0] & PS5::Buttons0::SQUARE)   gp_in.buttons |= gamepad.MAP_BUTTON_X;
+    if (in_report_.buttons[0] & PS5::Buttons0::CROSS)    gp_in.buttons |= gamepad.MAP_BUTTON_A;
+    if (in_report_.buttons[0] & PS5::Buttons0::CIRCLE)   gp_in.buttons |= gamepad.MAP_BUTTON_B;
+    if (in_report_.buttons[0] & PS5::Buttons0::TRIANGLE) gp_in.buttons |= gamepad.MAP_BUTTON_Y;
+    if (in_report_.buttons[1] & PS5::Buttons1::L1)       gp_in.buttons |= gamepad.MAP_BUTTON_LB;
+    if (in_report_.buttons[1] & PS5::Buttons1::R1)       gp_in.buttons |= gamepad.MAP_BUTTON_RB;
+    if (in_report_.buttons[1] & PS5::Buttons1::L3)       gp_in.buttons |= gamepad.MAP_BUTTON_L3;
+    if (in_report_.buttons[1] & PS5::Buttons1::R3)       gp_in.buttons |= gamepad.MAP_BUTTON_R3;
+    if (in_report_.buttons[1] & PS5::Buttons1::SHARE)    gp_in.buttons |= gamepad.MAP_BUTTON_BACK;
+    if (in_report_.buttons[1] & PS5::Buttons1::OPTIONS)  gp_in.buttons |= gamepad.MAP_BUTTON_START;
+    if (in_report_.buttons[2] & PS5::Buttons2::PS)       gp_in.buttons |= gamepad.MAP_BUTTON_SYS;
+    if (in_report_.buttons[2] & PS5::Buttons2::MUTE)     gp_in.buttons |= gamepad.MAP_BUTTON_MISC;
 
-    gamepad.set_joystick_lx(in_report_.joystick_lx);
-    gamepad.set_joystick_ly(in_report_.joystick_ly);
-    gamepad.set_joystick_rx(in_report_.joystick_rx);
-    gamepad.set_joystick_ry(in_report_.joystick_ry);
+    gp_in.trigger_l = in_report_.trigger_l;
+    gp_in.trigger_r = in_report_.trigger_r;
+
+    gp_in.joystick_lx = Scale::uint8_to_int16(in_report_.joystick_lx);
+    gp_in.joystick_ly = Scale::uint8_to_int16(in_report_.joystick_ly);
+    gp_in.joystick_rx = Scale::uint8_to_int16(in_report_.joystick_rx);
+    gp_in.joystick_ry = Scale::uint8_to_int16(in_report_.joystick_ry);
+    
+    gamepad.set_pad_in(gp_in);
 
     tuh_hid_receive_report(address, instance);
     std::memcpy(&prev_in_report_, &in_report_, PS5::IN_REPORT_CMP_SIZE);
@@ -86,8 +88,9 @@ void PS5Host::process_report(Gamepad& gamepad, uint8_t address, uint8_t instance
 
 bool PS5Host::send_feedback(Gamepad& gamepad, uint8_t address, uint8_t instance)
 {
-    out_report_.motor_left = gamepad.get_rumble_l().uint8();
-    out_report_.motor_right = gamepad.get_rumble_r().uint8();
+    Gamepad::PadOut gp_out = gamepad.get_pad_out();
+    out_report_.motor_left = gp_out.rumble_l;
+    out_report_.motor_right = gp_out.rumble_r;
 
     if (tuh_hid_send_report(address, instance, 0, &out_report_, sizeof(PS5::OutReport)))
     {

@@ -44,13 +44,21 @@ protected:
 
     void manage_rumble(Gamepad& gamepad)
     {
-        if (gamepad.get_rumble_l().uint8() != UINT8_MAX)
+        Gamepad::PadOut gp_out = gamepad.get_pad_out();
+        bool reset = false;
+        if (gp_out.rumble_l != UINT_8::MAX)
         {
-            gamepad.set_rumble_l(static_cast<uint8_t>(0));
+            gp_out.rumble_l = 0;
+            reset = true;
         }
-        if (gamepad.get_rumble_r().uint8() != UINT8_MAX)
+        if (gp_out.rumble_r != UINT_8::MAX)
         {
-            gamepad.set_rumble_r(static_cast<uint8_t>(0));
+            gp_out.rumble_r = 0;
+            reset = true;
+        }
+        if (reset)
+        {
+            gamepad.set_pad_out(gp_out);
         }
     }
 };

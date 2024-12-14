@@ -67,12 +67,8 @@
 #define CFG_TUSB_OS           OPT_OS_NONE
 #endif
 
-// #ifndef CFG_TUSB_DEBUG
-// #define CFG_TUSB_DEBUG        0
-// #endif
-#ifdef CFG_TUSB_DEBUG
-#undef CFG_TUSB_DEBUG
-#define CFG_TUSB_DEBUG        2
+#ifndef CFG_TUSB_DEBUG
+#define CFG_TUSB_DEBUG        0
 #endif
 
 // Enable Device stack, Default is max speed that hardware controller could support with on-chip PHY
@@ -141,13 +137,18 @@
 // Size of buffer to hold descriptors and other data used for enumeration
 #define CFG_TUH_ENUMERATION_BUFSIZE 512
 
-#define CFG_TUH_HUB             MAX_GAMEPADS
+#define CFG_TUH_HUB             0
 #define CFG_TUH_CDC             0
-#define CFG_TUH_HID             1 // typical keyboard + mouse device can have 3-4 HID interfaces
-// #define CFG_TUH_HID_CSTM        MAX_GAMEPADS
+
+#if defined(CONFIG_EN_4CH)
+#define CFG_TUH_HID             0
+#else
+#define CFG_TUH_HID             MAX_GAMEPADS
+#endif
+
 #define CFG_TUH_MSC             0
 #define CFG_TUH_VENDOR          0
-#define CFG_TUH_XINPUT          MAX_GAMEPADS
+#define CFG_TUH_XINPUT          4
 
 #define CFG_TUH_XINPUT_WIRED_CHATPAD_EN 0
 

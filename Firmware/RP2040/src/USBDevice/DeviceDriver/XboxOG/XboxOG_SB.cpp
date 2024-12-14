@@ -8,15 +8,15 @@
 
 static constexpr std::array<XboxOGSBDevice::ButtonMap, 9> GP_MAP = 
 {{
-    {Gamepad::Button::START,   XboxOG::SB::Buttons0::START,              0},
-    {Gamepad::Button::LB,      XboxOG::SB::Buttons0::RIGHTJOYFIRE,       0},
-    {Gamepad::Button::R3,      XboxOG::SB::Buttons0::RIGHTJOYLOCKON,     0},
-    {Gamepad::Button::B,       XboxOG::SB::Buttons0::RIGHTJOYLOCKON,     0},
-    {Gamepad::Button::RB,      XboxOG::SB::Buttons0::RIGHTJOYMAINWEAPON, 0},
-    {Gamepad::Button::A,       XboxOG::SB::Buttons0::RIGHTJOYMAINWEAPON, 0},
-    {Gamepad::Button::SYS,     XboxOG::SB::Buttons0::EJECT,              0},
-    {Gamepad::Button::L3,      XboxOG::SB::Buttons2::LEFTJOYSIGHTCHANGE, 2},
-    {Gamepad::Button::Y,       XboxOG::SB::Buttons1::CHAFF,              1}
+    {Gamepad::BUTTON_START,   XboxOG::SB::Buttons0::START,              0},
+    {Gamepad::BUTTON_LB,      XboxOG::SB::Buttons0::RIGHTJOYFIRE,       0},
+    {Gamepad::BUTTON_R3,      XboxOG::SB::Buttons0::RIGHTJOYLOCKON,     0},
+    {Gamepad::BUTTON_B,       XboxOG::SB::Buttons0::RIGHTJOYLOCKON,     0},
+    {Gamepad::BUTTON_RB,      XboxOG::SB::Buttons0::RIGHTJOYMAINWEAPON, 0},
+    {Gamepad::BUTTON_A,       XboxOG::SB::Buttons0::RIGHTJOYMAINWEAPON, 0},
+    {Gamepad::BUTTON_SYS,     XboxOG::SB::Buttons0::EJECT,              0},
+    {Gamepad::BUTTON_L3,      XboxOG::SB::Buttons2::LEFTJOYSIGHTCHANGE, 2},
+    {Gamepad::BUTTON_Y,       XboxOG::SB::Buttons1::CHAFF,              1}
 }};
 
 static constexpr std::array<XboxOGSBDevice::ButtonMap, 19> CHATPAD_MAP =
@@ -87,29 +87,29 @@ void XboxOGSBDevice::initialize()
 
 void XboxOGSBDevice::process(const uint8_t idx, Gamepad& gamepad) 
 {
-    // // uint8_t xid_index = tud_xid::get_index_by_type(0, tud_xid::Type::STEELBATTALION);
+    if (gamepad.new_pad_in())
+    {
+        Gamepad::PadIn gp_in = gamepad.get_pad_in();
 
-    // // if (tud_xid::send_report_ready(xid_index))
-    // // {
         in_report_.dButtons[0] = 0;
         in_report_.dButtons[1] = 0;
         in_report_.dButtons[2] &= XboxOG::SB::BUTTONS2_TOGGLE_MID;
 
-        uint16_t gp_buttons = gamepad.get_buttons();
+        // uint16_t gp_buttons = gamepad.get_buttons();
 
         for (const auto& map : GP_MAP)
         {
-            if (gp_buttons & map.gp_mask)
+            if (gp_in.buttons & map.gp_mask)
             {
                 in_report_.dButtons[map.button_offset] |= map.sb_mask;
             }
         }
 
-        Gamepad::Chatpad gp_chatpad = gamepad.get_chatpad();
+        // Gamepad::Chatpad gp_chatpad = gamepad.get_chatpad();
 
         for (const auto& map : CHATPAD_MAP)
         {
-            if (chatpad_pressed(gp_chatpad, map.gp_mask))
+            if (chatpad_pressed(gp_in.chatpad, map.gp_mask))
             {
                 in_report_.dButtons[map.button_offset] |= map.sb_mask;
             }
@@ -117,13 +117,13 @@ void XboxOGSBDevice::process(const uint8_t idx, Gamepad& gamepad)
 
         for (const auto& map : CHATPAD_TOGGLE_MAP)
         {
-            if (chatpad_pressed(gp_chatpad, map.gp_mask))
+            if (chatpad_pressed(gp_in.chatpad, map.gp_mask))
             {
                 in_report_.dButtons[map.button_offset] |= map.sb_mask;
             }
         }
 
-        if (gp_buttons & Gamepad::Button::X)
+        if (gp_in.buttons & Gamepad::BUTTON_X)
         {
             if (out_report_.Chaff_Extinguisher & 0x0F)
             {
@@ -139,63 +139,61 @@ void XboxOGSBDevice::process(const uint8_t idx, Gamepad& gamepad)
             }
         }
 
-        uint8_t gp_dpad = gamepad.get_dpad_buttons();
-
-        if (chatpad_pressed(gp_chatpad, XInput::Chatpad::CODE_MESSENGER) || gp_buttons & Gamepad::Button::BACK)
+        if (chatpad_pressed(gp_in.chatpad, XInput::Chatpad::CODE_MESSENGER) || gp_in.buttons & Gamepad::BUTTON_BACK)
         {
             for (const auto& map : CHATPAD_MAP_ALT1)
             {
-                if (chatpad_pressed(gp_chatpad, map.gp_mask))
+                if (chatpad_pressed(gp_in.chatpad, map.gp_mask))
                 {
                     in_report_.dButtons[map.button_offset] |= map.sb_mask;
                 }
             }
             // for (uint8_t i = 0; i < sizeof(CHATPAD_MAP_ALT1) / sizeof(CHATPAD_MAP_ALT1[0]); i++)
             // {
-            //     if (chatpad_pressed(gp_chatpad, CHATPAD_MAP_ALT1[i].gp_mask))
+            //     if (chatpad_pressed(gp_in.chatpad, CHATPAD_MAP_ALT1[i].gp_mask))
             //     {
             //         in_report_.dButtons[CHATPAD_MAP_ALT1[i].button_offset] |= CHATPAD_MAP_ALT1[i].sb_mask;
             //     }
             // }
-            if (gp_dpad & Gamepad::DPad::UP || gp_dpad & Gamepad::DPad::RIGHT)
+            if (gp_in.dpad & Gamepad::DPAD_UP || gp_in.dpad & Gamepad::DPAD_RIGHT)
             {
                 in_report_.tunerDial += (prev_in_report_.tunerDial < 15) ? 1 : -15;
             }
-            if (gp_dpad & Gamepad::DPad::DOWN || gp_dpad & Gamepad::DPad::LEFT)
+            if (gp_in.dpad & Gamepad::DPAD_DOWN || gp_in.dpad & Gamepad::DPAD_LEFT)
             {
                 in_report_.tunerDial -= (prev_in_report_.tunerDial > 0) ? 1 : -15;
             }
         }
-        else if (chatpad_pressed(gp_chatpad, XInput::Chatpad::CODE_ORANGE))
+        else if (chatpad_pressed(gp_in.chatpad, XInput::Chatpad::CODE_ORANGE))
         {
             for (const auto& map : CHATPAD_MAP_ALT2)
             {
-                if (chatpad_pressed(gp_chatpad, map.gp_mask))
+                if (chatpad_pressed(gp_in.chatpad, map.gp_mask))
                 {
                     in_report_.dButtons[map.button_offset] |= map.sb_mask;
                 }
             }
             // for (uint8_t i = 0; i < sizeof(CHATPAD_MAP_ALT2) / sizeof(CHATPAD_MAP_ALT2[0]); i++)
             // {
-            //     if (chatpad_pressed(gp_chatpad, CHATPAD_MAP_ALT2[i].gp_mask))
+            //     if (chatpad_pressed(gp_in.chatpad, CHATPAD_MAP_ALT2[i].gp_mask))
             //     {
             //         in_report_.dButtons[CHATPAD_MAP_ALT2[i].button_offset] |= CHATPAD_MAP_ALT2[i].sb_mask;
             //     }
             // }
-            if (!(gp_dpad & Gamepad::DPad::LEFT) && !(gp_dpad & Gamepad::DPad::RIGHT))
+            if (!(gp_in.dpad & Gamepad::DPAD_LEFT) && !(gp_in.dpad & Gamepad::DPAD_RIGHT))
             {
-                if (gp_dpad & Gamepad::DPad::UP)
+                if (gp_in.dpad & Gamepad::DPAD_UP)
                 {
                     in_report_.gearLever += (prev_in_report_.gearLever < XboxOG::SB::Gear::G5) ? 1 : 0;
                 }
-                if (gp_dpad & Gamepad::DPad::DOWN)
+                if (gp_in.dpad & Gamepad::DPAD_DOWN)
                 {
                     in_report_.gearLever -= (prev_in_report_.gearLever > XboxOG::SB::Gear::R) ? 1 : 0;
                 }
             }
         }
 
-        if (chatpad_pressed(gp_chatpad, XInput::Chatpad::CODE_SHIFT))
+        if (chatpad_pressed(gp_in.chatpad, XInput::Chatpad::CODE_SHIFT))
         {
             if (in_report_.dButtons[2] & XboxOG::SB::BUTTONS2_TOGGLE_MID)
             {
@@ -207,25 +205,25 @@ void XboxOGSBDevice::process(const uint8_t idx, Gamepad& gamepad)
             }
         }
 
-        in_report_.leftPedal        = gamepad.get_trigger_l().uint16();
-        in_report_.rightPedal       = gamepad.get_trigger_r().uint16();
-        in_report_.middlePedal      = chatpad_pressed(gp_chatpad, XInput::Chatpad::CODE_BACK) ? 0xFF00 : 0x0000;
-        in_report_.rotationLever    = chatpad_pressed(gp_chatpad, XInput::Chatpad::CODE_MESSENGER) ? 0 :
-                                    (gp_buttons & Gamepad::Button::BACK) ? 0 :
-                                    (gp_dpad & Gamepad::DPad::LEFT) ? INT16_MIN :
-                                    (gp_dpad & Gamepad::DPad::RIGHT) ? INT16_MAX : 0;
+        in_report_.leftPedal        = Scale::uint8_to_uint16(gp_in.trigger_l);
+        in_report_.rightPedal       = Scale::uint8_to_uint16(gp_in.trigger_r);
+        in_report_.middlePedal      = chatpad_pressed(gp_in.chatpad, XInput::Chatpad::CODE_BACK) ? 0xFF00 : 0x0000;
+        in_report_.rotationLever    = chatpad_pressed(gp_in.chatpad, XInput::Chatpad::CODE_MESSENGER) ? 0 :
+                                    (gp_in.buttons & Gamepad::BUTTON_BACK) ? 0 :
+                                    (gp_in.dpad & Gamepad::DPAD_LEFT) ? INT16_MIN :
+                                    (gp_in.dpad & Gamepad::DPAD_RIGHT) ? INT16_MAX : 0;
 
-        in_report_.sightChangeX = gamepad.get_joystick_lx().int16(true);
-        in_report_.sightChangeY = gamepad.get_joystick_ly().int16();
+        in_report_.sightChangeX = Scale::invert_joy(gp_in.joystick_lx);
+        in_report_.sightChangeY = gp_in.joystick_ly;
 
-        int32_t axis_value = static_cast<int32_t>(gamepad.get_joystick_rx().int16(true));
+        int32_t axis_value = static_cast<int32_t>(Scale::invert_joy(gp_in.joystick_rx));
 
         if (axis_value > XboxOG::SB::DEFAULT_DEADZONE)
         {
             vmouse_x_ += axis_value / sensitivity_;
         }
 
-        axis_value = static_cast<int32_t>(gamepad.get_joystick_ry().int16(true));
+        axis_value = static_cast<int32_t>(Scale::invert_joy(gp_in.joystick_ry));
 
         if (axis_value > XboxOG::SB::DEFAULT_DEADZONE)
         {
@@ -237,7 +235,7 @@ void XboxOGSBDevice::process(const uint8_t idx, Gamepad& gamepad)
         if (vmouse_y_ > UINT16_MAX) vmouse_y_ = UINT16_MAX;
         if (vmouse_y_ < 0) vmouse_y_ = 0;
 
-        if (gp_buttons & Gamepad::Button::L3)
+        if (gp_in.buttons & Gamepad::BUTTON_L3)
         {
             if ((time_us_32() / 1000) - aim_reset_timer_ > 500)
             {
@@ -257,75 +255,71 @@ void XboxOGSBDevice::process(const uint8_t idx, Gamepad& gamepad)
         {
             tud_remote_wakeup();
         }
-
-        if (std::memcmp(&prev_in_report_, &in_report_, sizeof(XboxOG::SB::InReport)) != 0 &&
-            tud_xid::send_report(0, reinterpret_cast<uint8_t*>(&in_report_), sizeof(XboxOG::SB::InReport)))
+        if (tud_xid::send_report_ready(0))
         {
-            std::memcpy(&prev_in_report_, &in_report_, sizeof(XboxOG::SB::InReport));
+            tud_xid::send_report(0, reinterpret_cast<uint8_t*>(&in_report_), sizeof(XboxOG::SB::InReport));
         }
-    // }
 
-    // Gamepad::Chatpad gp_chatpad = gamepad.chatpad();
-    // gp_chatpad = gamepad.get_chatpad();
+        if (chatpad_pressed(gp_in.chatpad, XInput::Chatpad::CODE_ORANGE))
+        {
+            uint16_t new_sense = 0;
 
-    // if (chatpad_pressed(gp_chatpad, XInput::Chatpad::CODE_ORANGE))
-    // {
-    //     uint16_t new_sense = 0;
+            if (chatpad_pressed(gp_in.chatpad, XInput::Chatpad::CODE_9))
+            {
+                new_sense = 200;
+            }
+            else if (chatpad_pressed(gp_in.chatpad, XInput::Chatpad::CODE_8))
+            {
+                new_sense = 250;
+            }
+            else if (chatpad_pressed(gp_in.chatpad, XInput::Chatpad::CODE_7))
+            {
+                new_sense = 300;
+            }
+            else if (chatpad_pressed(gp_in.chatpad, XInput::Chatpad::CODE_6))
+            {
+                new_sense = 350;
+            }
+            else if (chatpad_pressed(gp_in.chatpad, XInput::Chatpad::CODE_5))
+            {
+                new_sense = 400;
+            }
+            else if (chatpad_pressed(gp_in.chatpad, XInput::Chatpad::CODE_4))
+            {
+                new_sense = 650;
+            }
+            else if (chatpad_pressed(gp_in.chatpad, XInput::Chatpad::CODE_3))
+            {
+                new_sense = 800;
+            }
+            else if (chatpad_pressed(gp_in.chatpad, XInput::Chatpad::CODE_2))
+            {
+                new_sense = 1000;
+            }
+            else if (chatpad_pressed(gp_in.chatpad, XInput::Chatpad::CODE_1))
+            {
+                new_sense = 1200;
+            }
 
-    //     if (chatpad_pressed(gp_chatpad, XInput::Chatpad::CODE_9))
-    //     {
-    //         new_sense = 200;
-    //     }
-    //     else if (chatpad_pressed(gp_chatpad, XInput::Chatpad::CODE_8))
-    //     {
-    //         new_sense = 250;
-    //     }
-    //     else if (chatpad_pressed(gp_chatpad, XInput::Chatpad::CODE_7))
-    //     {
-    //         new_sense = 300;
-    //     }
-    //     else if (chatpad_pressed(gp_chatpad, XInput::Chatpad::CODE_6))
-    //     {
-    //         new_sense = 350;
-    //     }
-    //     else if (chatpad_pressed(gp_chatpad, XInput::Chatpad::CODE_5))
-    //     {
-    //         new_sense = 400;
-    //     }
-    //     else if (chatpad_pressed(gp_chatpad, XInput::Chatpad::CODE_4))
-    //     {
-    //         new_sense = 650;
-    //     }
-    //     else if (chatpad_pressed(gp_chatpad, XInput::Chatpad::CODE_3))
-    //     {
-    //         new_sense = 800;
-    //     }
-    //     else if (chatpad_pressed(gp_chatpad, XInput::Chatpad::CODE_2))
-    //     {
-    //         new_sense = 1000;
-    //     }
-    //     else if (chatpad_pressed(gp_chatpad, XInput::Chatpad::CODE_1))
-    //     {
-    //         new_sense = 1200;
-    //     }
+            if (new_sense != 0 && new_sense != sensitivity_)
+            {
+                sensitivity_ = new_sense;
+            }
+        }
+    }
 
-    //     if (new_sense != 0 && new_sense != sensitivity_)
-    //     {
-    //         sensitivity_ = new_sense;
-    //     }
-    // }
+    if (tud_xid::receive_report(0, reinterpret_cast<uint8_t*>(&out_report_), sizeof(XboxOG::SB::OutReport)) &&
+        out_report_.bLength == sizeof(XboxOG::SB::OutReport))
+    {
+        Gamepad::PadOut gp_out;
+        gp_out.rumble_l = out_report_.Chaff_Extinguisher;
+        gp_out.rumble_l |= out_report_.Chaff_Extinguisher << 4;
+        gp_out.rumble_l |= out_report_.Comm1_MagazineChange << 4;
+        gp_out.rumble_l |= out_report_.CockpitHatch_EmergencyEject << 4;
+        gp_out.rumble_r = gp_out.rumble_l;
 
-    // if (tud_xid::receive_report(0, reinterpret_cast<uint8_t*>(&out_report_), sizeof(XboxOG::SB::OutReport)) &&
-    //     out_report_.bLength == sizeof(XboxOG::SB::OutReport))
-    // {
-    //     uint8_t rumble = out_report_.Chaff_Extinguisher;
-    //     rumble |= out_report_.Chaff_Extinguisher << 4;
-    //     rumble |= out_report_.Comm1_MagazineChange << 4;
-    //     rumble |= out_report_.CockpitHatch_EmergencyEject << 4;
-
-    //     gamepad.set_rumble_l(rumble);
-    //     gamepad.set_rumble_r(rumble);
-    // }
+        gamepad.set_pad_out(gp_out);
+    }
 }
 
 uint16_t XboxOGSBDevice::get_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t report_type, uint8_t *buffer, uint16_t reqlen) 

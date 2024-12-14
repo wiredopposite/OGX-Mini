@@ -31,7 +31,6 @@ SOFTWARE.
 
 #include <cstdint>
 #include <array>
-#include <pico/time.h>
 
 #include "tusb.h"
 #include "host/usbh.h"
@@ -55,14 +54,16 @@ namespace tuh_xinput
     };
 
     static constexpr uint8_t ENDPOINT_SIZE = 64;
+    static constexpr uint32_t KEEPALIVE_MS = 1000;
 
     struct Interface
     {
         bool connected{false};
-        bool chatpad_inited{false};
 
         DevType dev_type{DevType::UNKNOWN};
         ItfType itf_type{ItfType::UNKNOWN};
+
+        bool chatpad_inited{false};
         ChatpadStage chatpad_stage{ChatpadStage::INIT_1};
 
         uint8_t dev_addr{0xFF};
@@ -74,16 +75,8 @@ namespace tuh_xinput
         uint8_t ep_in_size{0xFF};
         uint8_t ep_out_size{0xFF};
 
-        std::array<uint8_t, ENDPOINT_SIZE> ep_in_buffer;
-        std::array<uint8_t, ENDPOINT_SIZE> ep_out_buffer;
-
-        repeating_timer_t keepalive_timer;
-
-        Interface()
-        {
-            ep_in_buffer.fill(0);
-            ep_out_buffer.fill(0);
-        }
+        std::array<uint8_t, ENDPOINT_SIZE> ep_in_buffer{0};
+        std::array<uint8_t, ENDPOINT_SIZE> ep_out_buffer{0};
     };
 
     // API
@@ -93,6 +86,7 @@ namespace tuh_xinput
     bool receive_report(uint8_t address, uint8_t instance);
     bool set_rumble(uint8_t address, uint8_t instance, uint8_t rumble_l, uint8_t rumble_r, bool block);
     bool set_led(uint8_t address, uint8_t instance, uint8_t led_number, bool block);
+    bool xbox360_chatpad_keepalive(uint8_t address, uint8_t instance);
 
     // User implemented callbacks
 

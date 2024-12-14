@@ -60,7 +60,6 @@ static constexpr size_t MAX_BUFFER_SIZE = std::max(sizeof(ReportOut), sizeof(Rep
 static constexpr uint8_t I2C_ADDR = 0x01;
 
 std::array<Gamepad*, MAX_GAMEPADS> gamepads_{nullptr};
-// std::atomic<bool> pad_connected_ = false;
 
 inline void process_in_report(ReportIn* report_in)
 {
@@ -79,6 +78,7 @@ inline void process_in_report(ReportIn* report_in)
     gamepad->set_joystick_ly_int10(static_cast<int32_t>(report_in->joystick_ly));
     gamepad->set_joystick_rx_int10(static_cast<int32_t>(report_in->joystick_rx));
     gamepad->set_joystick_ry_int10(static_cast<int32_t>(report_in->joystick_ry));
+    gamepad->set_new_report(true);
 }
 
 inline void fill_out_report(uint8_t index, ReportOut* report_out)
@@ -173,10 +173,5 @@ void initialize(std::array<Gamepad, MAX_GAMEPADS>& gamepad)
 
     i2c_slave_init(I2C_PORT, I2C_ADDR, &slave_handler);
 }
-
-// bool pad_connected()
-// {
-//     return pad_connected_.load();
-// }
 
 } // namespace i2c_driver_esp32

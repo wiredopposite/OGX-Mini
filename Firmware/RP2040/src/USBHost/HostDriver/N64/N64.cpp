@@ -16,43 +16,43 @@ void N64Host::process_report(Gamepad& gamepad, uint8_t address, uint8_t instance
         return;
     }
 
-    gamepad.reset_buttons();
+    Gamepad::PadIn gp_in;   
 
     switch (in_report->buttons & N64::DPAD_MASK)
     {
         case N64::Buttons::DPAD_UP:
-            gamepad.set_dpad_up();
+            gp_in.dpad |= gamepad.MAP_DPAD_UP;
             break;
         case N64::Buttons::DPAD_UP_RIGHT:
-            gamepad.set_dpad_up_right();
+            gp_in.dpad |= gamepad.MAP_DPAD_UP_RIGHT;
             break;
         case N64::Buttons::DPAD_RIGHT:
-            gamepad.set_dpad_right();   
+            gp_in.dpad |= gamepad.MAP_DPAD_RIGHT;  
             break;
         case N64::Buttons::DPAD_RIGHT_DOWN:
-            gamepad.set_dpad_down_right();
+            gp_in.dpad |= gamepad.MAP_DPAD_DOWN_RIGHT;
             break;
         case N64::Buttons::DPAD_DOWN:
-            gamepad.set_dpad_down();
+            gp_in.dpad |= gamepad.MAP_DPAD_DOWN;
             break;
         case N64::Buttons::DPAD_DOWN_LEFT:
-            gamepad.set_dpad_down_left();
+            gp_in.dpad |= gamepad.MAP_DPAD_DOWN_LEFT;
             break;
         case N64::Buttons::DPAD_LEFT:
-            gamepad.set_dpad_left();
+            gp_in.dpad |= gamepad.MAP_DPAD_LEFT;
             break;
         case N64::Buttons::DPAD_LEFT_UP:    
-            gamepad.set_dpad_up_left();
+            gp_in.dpad |= gamepad.MAP_DPAD_UP_LEFT;
             break;  
         default:
             break;
     }
 
-    if (in_report->buttons & N64::Buttons::A) gamepad.set_button_a();
-    if (in_report->buttons & N64::Buttons::B) gamepad.set_button_b();
-    if (in_report->buttons & N64::Buttons::L) gamepad.set_button_lb();
-    if (in_report->buttons & N64::Buttons::R) gamepad.set_button_rb();
-    if (in_report->buttons & N64::Buttons::START) gamepad.set_button_start();
+    if (in_report->buttons & N64::Buttons::A) gp_in.buttons |= gamepad.MAP_BUTTON_A;
+    if (in_report->buttons & N64::Buttons::B) gp_in.buttons |= gamepad.MAP_BUTTON_B;
+    if (in_report->buttons & N64::Buttons::L) gp_in.buttons |= gamepad.MAP_BUTTON_LB;
+    if (in_report->buttons & N64::Buttons::R) gp_in.buttons |= gamepad.MAP_BUTTON_RB;
+    if (in_report->buttons & N64::Buttons::START) gp_in.buttons |= gamepad.MAP_BUTTON_START;
 
     uint8_t joy_ry = N64::JOY_MID;
     uint8_t joy_rx = N64::JOY_MID;
@@ -91,16 +91,17 @@ void N64Host::process_report(Gamepad& gamepad, uint8_t address, uint8_t instance
             break;
     }
 
-    gamepad.set_joystick_ry(joy_ry);
-    gamepad.set_joystick_rx(joy_rx);
+    gp_in.joystick_ry = Scale::uint8_to_int16(in_report->joystick_y);
+    gp_in.joystick_rx = Scale::uint8_to_int16(in_report->joystick_x);
 
-    gamepad.set_trigger_l((in_report->buttons & N64::Buttons::Z) ? UINT_8::MAX : UINT_8::MIN);
+    gp_in.trigger_l = (in_report->buttons & N64::Buttons::L) ? UINT_8::MAX : UINT_8::MIN;
 
-    gamepad.set_joystick_ly(in_report->joystick_y);
-    gamepad.set_joystick_lx(in_report->joystick_x);
+    gp_in.joystick_ly = Scale::uint8_to_int16(joy_ry);
+    gp_in.joystick_lx = Scale::uint8_to_int16(joy_rx);
+
+    gamepad.set_pad_in(gp_in);
 
     tuh_hid_receive_report(address, instance);
-
     std::memcpy(&prev_in_report_, in_report, sizeof(N64::InReport));
 }
 

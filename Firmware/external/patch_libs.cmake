@@ -41,24 +41,24 @@ function(apply_lib_patches EXTERNAL_DIR)
         message(FATAL_ERROR "Failed to apply Bluepad32 patch: ${BLUEPAD32_PATCH_ERROR}")
     endif ()
 
-    set(TUSB_PATCH "${EXTERNAL_DIR}/patches/tinyusb_disable_hidh.diff")
-    set(TUSB_PATH "${EXTERNAL_DIR}/tinyusb")
+    # set(TUSB_PATCH "${EXTERNAL_DIR}/patches/tinyusb_disable_hidh.diff")
+    # set(TUSB_PATH "${EXTERNAL_DIR}/tinyusb")
 
-    message(STATUS "Applying tinyusb patch: ${TUSB_PATCH}")
+    # message(STATUS "Applying tinyusb patch: ${TUSB_PATCH}")
 
-    execute_process(
-        COMMAND git apply --ignore-whitespace ${TUSB_PATCH}
-        WORKING_DIRECTORY ${TUSB_PATH}
-        RESULT_VARIABLE TUSB_PATCH_RESULT
-        OUTPUT_VARIABLE TUSB_PATCH_OUTPUT
-        ERROR_VARIABLE TUSB_PATCH_ERROR
-    )
+    # execute_process(
+    #     COMMAND git apply --ignore-whitespace ${TUSB_PATCH}
+    #     WORKING_DIRECTORY ${TUSB_PATH}
+    #     RESULT_VARIABLE TUSB_PATCH_RESULT
+    #     OUTPUT_VARIABLE TUSB_PATCH_OUTPUT
+    #     ERROR_VARIABLE TUSB_PATCH_ERROR
+    # )
 
-    if (TUSB_PATCH_RESULT EQUAL 0)
-        message(STATUS "tinyusb patch applied successfully.")
-    elseif (TUSB_PATCH_ERROR MATCHES "patch does not apply")
-        message(STATUS "tinyusb patch already applied.")
-    else ()
-        message(FATAL_ERROR "Failed to apply tinyusb patch: ${TUSB_PATCH_ERROR}")
-    endif ()
+    # if (TUSB_PATCH_RESULT EQUAL 0)
+    #     message(STATUS "tinyusb patch applied successfully.")
+    # elseif (TUSB_PATCH_ERROR MATCHES "patch does not apply")
+    #     message(STATUS "tinyusb patch already applied.")
+    # else ()
+    #     message(FATAL_ERROR "Failed to apply tinyusb patch: ${TUSB_PATCH_ERROR}")
+    # endif ()
 endfunction()

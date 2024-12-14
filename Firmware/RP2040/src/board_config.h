@@ -13,6 +13,8 @@
 #define EXTERNAL_4CH 6
 #define W_ESP32 7
 
+#define SYSCLOCK_HZ 250000
+
 #ifndef MAX_GAMEPADS
     #define MAX_GAMEPADS 1
 #endif

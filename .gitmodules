@@ -4,9 +4,6 @@
 [submodule "Firmware/external/tinyusb"]
 	path = Firmware/external/tinyusb
 	url = https://github.com/hathach/tinyusb.git
-[submodule "Firmware/external/Pico-PIO-USB"]
-	path = Firmware/external/Pico-PIO-USB
-	url = https://github.com/sekigon-gonnoc/Pico-PIO-USB.git
 [submodule "Tools/dump-dvd-kit"]
 	path = Tools/dump-dvd-kit
 	url = https://github.com/XboxDev/dump-dvd-kit.git

@@ -23,8 +23,7 @@ public:
     const uint8_t* get_descriptor_device_qualifier_cb() override;
 
 private:
-    DInput::InReport in_report_;
-    std::array<DInput::InReport, MAX_GAMEPADS> prev_in_reports_;
+    std::array<DInput::InReport, MAX_GAMEPADS> in_reports_;
 
     static bool control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_request_t const *request);
 };

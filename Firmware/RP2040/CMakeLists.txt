@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 3.13)
 set(FW_NAME "OGX-Mini")
 set(FW_VERSION "v1.0.0-alpha")
 
-set(CMAKE_C_COMPILER ${C_COMPILER})
-set(CMAKE_CXX_COMPILER ${CXX_COMPILER})
+set(CMAKE_C_COMPILER arm-none-eabi-gcc)
+set(CMAKE_CXX_COMPILER arm-none-eabi-g++)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
@@ -21,8 +21,8 @@ get_pico_sdk(${EXTERNAL_DIR})
 
 include(${PICO_SDK_PATH}/pico_sdk_init.cmake)
 message("PICO_SDK_VERSION_STRING: ${PICO_SDK_VERSION_STRING}")
-if (PICO_SDK_VERSION_STRING VERSION_LESS "1.4.0")
-    message(FATAL_ERROR "Raspberry Pi Pico SDK version 1.4.0 (or later) required. Your version is ${PICO_SDK_VERSION_STRING}")
+if (PICO_SDK_VERSION_STRING VERSION_LESS "2.1.0")
+    message(FATAL_ERROR "Raspberry Pi Pico SDK version 2.1.0 (or later) required. Your version is ${PICO_SDK_VERSION_STRING}")
 endif()
 
 project(${FW_NAME} C CXX ASM)
@@ -40,6 +40,8 @@ set(SOURCES_BOARD
     ${SRC}/OGXMini/OGXMini_4Ch.cpp
     ${SRC}/OGXMini/OGXMini_PicoW.cpp
     ${SRC}/OGXMini/OGXMini_ESP32.cpp
+
+    ${SRC}/TaskQueue/TaskQueue.cpp
 
     ${SRC}/Board/board_api.cpp
 
@@ -134,21 +136,21 @@ if(EN_USB_HOST)
     list(APPEND SOURCES_BOARD
         ${SRC}/USBHost/tuh_callbacks.cpp
 
-        ${SRC}/USBHost/HostDriver/DInput/DInput.cpp
-        ${SRC}/USBHost/HostDriver/PSClassic/PSClassic.cpp
-        ${SRC}/USBHost/HostDriver/SwitchWired/SwitchWired.cpp
-        ${SRC}/USBHost/HostDriver/SwitchPro/SwitchPro.cpp
-        ${SRC}/USBHost/HostDriver/PS5/PS5.cpp
-        ${SRC}/USBHost/HostDriver/PS4/PS4.cpp
-        ${SRC}/USBHost/HostDriver/PS3/PS3.cpp
+        # ${SRC}/USBHost/HostDriver/DInput/DInput.cpp
+        # ${SRC}/USBHost/HostDriver/PSClassic/PSClassic.cpp
+        # ${SRC}/USBHost/HostDriver/SwitchWired/SwitchWired.cpp
+        # ${SRC}/USBHost/HostDriver/SwitchPro/SwitchPro.cpp
+        # ${SRC}/USBHost/HostDriver/PS5/PS5.cpp
+        # ${SRC}/USBHost/HostDriver/PS4/PS4.cpp
+        # ${SRC}/USBHost/HostDriver/PS3/PS3.cpp
+        # ${SRC}/USBHost/HostDriver/N64/N64.cpp
+        # ${SRC}/USBHost/HostDriver/HIDGeneric/HIDGeneric.cpp
+
         ${SRC}/USBHost/HostDriver/XInput/XboxOG.cpp
         ${SRC}/USBHost/HostDriver/XInput/XboxOne.cpp
         ${SRC}/USBHost/HostDriver/XInput/Xbox360.cpp
         ${SRC}/USBHost/HostDriver/XInput/Xbox360W.cpp
-        ${SRC}/USBHost/HostDriver/N64/N64.cpp
         ${SRC}/USBHost/HostDriver/XInput/tuh_xinput/tuh_xinput.cpp
-        ${SRC}/USBHost/HostDriver/HIDGeneric/HIDGeneric.cpp
-        ${SRC}/USBHost/HostDriver/tuh_uni/tuh_uni.cpp
 
         ${SRC}/USBHost/HIDParser/HIDJoystick.cpp
         ${SRC}/USBHost/HIDParser/HIDReportDescriptor.cpp
@@ -196,7 +198,8 @@ if(EN_4CH)
     add_compile_definitions(CONFIG_EN_4CH=1)
     message(STATUS "4CH enabled.")
     list(APPEND SOURCES_BOARD
-        ${SRC}/I2CDriver/i2c_driver_4ch.cpp
+        ${SRC}/I2CDriver/4Channel/I2CMaster.cpp
+        ${SRC}/I2CDriver/4Channel/I2CSlave.cpp
     )
     list(APPEND LIBS_BOARD
         hardware_i2c
@@ -235,27 +238,34 @@ if(EXISTS ${SRC}/USBDevice/DeviceDriver/XboxOG/tud_xid/tud_xid_xremote_rom.h)
 endif()
 
 if(NOT EN_BLUETOOTH)
-    add_compile_definitions(PICO_BOOT_STAGE2_CHOOSE_GENERIC_03H=1 PICO_XOSC_STARTUP_DELAY_MULTIPLIER=64)
+    # add_compile_definitions(PICO_BOOT_STAGE2_CHOOSE_GENERIC_03H=1 PICO_XOSC_STARTUP_DELAY_MULTIPLIER=64)
+    add_compile_definitions(PICO_XOSC_STARTUP_DELAY_MULTIPLIER=64)
 endif()
 
 pico_sdk_init()
+# pico_enable_stdio_usb(${FW_NAME} 0)
 
 add_executable(${FW_NAME} ${SOURCES_BOARD})
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     pico_enable_stdio_uart(${FW_NAME} 1)
+    add_compile_definitions(CFG_TUSB_DEBUG=2)
     add_compile_definitions(LOG=2)
-    target_compile_options(${FW_NAME} PRIVATE
-        -Wall                # Enable most warnings
-        -Wextra              # Enable extra warnings
-        -Wconversion         # Warn on type conversion issues
-        -Wsign-conversion    # Warn on sign conversion issues
-        # -Werror              # Treat warnings as errors
-    )
+    # target_compile_options(${FW_NAME} PRIVATE
+    #     -Wall                # Enable most warnings
+    #     -Wextra              # Enable extra warnings
+    #     -Wconversion         # Warn on type conversion issues
+    #     -Wsign-conversion    # Warn on sign conversion issues
+    #     # -Werror              # Treat warnings as errors
+    # )
 
+    add_link_options(
+        -Wl,--gc-sections
+    )
 elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+    add_compile_definitions(CFG_TUSB_DEBUG=0)
     add_compile_options(
-        -O2                     # Optimize for speed
+        -O3                     # Optimize for speed
         -mcpu=cortex-m0plus     # Target ARM Cortex-M0+
         -mthumb                 # Use Thumb instruction set
         -ffunction-sections     # Place each function in its own section

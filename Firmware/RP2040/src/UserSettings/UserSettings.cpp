@@ -17,15 +17,15 @@ static constexpr uint32_t button_combo(const uint16_t& buttons, const uint8_t& d
 
 namespace ButtonCombo 
 {
-    static constexpr uint32_t PS3       = button_combo(Gamepad::Button::START, Gamepad::DPad::LEFT);
-    static constexpr uint32_t DINPUT    = button_combo(Gamepad::Button::START | Gamepad::Button::RB, Gamepad::DPad::LEFT);
-    static constexpr uint32_t XINPUT    = button_combo(Gamepad::Button::START, Gamepad::DPad::UP);
-    static constexpr uint32_t SWITCH    = button_combo(Gamepad::Button::START, Gamepad::DPad::DOWN);
-    static constexpr uint32_t XBOXOG    = button_combo(Gamepad::Button::START, Gamepad::DPad::RIGHT);
-    static constexpr uint32_t XBOXOG_SB = button_combo(Gamepad::Button::START | Gamepad::Button::RB, Gamepad::DPad::RIGHT);
-    static constexpr uint32_t XBOXOG_XR = button_combo(Gamepad::Button::START | Gamepad::Button::LB, Gamepad::DPad::RIGHT);
-    static constexpr uint32_t PSCLASSIC = button_combo(Gamepad::Button::START | Gamepad::Button::A);
-    static constexpr uint32_t WEBAPP    = button_combo(Gamepad::Button::START | Gamepad::Button::LB | Gamepad::Button::RB);
+    static constexpr uint32_t PS3       = button_combo(Gamepad::BUTTON_START, Gamepad::DPAD_LEFT);
+    static constexpr uint32_t DINPUT    = button_combo(Gamepad::BUTTON_START | Gamepad::BUTTON_RB, Gamepad::DPAD_LEFT);
+    static constexpr uint32_t XINPUT    = button_combo(Gamepad::BUTTON_START, Gamepad::DPAD_UP);
+    static constexpr uint32_t SWITCH    = button_combo(Gamepad::BUTTON_START, Gamepad::DPAD_DOWN);
+    static constexpr uint32_t XBOXOG    = button_combo(Gamepad::BUTTON_START, Gamepad::DPAD_RIGHT);
+    static constexpr uint32_t XBOXOG_SB = button_combo(Gamepad::BUTTON_START | Gamepad::BUTTON_RB, Gamepad::DPAD_RIGHT);
+    static constexpr uint32_t XBOXOG_XR = button_combo(Gamepad::BUTTON_START | Gamepad::BUTTON_LB, Gamepad::DPAD_RIGHT);
+    static constexpr uint32_t PSCLASSIC = button_combo(Gamepad::BUTTON_START | Gamepad::BUTTON_A);
+    static constexpr uint32_t WEBAPP    = button_combo(Gamepad::BUTTON_START | Gamepad::BUTTON_LB | Gamepad::BUTTON_RB);
 };
 
 static constexpr DeviceDriver::Type VALID_DRIVER_TYPES[] =
@@ -34,6 +34,7 @@ static constexpr DeviceDriver::Type VALID_DRIVER_TYPES[] =
     DeviceDriver::Type::XBOXOG, 
     DeviceDriver::Type::XBOXOG_SB, 
     DeviceDriver::Type::XBOXOG_XR,
+    DeviceDriver::Type::PS3,
     DeviceDriver::Type::WEBAPP,
     
 #elif MAX_GAMEPADS > 1
@@ -165,7 +166,7 @@ bool UserSettings::write_firmware_version_safe()
 
 DeviceDriver::Type UserSettings::get_current_driver()
 {
-    // return DeviceDriver::Type::XINPUT;
+    return DeviceDriver::Type::XINPUT;
     
     if (current_driver_ != DeviceDriver::Type::NONE)
     {
@@ -226,12 +227,13 @@ void UserSettings::store_driver_type_safe(DeviceDriver::Type new_mode)
 //Checks if button combo has been held for 3 seconds, returns true if mode has been changed
 bool UserSettings::check_for_driver_change(Gamepad& gamepad)
 {
-    static uint32_t last_button_combo = button_combo(gamepad.get_buttons(), gamepad.get_dpad_buttons());
+    Gamepad::PadIn gp_in = gamepad.get_pad_in();
+    static uint32_t last_button_combo = button_combo(gp_in.buttons, gp_in.dpad);
     static uint8_t call_count = 0;
 
-    uint32_t current_button_combo = button_combo(gamepad.get_buttons(), gamepad.get_dpad_buttons());
+    uint32_t current_button_combo = button_combo(gp_in.buttons, gp_in.dpad);
 
-    if (!(current_button_combo & (static_cast<uint32_t>(Gamepad::Button::START) << 16)) || 
+    if (!(current_button_combo & (static_cast<uint32_t>(Gamepad::BUTTON_START) << 16)) || 
         last_button_combo != current_button_combo)
     {
         last_button_combo = current_button_combo;

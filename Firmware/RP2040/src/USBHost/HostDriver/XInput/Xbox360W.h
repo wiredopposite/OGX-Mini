@@ -3,6 +3,7 @@
 
 #include <cstdint>
 
+#include "TaskQueue/TaskQueue.h"
 #include "Descriptors/XInput.h"
 #include "USBHost/HostDriver/HostDriver.h"
 
@@ -24,7 +25,7 @@ private:
         uint8_t address;
         uint8_t instance;
         uint8_t led_quadrant;
-        struct repeating_timer timer;
+        uint32_t task_id;
     };
 
     TimerInfo timer_info_;
