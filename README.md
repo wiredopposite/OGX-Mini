@@ -3,7 +3,7 @@
 
 Firmware for the RP2040, capable of emulating gamepads for several game consoles. The firmware comes in many flavors, supported on the [Adafruit Feather USB Host board](https://www.adafruit.com/product/5723), Pi Pico, Pi Pico 2, Waveshare RP2040-Zero, Pi Pico W, RP2040/ESP32 hybrid, and a 4-Channel RP2040-Zero setup.
 
-Visit the web app here: [https://wiredopposite.github.io/OGX-Mini-WebApp/](https://wiredopposite.github.io/OGX-Mini-WebApp/) to change your mappings and deadzone settings. To pair the OGX-Mini with the web app, plug your controller in, then connect it to your PC, hold **Start + Left Bumper + Right Bumper** to enter Web app mode. Then click "Connect" in the web app and select the OGX-Mini.
+Visit the web app here: [https://wiredopposite.github.io/OGX-Mini-WebApp/](https://wiredopposite.github.io/OGX-Mini-WebApp/) to change your mappings and deadzone settings. To pair the OGX-Mini with the web app, plug your controller in, then connect it to your PC, hold **Start + Left Bumper + Right Bumper** to enter Web app mode. Click "Connect" in the web app and select the OGX-Mini.
 
 ## Supported platforms
 - Original Xbox
