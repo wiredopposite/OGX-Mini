@@ -10,3 +10,6 @@
 [submodule "Firmware/external/Pico-PIO-USB"]
 	path = Firmware/external/Pico-PIO-USB
 	url = https://github.com/wiredopposite/Pico-PIO-USB.git
+[submodule "WebApp"]
+	path = WebApp
+	url = https://github.com/wiredopposite/OGX-Mini-WebApp.git
