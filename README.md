@@ -50,21 +50,21 @@ By default the OGX-Mini will emulate an OG Xbox controller, you must hold a butt
 Start = Plus (Switch) = Options (Dualsense/DS4)
 
 - XInput
-    Start + Dpad Up 
+    - Start + Dpad Up 
 - Original Xbox
-    Start + Dpad Right
+    - Start + Dpad Right
 - Original Xbox Steel Battalion
-    Start + Dpad Right + Right Bumper
+    - Start + Dpad Right + Right Bumper
 - Original Xbox DVD Remote
-    Start + Dpad Right + Left Bumper
+    - Start + Dpad Right + Left Bumper
 - Switch
-    Start + Dpad Down
+    - Start + Dpad Down
 - PlayStation 3
-    Start + Dpad Left
+    - Start + Dpad Left
 - PlayStation Classic
-    Start + A (Cross for PlayStation and B for Switch gamepads)
+    - Start + A (Cross for PlayStation and B for Switch gamepads)
 - Web Application Mode
-    Start + Left Bumper + Right Bumper
+    - Start + Left Bumper + Right Bumper
 
 After a new mode is stored, the RP2040 will reset itself so you don't need to unplug it.
 
