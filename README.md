@@ -11,6 +11,30 @@ Firmware for the RP2040, capable of emulating gamepads for several game consoles
 - Playstation Classic
 - DInput
 
+## Changing platforms
+By default the OGX-Mini will emulate an OG Xbox controller, you must hold a button combo for 3 seconds to change which platform you want to play on. Your chosen mode will persist after powering off the device. 
+
+Start = Plus (Switch) = Options (Dualsense/DS4)
+
+- XInput
+    - Start + Dpad Up 
+- Original Xbox
+    - Start + Dpad Right
+- Original Xbox Steel Battalion
+    - Start + Dpad Right + Right Bumper
+- Original Xbox DVD Remote
+    - Start + Dpad Right + Left Bumper
+- Switch
+    - Start + Dpad Down
+- PlayStation 3
+    - Start + Dpad Left
+- PlayStation Classic
+    - Start + A (Cross for PlayStation and B for Switch gamepads)
+- Web Application Mode
+    - Start + Left Bumper + Right Bumper
+
+After a new mode is stored, the RP2040 will reset itself so you don't need to unplug it.
+
 ## Supported devices
 ### Wired controllers
 - Original Xbox Duke and S
@@ -43,30 +67,6 @@ Note: Bluetooth functionality is in early testing, some may have quirks.
 - Stadia
 - And more
 Please visit [this page](https://bluepad32.readthedocs.io/en/latest/supported_gamepads/) for a more comprehensive list of supported controllers and Bluetooth pairing instructions.
-
-## Changing platforms
-By default the OGX-Mini will emulate an OG Xbox controller, you must hold a button combo for 3 seconds to change which platform you want to play on. Your chosen mode will persist after powering off the device. 
-
-Start = Plus (Switch) = Options (Dualsense/DS4)
-
-- XInput
-    - Start + Dpad Up 
-- Original Xbox
-    - Start + Dpad Right
-- Original Xbox Steel Battalion
-    - Start + Dpad Right + Right Bumper
-- Original Xbox DVD Remote
-    - Start + Dpad Right + Left Bumper
-- Switch
-    - Start + Dpad Down
-- PlayStation 3
-    - Start + Dpad Left
-- PlayStation Classic
-    - Start + A (Cross for PlayStation and B for Switch gamepads)
-- Web Application Mode
-    - Start + Left Bumper + Right Bumper
-
-After a new mode is stored, the RP2040 will reset itself so you don't need to unplug it.
 
 ## Features new to v1.0.0
 - Bluetooth functionality for the Pico W and Pico+ESP32.
