@@ -1,9 +1,9 @@
 # Pi Pico
-![](../Images/DiagramPiPico.png)
+![](../Images/DiagramPico.png)
 
 # Pi Pico 2
 The Pico 2 will likely require 4.7k resistors between the USB data lines and ground to work correctly.
-![](../Images/DiagramPiPico2.png)
+![](../Images/DiagramPico2.png)
 
 # RP2040-Zero
 ![](../images/DiagramRPZero.png)
