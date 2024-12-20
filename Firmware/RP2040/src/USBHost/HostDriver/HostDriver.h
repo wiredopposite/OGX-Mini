@@ -39,6 +39,9 @@ public:
     virtual void process_report(Gamepad& gamepad, uint8_t address, uint8_t instance, const uint8_t* report, uint16_t len) = 0;
     virtual bool send_feedback(Gamepad& gamepad, uint8_t address, uint8_t instance) = 0;
 
+    virtual void connect_cb(Gamepad& gamepad, uint8_t address, uint8_t instance) {}; //Wireless specific
+    virtual void disconnect_cb(Gamepad& gamepad, uint8_t address, uint8_t instance) {}; //Wireless specific
+
 protected:
     const uint8_t idx_;
 

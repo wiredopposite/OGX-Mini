@@ -1,7 +1,7 @@
 #ifndef _XINPUT_DESCRIPTORS_H_
 #define _XINPUT_DESCRIPTORS_H_
 
-#include <stdint.h>
+#include <cstdint>
 #include <cstring>
 
 namespace XInput
@@ -133,6 +133,11 @@ namespace XInput
 		uint8_t reserved[6];
 		uint8_t chatpad_status;
 		uint8_t chatpad[3];
+
+		InReportWireless()
+		{
+			std::memset(this, 0, sizeof(InReportWireless));
+		}
 	};
 	static_assert(sizeof(InReportWireless) == 28, "XInput::InReportWireless is not the correct size");
 

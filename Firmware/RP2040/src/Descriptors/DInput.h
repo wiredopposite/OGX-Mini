@@ -75,6 +75,11 @@ namespace DInput
         uint8_t r1_axis;
         uint8_t l2_axis;
         uint8_t r2_axis;
+
+        InReport()
+        {
+            std::memset(this, 0, sizeof(InReport));
+        }
     };
     #pragma pack(pop)
     static_assert(sizeof(InReport) == 19, "DInput::InReport is misaligned");

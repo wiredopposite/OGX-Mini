@@ -1,10 +1,10 @@
 #include <cstring>
-#include <vector>
-#include "pico/time.h"
+#include <pico/time.h>
 
 #include "Descriptors/XInput.h"
 #include "USBDevice/DeviceDriver/XboxOG/tud_xid/tud_xid.h"
 #include "USBDevice/DeviceDriver/XboxOG/XboxOG_SB.h"
+#include "OGXMini/Debug.h"
 
 static constexpr std::array<XboxOGSBDevice::ButtonMap, 9> GP_MAP = 
 {{
@@ -82,118 +82,55 @@ void XboxOGSBDevice::initialize()
     in_report_.bLength = sizeof(XboxOG::SB::InReport);
     in_report_.gearLever = XboxOG::SB::Gear::N;
 
-    std::memcpy(&prev_in_report_, &in_report_, sizeof(XboxOG::SB::InReport));
+    prev_in_report_ = in_report_;
 }
 
 void XboxOGSBDevice::process(const uint8_t idx, Gamepad& gamepad) 
 {
-    if (gamepad.new_pad_in())
+    Gamepad::PadIn gp_in = gamepad.get_pad_in();
+    Gamepad::ChatpadIn gp_in_chatpad = gamepad.get_chatpad_in();
+
+    in_report_.dButtons[0] = 0;
+    in_report_.dButtons[1] = 0;
+    in_report_.dButtons[2] &= XboxOG::SB::BUTTONS2_TOGGLE_MID;
+
+    for (const auto& map : GP_MAP)
     {
-        Gamepad::PadIn gp_in = gamepad.get_pad_in();
-
-        in_report_.dButtons[0] = 0;
-        in_report_.dButtons[1] = 0;
-        in_report_.dButtons[2] &= XboxOG::SB::BUTTONS2_TOGGLE_MID;
-
-        // uint16_t gp_buttons = gamepad.get_buttons();
-
-        for (const auto& map : GP_MAP)
+        if (gp_in.buttons & map.gp_mask)
         {
-            if (gp_in.buttons & map.gp_mask)
+            in_report_.dButtons[map.button_offset] |= map.sb_mask;
+        }
+    }
+
+    for (const auto& map : CHATPAD_MAP)
+    {
+        if (chatpad_pressed(gp_in_chatpad, map.gp_mask))
+        {
+            in_report_.dButtons[map.button_offset] |= map.sb_mask;
+        }
+    }
+
+    static std::array<bool, CHATPAD_TOGGLE_MAP.size() + 1> toggle_pressed{false};
+
+    for (uint8_t i = 0; i < CHATPAD_TOGGLE_MAP.size(); i++)
+    {
+        if (chatpad_pressed(gp_in_chatpad, CHATPAD_TOGGLE_MAP[i].gp_mask))
+        {
+            if (!toggle_pressed[i])
             {
-                in_report_.dButtons[map.button_offset] |= map.sb_mask;
+                in_report_.dButtons[CHATPAD_TOGGLE_MAP[i].button_offset] ^= CHATPAD_TOGGLE_MAP[i].sb_mask;
+                toggle_pressed[i] = true;
             }
         }
-
-        // Gamepad::Chatpad gp_chatpad = gamepad.get_chatpad();
-
-        for (const auto& map : CHATPAD_MAP)
+        else
         {
-            if (chatpad_pressed(gp_in.chatpad, map.gp_mask))
-            {
-                in_report_.dButtons[map.button_offset] |= map.sb_mask;
-            }
+            toggle_pressed[i] = false;
         }
+    }
 
-        for (const auto& map : CHATPAD_TOGGLE_MAP)
-        {
-            if (chatpad_pressed(gp_in.chatpad, map.gp_mask))
-            {
-                in_report_.dButtons[map.button_offset] |= map.sb_mask;
-            }
-        }
-
-        if (gp_in.buttons & Gamepad::BUTTON_X)
-        {
-            if (out_report_.Chaff_Extinguisher & 0x0F)
-            {
-                in_report_.dButtons[1] |= XboxOG::SB::Buttons1::EXTINGUISHER;
-            }
-            if (out_report_.Comm1_MagazineChange & 0x0F)
-            {
-                in_report_.dButtons[1] |= XboxOG::SB::Buttons1::WEAPONCONMAGAZINE;
-            }
-            if (out_report_.Washing_LineColorChange & 0xF0)
-            {
-                in_report_.dButtons[1] |= XboxOG::SB::Buttons1::WASHING;
-            }
-        }
-
-        if (chatpad_pressed(gp_in.chatpad, XInput::Chatpad::CODE_MESSENGER) || gp_in.buttons & Gamepad::BUTTON_BACK)
-        {
-            for (const auto& map : CHATPAD_MAP_ALT1)
-            {
-                if (chatpad_pressed(gp_in.chatpad, map.gp_mask))
-                {
-                    in_report_.dButtons[map.button_offset] |= map.sb_mask;
-                }
-            }
-            // for (uint8_t i = 0; i < sizeof(CHATPAD_MAP_ALT1) / sizeof(CHATPAD_MAP_ALT1[0]); i++)
-            // {
-            //     if (chatpad_pressed(gp_in.chatpad, CHATPAD_MAP_ALT1[i].gp_mask))
-            //     {
-            //         in_report_.dButtons[CHATPAD_MAP_ALT1[i].button_offset] |= CHATPAD_MAP_ALT1[i].sb_mask;
-            //     }
-            // }
-            if (gp_in.dpad & Gamepad::DPAD_UP || gp_in.dpad & Gamepad::DPAD_RIGHT)
-            {
-                in_report_.tunerDial += (prev_in_report_.tunerDial < 15) ? 1 : -15;
-            }
-            if (gp_in.dpad & Gamepad::DPAD_DOWN || gp_in.dpad & Gamepad::DPAD_LEFT)
-            {
-                in_report_.tunerDial -= (prev_in_report_.tunerDial > 0) ? 1 : -15;
-            }
-        }
-        else if (chatpad_pressed(gp_in.chatpad, XInput::Chatpad::CODE_ORANGE))
-        {
-            for (const auto& map : CHATPAD_MAP_ALT2)
-            {
-                if (chatpad_pressed(gp_in.chatpad, map.gp_mask))
-                {
-                    in_report_.dButtons[map.button_offset] |= map.sb_mask;
-                }
-            }
-            // for (uint8_t i = 0; i < sizeof(CHATPAD_MAP_ALT2) / sizeof(CHATPAD_MAP_ALT2[0]); i++)
-            // {
-            //     if (chatpad_pressed(gp_in.chatpad, CHATPAD_MAP_ALT2[i].gp_mask))
-            //     {
-            //         in_report_.dButtons[CHATPAD_MAP_ALT2[i].button_offset] |= CHATPAD_MAP_ALT2[i].sb_mask;
-            //     }
-            // }
-            if (!(gp_in.dpad & Gamepad::DPAD_LEFT) && !(gp_in.dpad & Gamepad::DPAD_RIGHT))
-            {
-                if (gp_in.dpad & Gamepad::DPAD_UP)
-                {
-                    in_report_.gearLever += (prev_in_report_.gearLever < XboxOG::SB::Gear::G5) ? 1 : 0;
-                }
-                if (gp_in.dpad & Gamepad::DPAD_DOWN)
-                {
-                    in_report_.gearLever -= (prev_in_report_.gearLever > XboxOG::SB::Gear::R) ? 1 : 0;
-                }
-            }
-        }
-
-        if (chatpad_pressed(gp_in.chatpad, XInput::Chatpad::CODE_SHIFT))
+    if (chatpad_pressed(gp_in_chatpad, XInput::Chatpad::CODE_SHIFT))
+    {
+        if (!toggle_pressed.back())
         {
             if (in_report_.dButtons[2] & XboxOG::SB::BUTTONS2_TOGGLE_MID)
             {
@@ -203,108 +140,193 @@ void XboxOGSBDevice::process(const uint8_t idx, Gamepad& gamepad)
             {
                 in_report_.dButtons[2] |= XboxOG::SB::BUTTONS2_TOGGLE_MID;
             }
+            toggle_pressed.back() = true;
+        }
+    }
+    else
+    {
+        toggle_pressed.back() = false;
+    }
+
+    if (gp_in.buttons & Gamepad::BUTTON_X)
+    {
+        if (out_report_.Chaff_Extinguisher & 0x0F)
+        {
+            in_report_.dButtons[1] |= XboxOG::SB::Buttons1::EXTINGUISHER;
+        }
+        if (out_report_.Comm1_MagazineChange & 0x0F)
+        {
+            in_report_.dButtons[1] |= XboxOG::SB::Buttons1::WEAPONCONMAGAZINE;
+        }
+        if (out_report_.Washing_LineColorChange & 0xF0)
+        {
+            in_report_.dButtons[1] |= XboxOG::SB::Buttons1::WASHING;
+        }
+    }
+
+    if (chatpad_pressed(gp_in_chatpad, XInput::Chatpad::CODE_MESSENGER) || gp_in.buttons & Gamepad::BUTTON_BACK)
+    {
+        for (const auto& map : CHATPAD_MAP_ALT1)
+        {
+            if (chatpad_pressed(gp_in_chatpad, map.gp_mask))
+            {
+                in_report_.dButtons[map.button_offset] |= map.sb_mask;
+            }
         }
 
-        in_report_.leftPedal        = Scale::uint8_to_uint16(gp_in.trigger_l);
-        in_report_.rightPedal       = Scale::uint8_to_uint16(gp_in.trigger_r);
-        in_report_.middlePedal      = chatpad_pressed(gp_in.chatpad, XInput::Chatpad::CODE_BACK) ? 0xFF00 : 0x0000;
-        in_report_.rotationLever    = chatpad_pressed(gp_in.chatpad, XInput::Chatpad::CODE_MESSENGER) ? 0 :
-                                    (gp_in.buttons & Gamepad::BUTTON_BACK) ? 0 :
-                                    (gp_in.dpad & Gamepad::DPAD_LEFT) ? INT16_MIN :
-                                    (gp_in.dpad & Gamepad::DPAD_RIGHT) ? INT16_MAX : 0;
-
-        in_report_.sightChangeX = Scale::invert_joy(gp_in.joystick_lx);
-        in_report_.sightChangeY = gp_in.joystick_ly;
-
-        int32_t axis_value = static_cast<int32_t>(Scale::invert_joy(gp_in.joystick_rx));
-
-        if (axis_value > XboxOG::SB::DEFAULT_DEADZONE)
+        if (gp_in.dpad & Gamepad::DPAD_UP && dpad_reset_)
         {
-            vmouse_x_ += axis_value / sensitivity_;
+            in_report_.tunerDial = (in_report_.tunerDial + 1) % 16;
+            dpad_reset_ = false;
+        }
+        else if (gp_in.dpad & Gamepad::DPAD_DOWN && dpad_reset_)
+        {
+            in_report_.tunerDial = (in_report_.tunerDial + 15) % 16;
+            dpad_reset_ = false;
+        }
+        else if (!(gp_in.dpad & Gamepad::DPAD_DOWN) && !(gp_in.dpad & Gamepad::DPAD_UP))
+        {
+            dpad_reset_ = true;
+        }
+    }
+    else if (chatpad_pressed(gp_in_chatpad, XInput::Chatpad::CODE_ORANGE))
+    {
+        for (const auto& map : CHATPAD_MAP_ALT2)
+        {
+            if (chatpad_pressed(gp_in_chatpad, map.gp_mask))
+            {
+                in_report_.dButtons[map.button_offset] |= map.sb_mask;
+            }
         }
 
-        axis_value = static_cast<int32_t>(Scale::invert_joy(gp_in.joystick_ry));
+        // if (!(gp_in.dpad & Gamepad::DPAD_LEFT) && !(gp_in.dpad & Gamepad::DPAD_RIGHT))
+        // {
+            if (gp_in.dpad & Gamepad::DPAD_UP && dpad_reset_)
+            {
+                if (in_report_.gearLever < XboxOG::SB::Gear::G5)
+                {
+                    in_report_.gearLever++;
+                }
+                dpad_reset_ = false;
+            }
+            else if (gp_in.dpad & Gamepad::DPAD_DOWN && dpad_reset_)
+            {
+                if (in_report_.gearLever > XboxOG::SB::Gear::R)
+                {
+                    in_report_.gearLever--;
+                }
+                dpad_reset_ = false;
+            }
+            else if (!(gp_in.dpad & Gamepad::DPAD_DOWN) && !(gp_in.dpad & Gamepad::DPAD_UP))
+            {
+                dpad_reset_ = true;
+            }
+        // }
+    }
+    else
+    {
+        dpad_reset_ = true;
+    }
 
-        if (axis_value > XboxOG::SB::DEFAULT_DEADZONE)
+    in_report_.leftPedal    = Scale::uint8_to_uint16(gp_in.trigger_l);
+    in_report_.rightPedal   = Scale::uint8_to_uint16(gp_in.trigger_r);
+    in_report_.middlePedal  = chatpad_pressed(  gp_in_chatpad, XInput::Chatpad::CODE_BACK) ? 0xFF00 : 0x0000;
+    in_report_.rotationLever= chatpad_pressed(  gp_in_chatpad, XInput::Chatpad::CODE_MESSENGER) ? 0 :
+                                                (gp_in.buttons & Gamepad::BUTTON_BACK) ? 0 :
+                                                (gp_in.dpad & Gamepad::DPAD_LEFT) ? INT_16::MIN :
+                                                (gp_in.dpad & Gamepad::DPAD_RIGHT) ? INT_16::MAX : 0;
+
+    in_report_.sightChangeX = gp_in.joystick_lx;
+    in_report_.sightChangeY = gp_in.joystick_ly;
+
+    int32_t axis_value_x = static_cast<int32_t>(gp_in.joystick_rx);
+    if (std::abs(axis_value_x) > DEFAULT_DEADZONE)
+    {
+        vmouse_x_ += axis_value_x / sensitivity_;
+    }
+
+    int32_t axis_value_y = static_cast<int32_t>(Scale::invert_joy(gp_in.joystick_ry));
+    if (std::abs(axis_value_y) > DEFAULT_DEADZONE)
+    {
+        vmouse_y_ -= axis_value_y / sensitivity_;
+    }
+
+    if (vmouse_x_ < 0) vmouse_x_ = 0;
+    if (vmouse_x_ > UINT_16::MAX) vmouse_x_ = UINT_16::MAX;
+    if (vmouse_y_ > UINT_16::MAX) vmouse_y_ = UINT_16::MAX;
+    if (vmouse_y_ < 0) vmouse_y_ = 0;
+
+    if (gp_in.buttons & Gamepad::BUTTON_L3)
+    {
+        if ((time_us_32() / 1000) - aim_reset_timer_ > 500)
         {
-            vmouse_y_ -= axis_value / sensitivity_;
+            vmouse_x_ = XboxOG::SB::AIMING_MID;
+            vmouse_y_ = XboxOG::SB::AIMING_MID;
+        }
+    }
+    else
+    {
+        aim_reset_timer_ = time_us_32() / 1000;
+    }
+
+    in_report_.aimingX = static_cast<uint16_t>(vmouse_x_);
+    in_report_.aimingY = static_cast<uint16_t>(vmouse_y_);
+
+    if (tud_suspended())
+    {
+        tud_remote_wakeup();
+    }
+    if (tud_xid::send_report_ready(0) &&
+        std::memcmp(&prev_in_report_, &in_report_, sizeof(XboxOG::SB::InReport)) &&
+        tud_xid::send_report(0, reinterpret_cast<uint8_t*>(&in_report_), sizeof(XboxOG::SB::InReport)))
+    {
+        std::memcpy(&prev_in_report_, &in_report_, sizeof(XboxOG::SB::InReport));
+    }
+
+    if (chatpad_pressed(gp_in_chatpad, XInput::Chatpad::CODE_ORANGE))
+    {
+        uint16_t new_sense = 0;
+
+        if (chatpad_pressed(gp_in_chatpad, XInput::Chatpad::CODE_9))
+        {
+            new_sense = 200;
+        }
+        else if (chatpad_pressed(gp_in_chatpad, XInput::Chatpad::CODE_8))
+        {
+            new_sense = 250;
+        }
+        else if (chatpad_pressed(gp_in_chatpad, XInput::Chatpad::CODE_7))
+        {
+            new_sense = 300;
+        }
+        else if (chatpad_pressed(gp_in_chatpad, XInput::Chatpad::CODE_6))
+        {
+            new_sense = 350;
+        }
+        else if (chatpad_pressed(gp_in_chatpad, XInput::Chatpad::CODE_5))
+        {
+            new_sense = 400;
+        }
+        else if (chatpad_pressed(gp_in_chatpad, XInput::Chatpad::CODE_4))
+        {
+            new_sense = 650;
+        }
+        else if (chatpad_pressed(gp_in_chatpad, XInput::Chatpad::CODE_3))
+        {
+            new_sense = 800;
+        }
+        else if (chatpad_pressed(gp_in_chatpad, XInput::Chatpad::CODE_2))
+        {
+            new_sense = 1000;
+        }
+        else if (chatpad_pressed(gp_in_chatpad, XInput::Chatpad::CODE_1))
+        {
+            new_sense = 1200;
         }
 
-        if (vmouse_x_ < 0) vmouse_x_ = 0;
-        if (vmouse_x_ > UINT16_MAX) vmouse_x_ = UINT16_MAX;
-        if (vmouse_y_ > UINT16_MAX) vmouse_y_ = UINT16_MAX;
-        if (vmouse_y_ < 0) vmouse_y_ = 0;
-
-        if (gp_in.buttons & Gamepad::BUTTON_L3)
+        if (new_sense != 0)
         {
-            if ((time_us_32() / 1000) - aim_reset_timer_ > 500)
-            {
-                vmouse_x_ = XboxOG::SB::AIMING_MID;
-                vmouse_y_ = XboxOG::SB::AIMING_MID;
-            }
-        }
-        else
-        {
-            aim_reset_timer_ = time_us_32() / 1000;
-        }
-
-        in_report_.aimingX = static_cast<uint16_t>(vmouse_x_);
-        in_report_.aimingY = static_cast<uint16_t>(vmouse_y_);
-
-        if (tud_suspended())
-        {
-            tud_remote_wakeup();
-        }
-        if (tud_xid::send_report_ready(0))
-        {
-            tud_xid::send_report(0, reinterpret_cast<uint8_t*>(&in_report_), sizeof(XboxOG::SB::InReport));
-        }
-
-        if (chatpad_pressed(gp_in.chatpad, XInput::Chatpad::CODE_ORANGE))
-        {
-            uint16_t new_sense = 0;
-
-            if (chatpad_pressed(gp_in.chatpad, XInput::Chatpad::CODE_9))
-            {
-                new_sense = 200;
-            }
-            else if (chatpad_pressed(gp_in.chatpad, XInput::Chatpad::CODE_8))
-            {
-                new_sense = 250;
-            }
-            else if (chatpad_pressed(gp_in.chatpad, XInput::Chatpad::CODE_7))
-            {
-                new_sense = 300;
-            }
-            else if (chatpad_pressed(gp_in.chatpad, XInput::Chatpad::CODE_6))
-            {
-                new_sense = 350;
-            }
-            else if (chatpad_pressed(gp_in.chatpad, XInput::Chatpad::CODE_5))
-            {
-                new_sense = 400;
-            }
-            else if (chatpad_pressed(gp_in.chatpad, XInput::Chatpad::CODE_4))
-            {
-                new_sense = 650;
-            }
-            else if (chatpad_pressed(gp_in.chatpad, XInput::Chatpad::CODE_3))
-            {
-                new_sense = 800;
-            }
-            else if (chatpad_pressed(gp_in.chatpad, XInput::Chatpad::CODE_2))
-            {
-                new_sense = 1000;
-            }
-            else if (chatpad_pressed(gp_in.chatpad, XInput::Chatpad::CODE_1))
-            {
-                new_sense = 1200;
-            }
-
-            if (new_sense != 0 && new_sense != sensitivity_)
-            {
-                sensitivity_ = new_sense;
-            }
+            sensitivity_ = new_sense;
         }
     }
 

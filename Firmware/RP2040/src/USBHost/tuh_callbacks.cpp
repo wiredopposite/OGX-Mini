@@ -9,7 +9,6 @@
 #include "USBHost/HostDriver/XInput/tuh_xinput/tuh_xinput.h"
 #include "USBHost/HostManager.h"
 #include "OGXMini/OGXMini.h"
-#include "Board/board_api.h"
 
 #if defined(CONFIG_EN_4CH)
 #include "I2CDriver/4Channel/I2CManager.h"
@@ -36,7 +35,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
         I2CManager::get_instance().get_driver()->notify_tuh_mounted();
 #endif //defined(CONFIG_EN_4CH)
 
-        OGXMini::update_tuh_status(true);
+        OGXMini::update_tud_status(true);
     }
 }
 
@@ -47,11 +46,11 @@ void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance)
 
     if (!host_manager.any_mounted())
     {
-// #if defined(CONFIG_EN_4CH)
-//         I2CManager::get_instance().get_driver()->notify_tuh_unmounted();
-// #endif //defined(CONFIG_EN_4CH)
+#if defined(CONFIG_EN_4CH)
+        I2CManager::get_instance().get_driver()->notify_tuh_unmounted();
+#endif //defined(CONFIG_EN_4CH)
 
-        OGXMini::update_tuh_status(false);
+        OGXMini::update_tud_status(false);
     }
 }
 
@@ -69,11 +68,11 @@ void tuh_xinput::mount_cb(uint8_t dev_addr, uint8_t instance, const tuh_xinput::
 
     if (host_manager.setup_driver(host_type, dev_addr, instance))
     {
-// #if defined(CONFIG_EN_4CH)
-//         I2CManager::get_instance().get_driver()->notify_tuh_mounted(host_type);
-// #endif //defined(CONFIG_EN_4CH)
-    
-        OGXMini::update_tuh_status(true);
+#if defined(CONFIG_EN_4CH)
+        I2CManager::get_instance().get_driver()->notify_tuh_mounted(host_type);
+#endif //defined(CONFIG_EN_4CH)
+
+        OGXMini::update_tud_status(true);
     }
 }
 
@@ -84,11 +83,11 @@ void tuh_xinput::unmount_cb(uint8_t dev_addr, uint8_t instance, const tuh_xinput
 
     if (!host_manager.any_mounted())
     {
-// #if defined(CONFIG_EN_4CH)
-//         I2CManager::get_instance().get_driver()->notify_tuh_mounted(host_manager.get_type(interface->dev_type));
-// #endif //defined(CONFIG_EN_4CH)
+#if defined(CONFIG_EN_4CH)
+        I2CManager::get_instance().get_driver()->notify_tuh_mounted(host_manager.get_type(interface->dev_type));
+#endif //defined(CONFIG_EN_4CH)
 
-        OGXMini::update_tuh_status(false);
+        OGXMini::update_tud_status(false);
     }
 }
 
@@ -99,16 +98,20 @@ void tuh_xinput::report_received_cb(uint8_t dev_addr, uint8_t instance, const ui
 
 void tuh_xinput::xbox360w_connect_cb(uint8_t dev_addr, uint8_t instance)
 {
-// #if defined(CONFIG_EN_4CH)
-//     uint8_t idx = HostManager::get_instance().get_gamepad_idx(HostManager::DriverClass::XINPUT, dev_addr, instance);
-//     I2CManager::get_instance().get_driver()->notify_xbox360w_connected(idx);
-// #endif //defined(CONFIG_EN_4CH)
+#if defined(CONFIG_EN_4CH)
+    uint8_t idx = HostManager::get_instance().get_gamepad_idx(HostManager::DriverClass::XINPUT, dev_addr, instance);
+    I2CManager::get_instance().get_driver()->notify_xbox360w_connected(idx);
+#endif //defined(CONFIG_EN_4CH)
+
+    HostManager::get_instance().connect_cb(HostManager::DriverClass::XINPUT, dev_addr, instance);
 }
 
 void tuh_xinput::xbox360w_disconnect_cb(uint8_t dev_addr, uint8_t instance)
 {
-// #if defined(CONFIG_EN_4CH)
-//     uint8_t idx = HostManager::get_instance().get_gamepad_idx(HostManager::DriverClass::XINPUT, dev_addr, instance);
-//     I2CManager::get_instance().get_driver()->notify_xbox360w_disconnected(idx);
-// #endif //defined(CONFIG_EN_4CH)
+#if defined(CONFIG_EN_4CH)
+    uint8_t idx = HostManager::get_instance().get_gamepad_idx(HostManager::DriverClass::XINPUT, dev_addr, instance);
+    I2CManager::get_instance().get_driver()->notify_xbox360w_disconnected(idx);
+#endif //defined(CONFIG_EN_4CH)
+
+    HostManager::get_instance().disconnect_cb(HostManager::DriverClass::XINPUT, dev_addr, instance);
 }

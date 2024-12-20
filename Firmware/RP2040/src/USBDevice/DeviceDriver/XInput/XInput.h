@@ -1,8 +1,6 @@
 #ifndef _XINPUT_DEVICE_H_
 #define _XINPUT_DEVICE_H_
 
-#include <pico/time.h>
-
 #include "USBDevice/DeviceDriver/DeviceDriver.h"
 #include "Descriptors/XInput.h"
 
@@ -23,8 +21,6 @@ public:
 private:
     XInput::InReport in_report_;
     XInput::OutReport out_report_;
-    XInput::InReport prev_in_report_;
-    XInput::OutReport prev_out_report_;
 };
 
 #endif // _XINPUT_DEVICE_H_

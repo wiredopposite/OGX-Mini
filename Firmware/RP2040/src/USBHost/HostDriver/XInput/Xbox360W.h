@@ -3,7 +3,6 @@
 
 #include <cstdint>
 
-#include "TaskQueue/TaskQueue.h"
 #include "Descriptors/XInput.h"
 #include "USBHost/HostDriver/HostDriver.h"
 
@@ -19,19 +18,12 @@ public:
     void process_report(Gamepad& gamepad, uint8_t address, uint8_t instance, const uint8_t* report, uint16_t len) override;
     bool send_feedback(Gamepad& gamepad, uint8_t address, uint8_t instance) override;
 
+    void connect_cb(Gamepad& gamepad, uint8_t address, uint8_t instance) override;
+    void disconnect_cb(Gamepad& gamepad, uint8_t address, uint8_t instance) override;
+
 private:
-    struct TimerInfo
-    {
-        uint8_t address;
-        uint8_t instance;
-        uint8_t led_quadrant;
-        uint32_t task_id;
-    };
-
-    TimerInfo timer_info_;
+    uint32_t tid_chatpad_keepalive_{0};
     XInput::InReportWireless prev_in_report_;
-
-    static bool timer_cb(struct repeating_timer *t);
 };
 
 #endif // _XBOX360_WIRELESS_HOST_H_

@@ -1,11 +1,10 @@
+/*  
+    Copyright ForsakenNGS 2021
+    https://github.com/ForsakenNGS/Pico_WS2812 
+*/
+
 #include "Board/Pico_WS2812/WS2812.hpp"
 #include "WS2812.pio.h"
-
-//#define DEBUG
-
-#ifdef DEBUG
-#include <stdio.h>
-#endif
 
 WS2812::WS2812(uint pin, uint length, PIO pio, uint sm)  {
     initialize(pin, length, pio, sm, NONE, GREEN, RED, BLUE);
@@ -42,16 +41,14 @@ void WS2812::initialize(uint pin, uint length, PIO pio, uint sm, DataByte b1, Da
     this->length = length;
     this->pio = pio;
     this->sm = sm;
-    this->data.fill(0);
+    this->data = new uint32_t[length];
     this->bytes[0] = b1;
     this->bytes[1] = b2;
     this->bytes[2] = b3;
     this->bytes[3] = b4;
     uint offset = pio_add_program(pio, &ws2812_program);
     uint bits = (b1 == NONE ? 24 : 32);
-    #ifdef DEBUG
-    printf("WS2812 / Initializing SM %u with offset %X at pin %u and %u data bits...\n", sm, offset, pin, bits);
-    #endif
+
     ws2812_program_init(pio, sm, offset, pin, 800000, bits);
 }
 
@@ -111,11 +108,6 @@ void WS2812::fill(uint32_t color, uint first, uint count) {
 }
 
 void WS2812::show() {
-    #ifdef DEBUG
-    for (uint i = 0; i < length; i++) {
-        printf("WS2812 / Put data: %08X\n", data[i]);
-    }
-    #endif
     for (uint i = 0; i < length; i++) {
         pio_sm_put_blocking(pio, sm, data[i]);
     }

@@ -1,11 +1,12 @@
-#ifndef _BOARD_API_H_
-#define _BOARD_API_H_
+#ifndef _OGXM_BOARD_API_H_
+#define _OGXM_BOARD_API_H_
 
 #include <cstdint>
+#include <string>
 
 namespace board_api
 {
-    void init_gpio();
+    void init_board();
     void set_led(bool state);
     void reboot();
 
@@ -14,4 +15,4 @@ namespace board_api
     void enter_esp32_prog_mode();
 }
 
-#endif // _BOARD_API_H_
+#endif // _OGXM_BOARD_API_H_

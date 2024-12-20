@@ -38,7 +38,6 @@ namespace board_api
     void init_pins();
     void set_led(uint8_t index, bool state);
     void set_led(bool state);
-    void check_reset_pin();
 }
 
 #endif // _BOARD_API_H_

@@ -1,7 +1,7 @@
 #include <cstring>
 #include <array>
 
-#include "Board/board_api.h"
+#include "USBHost/HostManager.h"
 #include "OGXMini/OGXMini.h"
 #include "I2CDriver/4Channel/I2CSlave.h"
 
@@ -40,10 +40,15 @@ void I2CSlave::process(Gamepad (&gamepads)[MAX_GAMEPADS])
     {
         return;
     }
+    //Don't want to hang up the i2c bus by doing this in the slave handler
     if (packet_in_.packet_id == static_cast<uint8_t>(PacketID::PAD))
     {
-        gamepads[0].set_pad_in(packet_in_.pad_in);
-
+        if (new_packet_in_)
+        {
+            new_packet_in_ = false;
+            gamepads[0].set_pad_in(packet_in_.pad_in);
+        }
+        
         if (gamepads[0].new_pad_out())
         {
             packet_out_.pad_out = gamepads[0].get_pad_out();
@@ -114,34 +119,38 @@ void I2CSlave::slave_handler(i2c_inst_t *i2c, i2c_slave_event_t event)
             {
                 case PacketID::PAD:
                     this_instance_->packet_in_ = *reinterpret_cast<PacketIn*>(buffer_in.data());
+                    this_instance_->new_packet_in_ = true;
                     *reinterpret_cast<PacketOut*>(buffer_out.data()) = this_instance_->packet_out_;
                     break;
+
                 case PacketID::STATUS:
                     buffer_out.data()[0] = sizeof(PacketStatus);
                     buffer_out.data()[1] = static_cast<uint8_t>(PacketID::STATUS);
-                    // if something is mounted by tuh, signal to not send gamepad data
-                    buffer_out.data()[2] = this_instance_->i2c_disabled_.load() ? static_cast<uint8_t>(SlaveStatus::NOT_READY) : static_cast<uint8_t>(SlaveStatus::READY);
+                    // if something is mounted by tuh, signal that we're not talking to the master
+                    buffer_out.data()[2] = 
+                        this_instance_->i2c_disabled_.load() ? 
+                        static_cast<uint8_t>(SlaveStatus::NOT_READY) : 
+                        static_cast<uint8_t>(SlaveStatus::READY);
                     break;
+
                 case PacketID::ENABLE:
                     buffer_out.data()[0] = sizeof(PacketStatus);
                     buffer_out.data()[1] = static_cast<uint8_t>(PacketID::STATUS);
                     buffer_out.data()[2] = static_cast<uint8_t>(SlaveStatus::RESP_OK);
-                    if (!this_instance_->i2c_disabled_.load())
-                    {
-                        // If no TUH devices are mounted, signal to connect usb
-                        OGXMini::update_tuh_status(true);
-                    }
+
+                    OGXMini::update_tud_status(true);
                     break;
+
                 case PacketID::DISABLE:
                     buffer_out.data()[0] = sizeof(PacketStatus);
                     buffer_out.data()[1] = static_cast<uint8_t>(PacketID::STATUS);
                     buffer_out.data()[2] = static_cast<uint8_t>(SlaveStatus::RESP_OK);
                     if (!this_instance_->i2c_disabled_.load())
                     {
-                        // If no TUH devices are mounted, signal to disconnect usb reset the pico
-                        OGXMini::update_tuh_status(false);
+                        OGXMini::update_tud_status(false);
                     }
                     break;
+
                 default:
                     break;
             }
@@ -155,6 +164,5 @@ void I2CSlave::slave_handler(i2c_inst_t *i2c, i2c_slave_event_t event)
 
         default:
             break;
-
     }
 }

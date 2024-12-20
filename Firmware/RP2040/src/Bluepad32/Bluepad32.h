@@ -14,7 +14,6 @@
 namespace bluepad32 
 {
     void run_task(Gamepad (&gamepads)[MAX_GAMEPADS]);
-    // std::array<bool, MAX_GAMEPADS> get_connected_map();
     bool any_connected();
 
 } //namespace bluepad32

@@ -35,14 +35,14 @@ UserProfile::UserProfile()
 
     analog_enabled = 1;
 
-    analog_off_up = 0;
-    analog_off_down = 1;
-    analog_off_left = 2;
-    analog_off_right = 3;
-    analog_off_a = 4;
-    analog_off_b = 5;
-    analog_off_x = 6;
-    analog_off_y = 7;
-    analog_off_lb = 8;
-    analog_off_rb = 9;
+    analog_off_up = Gamepad::ANALOG_OFF_UP;
+    analog_off_down = Gamepad::ANALOG_OFF_DOWN;
+    analog_off_left = Gamepad::ANALOG_OFF_LEFT;
+    analog_off_right = Gamepad::ANALOG_OFF_RIGHT;
+    analog_off_a = Gamepad::ANALOG_OFF_A;
+    analog_off_b = Gamepad::ANALOG_OFF_B;
+    analog_off_x = Gamepad::ANALOG_OFF_X;
+    analog_off_y = Gamepad::ANALOG_OFF_Y;
+    analog_off_lb = Gamepad::ANALOG_OFF_LB;
+    analog_off_rb = Gamepad::ANALOG_OFF_RB;
 }

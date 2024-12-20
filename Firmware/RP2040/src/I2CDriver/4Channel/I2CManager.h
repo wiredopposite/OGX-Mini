@@ -23,7 +23,7 @@ public:
         return instance;
     }
 
-    bool initialize_driver() //Gamepad idx 0 for slave to update on interrupt
+    bool initialize_driver()
     {
         uint8_t i2c_address = get_i2c_address();
         if (i2c_address == 0xFF)

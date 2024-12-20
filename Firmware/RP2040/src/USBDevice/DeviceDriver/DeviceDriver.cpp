@@ -1,3 +1,5 @@
+#include "class/cdc/cdc_device.h"
+#include "bsp/board_api.h"
 #include "USBDevice/DeviceDriver/DeviceDriver.h"
 
 uint16_t* DeviceDriver::get_string_descriptor(const char* value, uint8_t index)

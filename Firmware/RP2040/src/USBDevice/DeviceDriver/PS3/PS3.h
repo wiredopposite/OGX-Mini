@@ -22,11 +22,11 @@ public:
     const uint8_t* get_descriptor_device_qualifier_cb() override;
 
 private:
-    PS3::InReport in_report_;
-    PS3::OutReport out_report_;
+    PS3::InReport report_in_;
+    PS3::OutReport report_out_;
     PS3::BTInfo bt_info_;
     uint8_t ef_byte_;
-    bool new_out_report_{false};
+    bool new_report_out_{false};
 };
 
 #endif // _PS3_DEVICE_H_

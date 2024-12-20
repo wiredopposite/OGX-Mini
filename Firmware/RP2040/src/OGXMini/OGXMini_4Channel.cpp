@@ -1,5 +1,5 @@
 #include "board_config.h"
-#if (OGXM_BOARD == ADA_FEATHER) || (OGXM_BOARD == RP_ZERO) || (OGXM_BOARD == PI_PICO) || (OGXM_BOARD == PI_PICO2)
+#if OGXM_BOARD == INTERNAL_4CH || OGXM_BOARD == EXTERNAL_4CH
 
 #include <pico/multicore.h>
 
@@ -7,12 +7,13 @@
 #include "bsp/board_api.h"
 #include "pio_usb.h"
 
-#include "USBHost/HostManager.h"
 #include "USBDevice/DeviceManager.h"
-#include "OGXMini/OGXMini.h"
-#include "TaskQueue/TaskQueue.h"
-#include "Gamepad.h"
+#include "USBHost/HostManager.h"
 #include "Board/board_api.h"
+#include "OGXMini/OGXMini.h"
+#include "I2CDriver/4Channel/I2CManager.h"
+#include "Gamepad.h"
+#include "TaskQueue/TaskQueue.h"
 
 namespace OGXMini {
 
@@ -35,7 +36,7 @@ void core1_task()
         host_manager.send_feedback();
     });
 
-    while (true)
+    while (true) 
     {
         TaskQueue::Core1::process_tasks();
         tuh_task();
@@ -92,22 +93,23 @@ void run_program()
         gamepads_[i].set_profile(user_settings.get_profile_by_index(i));
     }
 
-    DeviceManager& device_manager = DeviceManager::get_instance();
-    device_manager.initialize_driver(user_settings.get_current_driver(), gamepads_);
-
+    DeviceManager::get_instance().initialize_driver(user_settings.get_current_driver(), gamepads_);
+    I2CManager::get_instance().initialize_driver();
+    
     multicore_reset_core1();
     multicore_launch_core1(core1_task);
 
     uint32_t tid_gp_check = TaskQueue::Core0::get_new_task_id();
     set_gp_check_timer(tid_gp_check, user_settings);
 
-    DeviceDriver* device_driver = device_manager.get_driver();
+    DeviceDriver* device_driver = DeviceManager::get_instance().get_driver();
+    I2CDriver* i2c_driver = I2CManager::get_instance().get_driver();
 
-    // Wait for something to call update_tud_status()
+    //Wait for something to call tud_init
     while (!tud_inited())
     {
         TaskQueue::Core0::process_tasks();
-        sleep_ms(100);
+        sleep_ms(10);
     }
 
     tud_inited_.store(true);
@@ -116,10 +118,8 @@ void run_program()
     {
         TaskQueue::Core0::process_tasks();
 
-        for (uint8_t i = 0; i < MAX_GAMEPADS; ++i)
-        {
-            device_driver->process(i, gamepads_[i]);
-        }
+        i2c_driver->process(gamepads_);
+        device_driver->process(0, gamepads_[0]);
 
         tud_task();
         sleep_us(100);
@@ -128,4 +128,4 @@ void run_program()
 
 } // namespace OGXMini
 
-#endif // (OGXM_BOARD == ADA_FEATHER) || (OGXM_BOARD == RP_ZERO) || (OGXM_BOARD == PI_PICO) || (OGXM_BOARD == PI_PICO2)
+#endif // OGXM_BOARD == INTERNAL_4CH || OGXM_BOARD == EXTERNAL_4CH

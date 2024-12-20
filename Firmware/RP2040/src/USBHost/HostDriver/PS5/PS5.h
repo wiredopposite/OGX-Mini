@@ -17,7 +17,6 @@ public:
     bool send_feedback(Gamepad& gamepad, uint8_t address, uint8_t instance) override;
 
 private:
-    PS5::InReport in_report_{};
     PS5::InReport prev_in_report_{};
     PS5::OutReport out_report_{};
 };

@@ -10,7 +10,7 @@
 namespace PS3 
 {
 	static constexpr uint8_t MAGIC_BYTES[8] = { 0x21, 0x26, 0x01, 0x07, 0x00, 0x00, 0x00, 0x00 };
-	static constexpr uint8_t JOYSTICK_MID = 0x80;
+	static constexpr uint8_t JOYSTICK_MID = 0x7F;
 	static constexpr uint16_t SIXAXIS_MID = 0xFF01;
 
 	namespace ReportID 
@@ -94,22 +94,19 @@ namespace PS3
 	struct InReport
 	{
 		uint8_t report_id;
-		uint8_t reserved0;
+		uint8_t unk0;
 
 		uint8_t buttons[3];
-
-		uint8_t reserved1;
+		uint8_t unk1;
 
 		uint8_t joystick_lx;
 		uint8_t joystick_ly;
 		uint8_t joystick_rx;
 		uint8_t joystick_ry;
 
-		uint8_t reserved2[2];
-
+		uint8_t unk2[2];
 		uint8_t move_power_status;
-
-		uint8_t reserved3;
+		uint8_t unk3;
 
 		uint8_t up_axis;
 		uint8_t right_axis;
@@ -126,7 +123,7 @@ namespace PS3
 		uint8_t cross_axis;
 		uint8_t square_axis;
 
-		uint8_t reserved4[3];
+		uint8_t unk4[3];
 
 		uint8_t plugged;
 		uint8_t power_status;
@@ -137,8 +134,7 @@ namespace PS3
 		uint16_t acceler_x;
 		uint16_t acceler_y;
 		uint16_t acceler_z;
-
-		uint16_t velocity_z;
+		uint16_t gyro_z;
 
 		InReport()
 		{
@@ -151,44 +147,50 @@ namespace PS3
 			plugged = PlugState::PLUGGED;
 			power_status = PowerState::FULL;
 			rumble_status = RumbleState::WIRED_RUMBLE;
-			acceler_x = acceler_y = acceler_z = velocity_z = SIXAXIS_MID;
+			acceler_x = acceler_y = acceler_z = gyro_z = SIXAXIS_MID;
 		}
 	};
 	static_assert(sizeof(InReport) == 49, "PS3::InReport size mismatch");
 
-	struct LEDs {
-		uint8_t time_enabled; /* the total time the led is active (0xff means forever) */
-		uint8_t duty_length;  /* how long a cycle is in deciseconds (0 means "really fast") */
-		uint8_t enabled;
-		uint8_t duty_off; /* % of duty_length the led is off (0xff means 100%) */
-		uint8_t duty_on;  /* % of duty_length the led is on (0xff mean 100%) */
-	};
-	static_assert(sizeof(LEDs) == 5, "PS3::LEDs size mismatch");
-
-	struct Rumble {
-		uint8_t reserved;
-		uint8_t right_duration; /* Right motor duration (0xff means forever) */
-		uint8_t right_motor_on; /* Right (small) motor on/off, only supports values of 0 or 1 (off/on) */
-		uint8_t left_duration;    /* Left motor duration (0xff means forever) */
-		uint8_t left_motor_force; /* left (large) motor, supports force values from 0 to 255 */
-	};
-	static_assert(sizeof(Rumble) == 5, "PS3::Rumble size mismatch");
-
 	struct OutReport 
 	{
-		struct Rumble rumble;
-		uint8_t padding[4];
-		uint8_t leds_bitmap; /* bitmap of enabled LEDs: LED_1 = 0x02, LED_2 = 0x04, ... */
-		struct LEDs led[4];    /* LEDx at (4 - x) */
-		struct LEDs reserved; /* LED5, not actually soldered */
+		//uint8_t report_id;
+		uint8_t reserved0;
+		struct Rumble 
+		{
+			uint8_t right_duration;   /* Right motor duration (0xff means forever) */
+			uint8_t right_motor_on;   /* Right (small) motor on/off, only supports values of 0 or 1 (off/on) */
+			uint8_t left_duration;    /* Left motor duration (0xff means forever) */
+			uint8_t left_motor_force; /* left (large) motor, supports force values from 0 to 255 */
+		} rumble;
+		uint8_t reserved1[4];
+		uint8_t leds_bitmap;      /* bitmap of enabled LEDs: LED_1 = 0x02, LED_2 = 0x04, ... */
+		struct LEDs 
+		{
+			uint8_t time_enabled; /* the total time the led is active (0xff means forever) */
+			uint8_t duty_length;  /* how long a cycle is in deciseconds (0 means "really fast") */
+			uint8_t enabled;
+			uint8_t duty_off;     /* % of duty_length the led is off (0xff means 100%) */
+			uint8_t duty_on;      /* % of duty_length the led is on (0xff mean 100%) */
+		} leds[4];                /* LEDx at (4 - x) */
+		struct LEDs unused;       /* LED5, not actually soldered */
+		uint8_t reserved2[13];
 
 		OutReport()
 		{
-			std::memcpy(this, DEFAULT_OUT_REPORT, sizeof(OutReport));
+			std::memset(this, 0, sizeof(OutReport));
+			std::memcpy(this, DEFAULT_OUT_REPORT, sizeof(DEFAULT_OUT_REPORT));
 		}
 	};
-	static_assert(sizeof(OutReport) == 35, "PS3::OutReport size mismatch");
-	static_assert(sizeof(OutReport) == sizeof(DEFAULT_OUT_REPORT));
+	static_assert(sizeof(OutReport) == 48, "PS3::OutReport size mismatch");
+	static_assert(sizeof(OutReport) >= sizeof(DEFAULT_OUT_REPORT));
+
+	static constexpr uint8_t DEFAULT_BT_INFO_HEADER[] =
+	{
+		0xFF, 0xFF,
+		0x00, 0x20, 0x40, 0xCE, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	};
 
 	struct BTInfo
 	{
@@ -200,20 +202,19 @@ namespace PS3
 		BTInfo()
 		{
 			std::memset(this, 0, sizeof(BTInfo));
-			std::memset(reserved0, 0xFF, sizeof(reserved0));
-			uint8_t addr[] = { 0x00, 0x20, 0x40, 0xCE, 0x00, 0x00, 0x00 };
-			std::memcpy(device_address, addr, sizeof(addr));
+			std::memcpy(device_address, DEFAULT_BT_INFO_HEADER, sizeof(DEFAULT_BT_INFO_HEADER));
 			for (uint8_t addr = 0; addr < 3; addr++) 
 			{
-				device_address[4 + addr] = static_cast<uint8_t>(get_rand_32() % 0xFF);
+				device_address[4 + addr] = static_cast<uint8_t>(get_rand_32() % 0xff);
 			}
 			for (uint8_t addr = 0; addr < 6; addr++) 
 			{
-				host_address[1 + addr] = static_cast<uint8_t>(get_rand_32() % 0xFF);
+				host_address[1 + addr] = static_cast<uint8_t>(get_rand_32() % 0xff);
 			}
 		}
 	};
 	static_assert(sizeof(BTInfo) == 17, "PS3::BTInfo size mismatch");
+	static_assert(sizeof(BTInfo) >= sizeof(DEFAULT_BT_INFO_HEADER));
 	#pragma pack(pop)
 
 	static const uint8_t STRING_LANGUAGE[]     = { 0x09, 0x04 };
@@ -327,128 +328,10 @@ namespace PS3
 		0xB1, 0x02,        //     Feature (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
 		0xC0,              //   End Collection
 		0xC0,              // End Collection
-		// 0x05, 0x01,        // Usage Page (Generic Desktop Ctrls)
-		// 0x09, 0x04,        // Usage (Joystick)
-		// 0xA1, 0x01,        // Collection (Application)
-		// 0xA1, 0x02,        //   Collection (Logical)
-		// 0x85, 0x01,        //     Report ID (1)
-		// 0x75, 0x08,        //     Report Size (8)
-		// 0x95, 0x01,        //     Report Count (1)
-		// 0x15, 0x00,        //     Logical Minimum (0)
-		// 0x26, 0xFF, 0x00,  //     Logical Maximum (255)
-		// 0x81, 0x03,        //     Input (Const,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
-		// 0x75, 0x01,        //     Report Size (1)
-		// 0x95, 0x13,        //     Report Count (19)
-		// 0x15, 0x00,        //     Logical Minimum (0)
-		// 0x25, 0x01,        //     Logical Maximum (1)
-		// 0x35, 0x00,        //     Physical Minimum (0)
-		// 0x45, 0x01,        //     Physical Maximum (1)
-		// 0x05, 0x09,        //     Usage Page (Button)
-		// 0x19, 0x01,        //     Usage Minimum (0x01)
-		// 0x29, 0x13,        //     Usage Maximum (0x13)
-		// 0x81, 0x02,        //     Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
-		// 0x75, 0x01,        //     Report Size (1)
-		// 0x95, 0x0D,        //     Report Count (13)
-		// 0x06, 0x00, 0xFF,  //     Usage Page (Vendor Defined 0xFF00)
-		// 0x81, 0x03,        //     Input (Const,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
-		// 0x15, 0x00,        //     Logical Minimum (0)
-		// 0x26, 0xFF, 0x00,  //     Logical Maximum (255)
-		// 0x05, 0x01,        //     Usage Page (Generic Desktop Ctrls)
-		// 0x09, 0x01,        //     Usage (Pointer)
-		// 0xA1, 0x00,        //     Collection (Physical)
-		// 0x75, 0x08,        //       Report Size (8)
-		// 0x95, 0x04,        //       Report Count (4)
-		// 0x35, 0x00,        //       Physical Minimum (0)
-		// 0x46, 0xFF, 0x00,  //       Physical Maximum (255)
-		// 0x09, 0x30,        //       Usage (X)
-		// 0x09, 0x31,        //       Usage (Y)
-		// 0x09, 0x32,        //       Usage (Z)
-		// 0x09, 0x35,        //       Usage (Rz)
-		// 0x81, 0x02,        //       Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
-		// 0xC0,              //     End Collection
-		// 0x05, 0x01,        //     Usage Page (Generic Desktop Ctrls)
-		// 0x75, 0x08,        //     Report Size (8)
-		// 0x95, 0x27,        //     Report Count (39)
-		// 0x09, 0x01,        //     Usage (Pointer)
-		// 0x81, 0x02,        //     Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
-		// 0x75, 0x08,        //     Report Size (8)
-		// 0x95, 0x30,        //     Report Count (48)
-		// 0x09, 0x01,        //     Usage (Pointer)
-		// 0x91, 0x02,        //     Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
-		// 0x75, 0x08,        //     Report Size (8)
-		// 0x95, 0x30,        //     Report Count (48)
-		// 0x09, 0x01,        //     Usage (Pointer)
-		// 0xB1, 0x02,        //     Feature (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
-		// 0xC0,              //   End Collection
-		// 0xA1, 0x02,        //   Collection (Logical)
-		// 0x85, 0x02,        //     Report ID (2)
-		// 0x75, 0x08,        //     Report Size (8)
-		// 0x95, 0x30,        //     Report Count (48)
-		// 0x09, 0x01,        //     Usage (Pointer)
-		// 0xB1, 0x02,        //     Feature (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
-		// 0xC0,              //   End Collection
-		// 0xA1, 0x02,        //   Collection (Logical)
-		// 0x85, 0xEE,        //     Report ID (-18)
-		// 0x75, 0x08,        //     Report Size (8)
-		// 0x95, 0x30,        //     Report Count (48)
-		// 0x09, 0x01,        //     Usage (Pointer)
-		// 0xB1, 0x02,        //     Feature (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
-		// 0xC0,              //   End Collection
-		// 0xA1, 0x02,        //   Collection (Logical)
-		// 0x85, 0xEF,        //     Report ID (-17)
-		// 0x75, 0x08,        //     Report Size (8)
-		// 0x95, 0x30,        //     Report Count (48)
-		// 0x09, 0x01,        //     Usage (Pointer)
-		// 0xB1, 0x02,        //     Feature (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
-		// 0xC0,              //   End Collection
-		// 0xC0,              // End Collection
 	};
-
-	// #define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + TUD_HID_DESC_LEN)
 
 	static const uint8_t CONFIGURATION_DESCRIPTORS[] =
 	{
-		// 0x09,        // bLength
-		// 0x02,        // bDescriptorType (Configuration)
-		// 0x29, 0x00,  // wTotalLength 41
-		// 0x01,        // bNumInterfaces 1
-		// 0x01,        // bConfigurationValue
-		// 0x00,        // iConfiguration (String Index)
-		// 0x80,        // bmAttributes
-		// 0xFA,        // bMaxPower 500mA
-
-		// 0x09,        // bLength
-		// 0x04,        // bDescriptorType (Interface)
-		// 0x00,        // bInterfaceNumber 0
-		// 0x00,        // bAlternateSetting
-		// 0x02,        // bNumEndpoints 2
-		// 0x03,        // bInterfaceClass
-		// 0x00,        // bInterfaceSubClass
-		// 0x00,        // bInterfaceProtocol
-		// 0x00,        // iInterface (String Index)
-
-		// 0x09,        // bLength
-		// 0x21,        // bDescriptorType (HID)
-		// 0x11, 0x01,  // bcdHID 1.11
-		// 0x00,        // bCountryCode
-		// 0x01,        // bNumDescriptors
-		// 0x22,        // bDescriptorType[0] (HID)
-		// 0x94, 0x00,  // wDescriptorLength[0] 148
-
-		// 0x07,        // bLength
-		// 0x05,        // bDescriptorType (Endpoint)
-		// 0x02,        // bEndpointAddress (OUT/H2D)
-		// 0x03,        // bmAttributes (Interrupt)
-		// 0x40, 0x00,  // wMaxPacketSize 64
-		// 0x0A,        // bInterval 10 (unit depends on device speed)
-
-		// 0x07,        // bLength
-		// 0x05,        // bDescriptorType (Endpoint)
-		// 0x81,        // bEndpointAddress (IN/D2H)
-		// 0x03,        // bmAttributes (Interrupt)
-		// 0x40, 0x00,  // wMaxPacketSize 64
-		// 0x0A,        // bInterval 10 (unit depends on device speed)
-
 		0x09,        // bLength
 		0x02,        // bDescriptorType (Configuration)
 		0x29, 0x00,  // wTotalLength 41
@@ -489,6 +372,68 @@ namespace PS3
 		0x03,        // bmAttributes (Interrupt)
 		0x40, 0x00,  // wMaxPacketSize 64
 		0x01,        // bInterval 1 (unit depends on device speed)
+	};
+
+	static constexpr uint8_t OUTPUT_0x01[] = 
+	{
+		0x01, 0x04, 0x00, 0x0b, 0x0c, 0x01, 0x02, 0x18, 
+		0x18, 0x18, 0x18, 0x09, 0x0a, 0x10, 0x11, 0x12,
+		0x13, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x02,
+		0x02, 0x02, 0x02, 0x00, 0x00, 0x00, 0x04, 0x04,
+		0x04, 0x04, 0x00, 0x00, 0x04, 0x00, 0x01, 0x02,
+		0x07, 0x00, 0x17, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+	};
+
+	// calibration data
+	static constexpr uint8_t OUTPUT_0xEF[] = 
+	{
+		0xef, 0x04, 0x00, 0x0b, 0x03, 0x01, 0xa0, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x01, 0xff, 0x01, 0xff, 0x01, 0xff, 0x01, 0xff,
+		0x01, 0xff, 0x01, 0xff, 0x01, 0xff, 0x01, 0xff,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06,
+	};
+
+	// unknown
+	static constexpr uint8_t OUTPUT_0xF5[] = 
+	{
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // host address - must match 0xf2
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+	};
+
+	// unknown
+	static constexpr uint8_t OUTPUT_0xF7[] = 
+	{
+		0x02, 0x01, 0xf8, 0x02, 0xe2, 0x01, 0x05, 0xff,
+		0x04, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+	};
+
+	// unknown
+	static constexpr uint8_t OUTPUT_0xF8[] = 
+	{
+		0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 	};
 } // namespace PS3
 

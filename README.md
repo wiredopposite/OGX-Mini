@@ -1,7 +1,7 @@
 # OGX-Mini
 ![OGX-Mini Boards](images/OGX-Mini-github.jpg "OGX-Mini Boards")
 
-Firmware for the RP2040, capable of emulating gamepads for several game consoles. The firmware comes in 6 flavors, the [Adafruit Feather USB Host board](https://www.adafruit.com/product/5723), Pi Pico, Waveshare RP2040-Zero, Pi Pico W, RP2040/ESP32 hybrid, and 4-Channel RP2040-Zero.
+Firmware for the RP2040, capable of emulating gamepads for several game consoles. The firmware comes in many flavors, supported on the [Adafruit Feather USB Host board](https://www.adafruit.com/product/5723), Pi Pico, Waveshare RP2040-Zero, Pi Pico W, RP2040/ESP32 hybrid, and a 4-Channel RP2040-Zero setup.
 
 ## Supported platforms
 - Original Xbox
@@ -9,6 +9,7 @@ Firmware for the RP2040, capable of emulating gamepads for several game consoles
 - Nintendo Switch (docked)
 - XInput (use [UsbdSecPatch](https://github.com/InvoxiPlayGames/UsbdSecPatch) for Xbox 360, or select the patch in J-Runner while flashing your NAND)
 - Playstation Classic
+- DInput
 
 ## Supported devices
 ### Wired controllers
@@ -68,14 +69,15 @@ Start = Plus (Switch) = Options (Dualsense/DS4)
 After a new mode is stored, the RP2040 will reset itself so you don't need to unplug it.
 
 ## Features new to v1.0.0
+- Bluetooth functionality for the Pico W and Pico+ESP32.
 - Web application for configuring deadzones and buttons mappings, supports up to 8 saved profiles.
-- Bluetooth functionality for the Pico W and ESP32 (in combination with an RP2040).
-- 4 channel functionality, connect 4 Picos via I2C and use your Xbox 360 wireless adapter.
-- Delayed USB mount until a controller is plugged in, useful for internal installation. 
+- Pi Pico 2 (RP2350) support.
+- 4 channel functionality, connect 4 Picos and use one Xbox 360 wireless adapter to control all 4.
+- Delayed USB mount until a controller is plugged in, useful for internal installation (non-Bluetooth boards only). 
 - Generic HID controller support.
 - Dualshock 3 emulation (minus gyros), rumble now works.
 - Steel Battalion controller emulation with a wireless Xbox 360 chatpad.
-- Xbox DVD dongle emulation, you must provide or dump your own firmware, see the Tools directory.
+- Xbox DVD dongle emulation. You must provide or dump your own firmware, see the Tools directory.
 - Analog button support on OG Xbox and PS3.
 - RGB LED support for RP2040-Zero and Adafruit Feather boards.
 
@@ -85,13 +87,12 @@ After a new mode is stored, the RP2040 will reset itself so you don't need to un
 - Anti-deadzone settings
 - More accurate report parser for unknown HID controllers
 - Hardware design for internal OG Xbox install
-- Hardware design for 4 channel adapter
+- Hardware design for 4 channel RP2040-Zero adapter
 - Wired Xbox 360 chatpad support
 - Wired Xbox One chatpad support
 - Switch (as input) rumble support
-- OG Xbox communicator support (in some form, will probably require custom hardware)
+- OG Xbox communicator support (in some form)
 - Generic bluetooth dongle support
-- Removal of some abstraction between TinyUSB class drivers and the rest of the app for decreased memory usage and (possible) speed improvement
 
 ## Hardware
 For Pi Pico, RP2040-Zero, 4 channel, and ESP32 configurations, please see the hardware folder for diagrams.

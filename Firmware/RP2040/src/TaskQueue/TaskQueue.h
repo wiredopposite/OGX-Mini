@@ -4,7 +4,10 @@
 #include <cstdint>
 #include <functional>
 
-/* Queue tasks to be executed with process_tasks() */
+#include "board_config.h"
+
+/*  Queue tasks to be executed with process_tasks() in the main loop on either core.
+    Don't use this on the core running BTStack, that is not safe. */
 namespace TaskQueue 
 {
     namespace Core0 
@@ -16,6 +19,7 @@ namespace TaskQueue
         void process_tasks();
     }
 
+#if OGXM_BOARD != PI_PICOW
     namespace Core1 
     {
         uint32_t get_new_task_id();
@@ -24,6 +28,7 @@ namespace TaskQueue
         bool queue_task(const std::function<void()>& function);
         void process_tasks();
     }
+#endif // OGXM_BOARD != PI_PICOW
 
 } // namespace TaskQueue
 

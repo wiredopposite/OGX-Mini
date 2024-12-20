@@ -7,9 +7,13 @@
 namespace PS5
 {
     static constexpr uint8_t DPAD_MASK = 0x0F;
-    static constexpr size_t IN_REPORT_CMP_SIZE = 12;
     static constexpr uint8_t JOYSTICK_MID = 0x80;
-    static constexpr uint8_t OUT_REPORT_ID = 5;
+
+    namespace OutReportID
+    {
+        static constexpr uint8_t CONTROL = 0x02;
+        static constexpr uint8_t RUMBLE = 0x05;
+    };
 
     namespace Buttons0
     {
@@ -68,30 +72,34 @@ namespace PS5
         uint16_t gyro[3]; // Gyroscope data for x, y, z axes
         uint16_t accel[3]; // Accelerometer data for x, y, z axes
         uint32_t sensor_timestamp; // Timestamp for sensor data
-        uint8_t reserved2;
+        uint8_t reserved0;
 
-        // Touchpad
-        struct dualsense_touch_point {
-            uint8_t counter : 7; // Incremented every time a finger touches the touchpad
-            uint8_t touching : 1; // Indicates if a finger is currently touching the touchpad
-            uint16_t x : 12; // X coordinate of the touchpoint
-            uint16_t y : 12; // Y coordinate of the touchpoint
+        struct Touchpad 
+        {
+            uint32_t counter : 7; // Incremented every time a finger touches the touchpad
+            uint32_t touching : 1; // Indicates if a finger is currently touching the touchpad
+            uint32_t x : 12; // X coordinate of the touchpoint
+            uint32_t y : 12; // Y coordinate of the touchpoint
         } points[2]; // Array of touchpoints (up to 2)
+        // uint32_t touchpad[2];
 
-        uint8_t reserved3[12];
+        uint8_t reserved1[12];
 
         uint8_t status; // ?
 
-        uint8_t reserved4[10];
+        uint8_t reserved2[10];
+
+        InReport()
+        {
+            std::memset(this, 0, sizeof(InReport));
+        }
     };
-    // static_assert(sizeof(InReport) == 52, "PS5::InReport is not correct size");
+    static_assert(sizeof(InReport) == 60, "PS5::InReport is not correct size");
 
     struct OutReport
     {
         uint8_t report_id;
-
-        uint8_t valid_flag0;
-        uint8_t valid_flag1;
+        uint8_t control_flag[2];
 
         /* For DualShock 4 compatibility mode. */
         uint8_t motor_right;
@@ -120,14 +128,19 @@ namespace PS5
         uint8_t audio_flags2; /* 3 first bits: speaker pre-gain */
 
         /* LEDs and lightbar */
-        uint8_t valid_flag2;
+        uint8_t led_control_flag;
         uint8_t reserved3[2];
-        uint8_t lightbar_setup;
+        uint8_t pulse_option;
         uint8_t led_brightness;
-        uint8_t player_leds;
+        uint8_t player_number;
         uint8_t lightbar_red;
         uint8_t lightbar_green;
         uint8_t lightbar_blue;
+
+        OutReport()
+        {
+            std::memset(this, 0, sizeof(OutReport));
+        }
     };
     static_assert(sizeof(OutReport) == 48);
     #pragma pack(pop)

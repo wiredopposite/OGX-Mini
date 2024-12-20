@@ -33,50 +33,68 @@ namespace Gamepad
         static constexpr uint16_t MISC  = 0x0800;
     }
 
+} // namespace Gamepad
+
+namespace Scale 
+{
+    namespace INT_16
+    {
+        static constexpr int16_t MIN = INT16_MIN;
+        static constexpr int16_t MID = 0;
+        static constexpr int16_t MAX = INT16_MAX;
+    }
+    namespace UINT_16
+    {
+        static constexpr uint16_t MIN = 0;
+        static constexpr uint16_t MID = 0x8000;
+        static constexpr uint16_t MAX = 0xFFFF;
+    }
     namespace UINT_8
     {
-        static constexpr uint8_t MID = 0x80;
-        static constexpr uint8_t MAX = 0xFF;
+        static constexpr uint8_t  MAX  = 0xFF;
+        static constexpr uint8_t  MID  = 0x80;
+        static constexpr uint8_t  MIN  = 0x00;
     }
-
     namespace INT_10
     {
         static constexpr int32_t  MIN  = -512;
         static constexpr int32_t  MAX  = 511;
     }
-
     namespace UINT_10
     {
         static constexpr int32_t MAX = 1023;
     }
 
-    static inline uint8_t scale_joystick(int32_t value)
+    static inline int16_t int10_to_int16(int32_t value)
     {
-        value = value - INT_10::MIN;
+        constexpr int32_t scale_factor = INT_16::MAX - INT_16::MIN;
+        constexpr int32_t range = INT_10::MAX - INT_10::MIN;
 
-        if (value >= UINT_10::MAX) 
+        if (value >= INT_10::MAX)
         {
-            return UINT_8::MAX;
+            return INT_16::MAX;
         }
-        else if (value <= 0) 
+        else if (value <= INT_10::MIN)
         {
-            return 0;
+            return INT_16::MIN;
+        }
+
+        int32_t scaled_value = (value - INT_10::MIN) * scale_factor;
+        return static_cast<int16_t>(scaled_value / range + INT_16::MIN);
+    }
+    static inline uint8_t uint10_to_uint8(int32_t value)
+    {
+        if (value > UINT_10::MAX) 
+        {
+            value = UINT_10::MAX;
+        }
+        else if (value < 0) 
+        {
+            value = 0;
         }
         return static_cast<uint8_t>(value >> 2);
     }
-    static inline uint8_t scale_trigger(int32_t value)
-    {
-        if (value >= UINT_10::MAX) 
-        {
-            return UINT_8::MAX;
-        }
-        else if (value <= 0) 
-        {
-            return 0;
-        }
-        return static_cast<uint8_t>(value >> 2);
-    }
-
-} // namespace Gamepad
+    
+} // namespace Scale
 
 #endif // GAMEPAD_H

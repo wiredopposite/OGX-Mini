@@ -1,11 +1,7 @@
 #include "board_config.h"
 #if (OGXM_BOARD == PI_PICOW)
 
-#include <pico/stdlib.h>
-#include <hardware/sync.h>
 #include <pico/multicore.h>
-#include <hardware/gpio.h>
-#include <hardware/clocks.h>
 #include <pico/cyw43_arch.h>
 
 #include "tusb.h"
@@ -15,26 +11,25 @@
 #include "Board/board_api.h"
 #include "Bluepad32/Bluepad32.h"
 #include "OGXMini/OGXMini.h"
+#include "Gamepad.h"
+#include "TaskQueue/TaskQueue.h"
 
 namespace OGXMini {
 
 Gamepad gamepads_[MAX_GAMEPADS];
 
+//Not using this for Pico W currently
+void update_tud_status(bool host_mounted) { }
+
 void core1_task()
 {
     if (cyw43_arch_init() != 0)
-    {
+    {        
         return;
     }
 
+    //Doesn't return, don't do anything with core1 unless it's executing within the BTStack loop
     bluepad32::run_task(gamepads_);
-}
-
-bool gp_check_cb(repeating_timer_t* rt)
-{
-    GPCheckContext* gp_check_ctx = static_cast<GPCheckContext*>(rt->user_data);
-    gp_check_ctx->driver_changed = gp_check_ctx->user_settings.check_for_driver_change(gamepads_[0]);
-    return true;
 }
 
 void run_program()
@@ -42,30 +37,37 @@ void run_program()
     UserSettings user_settings;
     user_settings.initialize_flash();
 
-    board_init();
-    board_api::init_gpio();
+    board_api::init_board();
 
     for (uint8_t i = 0; i < MAX_GAMEPADS; ++i)
     {
         gamepads_[i].set_profile(user_settings.get_profile_by_index(i));
     }
 
-    DeviceManager& device_manager = DeviceManager::get_instance();
-    device_manager.initialize_driver(user_settings.get_current_driver());
+    DeviceManager::get_instance().initialize_driver(user_settings.get_current_driver(), gamepads_);
 
     multicore_reset_core1();
     multicore_launch_core1(core1_task);
 
-    GPCheckContext gp_check_ctx = { false, user_settings };
-    repeating_timer_t gp_check_timer;
-    add_repeating_timer_ms(UserSettings::GP_CHECK_DELAY_MS, gp_check_cb, &gp_check_ctx, &gp_check_timer);
+    uint32_t tid_gp_check = TaskQueue::Core0::get_new_task_id();
+    TaskQueue::Core0::queue_delayed_task(tid_gp_check, UserSettings::GP_CHECK_DELAY_MS, true, [&user_settings]
+    {
+        //Check gamepad inputs for button combo to change usb device driver
+        if (user_settings.check_for_driver_change(gamepads_[0]))
+        {
+            //This will store the new mode and reboot the pico
+            user_settings.store_driver_type_safe(user_settings.get_current_driver());
+        }
+    });
 
-    DeviceDriver* device_driver = device_manager.get_driver();
+    DeviceDriver* device_driver = DeviceManager::get_instance().get_driver();
 
     tud_init(BOARD_TUD_RHPORT);
 
     while (true)
     {
+        TaskQueue::Core0::process_tasks();
+
         for (uint8_t i = 0; i < MAX_GAMEPADS; ++i)
         {
             device_driver->process(i, gamepads_[i]);
@@ -73,12 +75,6 @@ void run_program()
         }
 
         sleep_us(100);
-
-        if (gp_check_ctx.driver_changed)
-        {
-            cancel_repeating_timer(&gp_check_timer);
-            user_settings.store_driver_type_safe(user_settings.get_current_driver());
-        }
     }
 }
 

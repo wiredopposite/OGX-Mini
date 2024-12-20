@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.13)
 
 set(FW_NAME "OGX-Mini")
-set(FW_VERSION "v1.0.0-alpha")
+set(FW_VERSION "v1.0.0a")
 
 set(CMAKE_C_COMPILER arm-none-eabi-gcc)
 set(CMAKE_CXX_COMPILER arm-none-eabi-g++)
@@ -19,14 +19,6 @@ include(${CMAKE_CURRENT_LIST_DIR}/cmake/get_pico_sdk.cmake)
 apply_lib_patches(${EXTERNAL_DIR})
 get_pico_sdk(${EXTERNAL_DIR})
 
-include(${PICO_SDK_PATH}/pico_sdk_init.cmake)
-message("PICO_SDK_VERSION_STRING: ${PICO_SDK_VERSION_STRING}")
-if (PICO_SDK_VERSION_STRING VERSION_LESS "2.1.0")
-    message(FATAL_ERROR "Raspberry Pi Pico SDK version 2.1.0 (or later) required. Your version is ${PICO_SDK_VERSION_STRING}")
-endif()
-
-project(${FW_NAME} C CXX ASM)
-
 set(PICO_PIO_USB_PATH ${EXTERNAL_DIR}/Pico-PIO-USB)
 set(PICO_TINYUSB_PATH ${EXTERNAL_DIR}/tinyusb)
 set(BLUEPAD32_ROOT ${EXTERNAL_DIR}/bluepad32)
@@ -37,7 +29,7 @@ set(SOURCES_BOARD
     ${SRC}/main.cpp
 
     ${SRC}/OGXMini/OGXMini_Standard.cpp
-    ${SRC}/OGXMini/OGXMini_4Ch.cpp
+    ${SRC}/OGXMini/OGXMini_4Channel.cpp
     ${SRC}/OGXMini/OGXMini_PicoW.cpp
     ${SRC}/OGXMini/OGXMini_ESP32.cpp
 
@@ -81,6 +73,7 @@ set(INC_DIRS_BOARD
 )
 
 # Config options
+
 # Max gamepads
 set(MAX_GAMEPADS 1 CACHE STRING "Set number of gamepads, 1 to 4")
 if (MAX_GAMEPADS GREATER 4 OR MAX_GAMEPADS LESS 1)
@@ -96,6 +89,11 @@ set(PICO_BOARD none)
 
 if (OGXM_BOARD STREQUAL "PI_PICO")
     set(EN_USB_HOST TRUE)
+
+elseif (OGXM_BOARD STREQUAL "PI_PICO2")
+    set(EN_USB_HOST TRUE)
+    set(PICO_PLATFORM rp2350)
+    set(FLASH_SIZE_MB 4)
 
 elseif(OGXM_BOARD STREQUAL "ADA_FEATHER")
     set(EN_USB_HOST TRUE)
@@ -135,28 +133,29 @@ if(EN_USB_HOST)
     add_compile_definitions(CONFIG_EN_USB_HOST=1)
     list(APPEND SOURCES_BOARD
         ${SRC}/USBHost/tuh_callbacks.cpp
-
-        # ${SRC}/USBHost/HostDriver/DInput/DInput.cpp
-        # ${SRC}/USBHost/HostDriver/PSClassic/PSClassic.cpp
-        # ${SRC}/USBHost/HostDriver/SwitchWired/SwitchWired.cpp
-        # ${SRC}/USBHost/HostDriver/SwitchPro/SwitchPro.cpp
-        # ${SRC}/USBHost/HostDriver/PS5/PS5.cpp
-        # ${SRC}/USBHost/HostDriver/PS4/PS4.cpp
-        # ${SRC}/USBHost/HostDriver/PS3/PS3.cpp
-        # ${SRC}/USBHost/HostDriver/N64/N64.cpp
-        # ${SRC}/USBHost/HostDriver/HIDGeneric/HIDGeneric.cpp
-
-        ${SRC}/USBHost/HostDriver/XInput/XboxOG.cpp
-        ${SRC}/USBHost/HostDriver/XInput/XboxOne.cpp
-        ${SRC}/USBHost/HostDriver/XInput/Xbox360.cpp
-        ${SRC}/USBHost/HostDriver/XInput/Xbox360W.cpp
-        ${SRC}/USBHost/HostDriver/XInput/tuh_xinput/tuh_xinput.cpp
+        # HID
+        ${SRC}/USBHost/HostDriver/DInput/DInput.cpp
+        ${SRC}/USBHost/HostDriver/PSClassic/PSClassic.cpp
+        ${SRC}/USBHost/HostDriver/SwitchWired/SwitchWired.cpp
+        ${SRC}/USBHost/HostDriver/SwitchPro/SwitchPro.cpp
+        ${SRC}/USBHost/HostDriver/PS5/PS5.cpp
+        ${SRC}/USBHost/HostDriver/PS4/PS4.cpp
+        ${SRC}/USBHost/HostDriver/PS3/PS3.cpp
+        ${SRC}/USBHost/HostDriver/N64/N64.cpp
+        ${SRC}/USBHost/HostDriver/HIDGeneric/HIDGeneric.cpp
 
         ${SRC}/USBHost/HIDParser/HIDJoystick.cpp
         ${SRC}/USBHost/HIDParser/HIDReportDescriptor.cpp
         ${SRC}/USBHost/HIDParser/HIDReportDescriptorElements.cpp
         ${SRC}/USBHost/HIDParser/HIDReportDescriptorUsages.cpp
         ${SRC}/USBHost/HIDParser/HIDUtils.cpp
+
+        # XInput
+        ${SRC}/USBHost/HostDriver/XInput/XboxOG.cpp
+        ${SRC}/USBHost/HostDriver/XInput/XboxOne.cpp
+        ${SRC}/USBHost/HostDriver/XInput/Xbox360.cpp
+        ${SRC}/USBHost/HostDriver/XInput/Xbox360W.cpp
+        ${SRC}/USBHost/HostDriver/XInput/tuh_xinput/tuh_xinput.cpp
     )
     list(APPEND LIBS_BOARD
         tinyusb_host
@@ -211,7 +210,7 @@ if(EN_ESP32)
     add_compile_definitions(CONFIG_EN_ESP32=1)
     message(STATUS "ESP32 enabled.")
     list(APPEND SOURCES_BOARD
-        ${SRC}/I2CDriver/i2c_driver_esp32.cpp
+        ${SRC}/I2CDriver/ESP32/I2CDriver.cpp
     )
     list(APPEND LIBS_BOARD
         hardware_i2c
@@ -238,31 +237,45 @@ if(EXISTS ${SRC}/USBDevice/DeviceDriver/XboxOG/tud_xid/tud_xid_xremote_rom.h)
 endif()
 
 if(NOT EN_BLUETOOTH)
-    # add_compile_definitions(PICO_BOOT_STAGE2_CHOOSE_GENERIC_03H=1 PICO_XOSC_STARTUP_DELAY_MULTIPLIER=64)
     add_compile_definitions(PICO_XOSC_STARTUP_DELAY_MULTIPLIER=64)
 endif()
 
+include(${PICO_SDK_PATH}/pico_sdk_init.cmake)
+
+message("PICO_SDK_VERSION_STRING: ${PICO_SDK_VERSION_STRING}")
+if(PICO_SDK_VERSION_STRING VERSION_LESS "2.1.0")
+    message(FATAL_ERROR "Raspberry Pi Pico SDK version 2.1.0 (or later) required. Your version is ${PICO_SDK_VERSION_STRING}")
+endif()
+
+project(${FW_NAME} C CXX ASM)
+
 pico_sdk_init()
-# pico_enable_stdio_usb(${FW_NAME} 0)
 
 add_executable(${FW_NAME} ${SOURCES_BOARD})
 
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    pico_enable_stdio_uart(${FW_NAME} 1)
-    add_compile_definitions(CFG_TUSB_DEBUG=2)
-    add_compile_definitions(LOG=2)
-    # target_compile_options(${FW_NAME} PRIVATE
-    #     -Wall                # Enable most warnings
-    #     -Wextra              # Enable extra warnings
-    #     -Wconversion         # Warn on type conversion issues
-    #     -Wsign-conversion    # Warn on sign conversion issues
-    #     # -Werror              # Treat warnings as errors
-    # )
+set(BUILD_STR "")
 
-    add_link_options(
-        -Wl,--gc-sections
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(BUILD_STR "-Debug")
+    pico_enable_stdio_uart(${FW_NAME} 1)
+    target_compile_definitions(${FW_NAME} PRIVATE
+        PICO_DEFAULT_UART=1
+        PICO_DEFAULT_UART_TX_PIN=4
+        PICO_DEFAULT_UART_RX_PIN=5
+    )
+    add_compile_definitions(LOG=1)
+    add_compile_definitions(CFG_TUSB_DEBUG=1)
+    add_compile_definitions(OGXM_DEBUG=1)
+    target_compile_options(${FW_NAME} PRIVATE
+        -Wall                # Enable most warnings
+        -Wextra              # Enable extra warnings
+        -Wconversion         # Warn on type conversion issues
+        -Wsign-conversion    # Warn on sign conversion issues
+        -Wno-unused-parameter # Disable warnings for unused parameters
+        # -Werror              # Treat warnings as errors
     )
 elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+    pico_enable_stdio_uart(${FW_NAME} 0)
     add_compile_definitions(CFG_TUSB_DEBUG=0)
     add_compile_options(
         -O3                     # Optimize for speed
@@ -301,7 +314,7 @@ endif()
 
 target_link_libraries(${FW_NAME} PRIVATE ${LIBS_BOARD})
 
-set(EXE_FILENAME "${FW_NAME}-${FW_VERSION}-${OGXM_BOARD}")
+set(EXE_FILENAME "${FW_NAME}-${FW_VERSION}-${OGXM_BOARD}${BUILD_STR}")
 set_target_properties(${FW_NAME} PROPERTIES OUTPUT_NAME ${EXE_FILENAME})
 
 pico_add_extra_outputs(${FW_NAME})

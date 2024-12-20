@@ -5,7 +5,6 @@
 #include <atomic>
 #include <array>
 
-#include <pico/time.h>
 #include <hardware/gpio.h>
 #include <hardware/i2c.h>
 
@@ -17,7 +16,6 @@ class I2CMaster : public I2CDriver
 {
 public:
     ~I2CMaster() override;
-
     void initialize(uint8_t address) override;
     void process(Gamepad (&gamepads)[MAX_GAMEPADS]) override;
     void notify_tuh_mounted(HostDriver::Type host_type) override;
@@ -36,22 +34,23 @@ private:
     static constexpr size_t NUM_SLAVES = MAX_GAMEPADS - 1;
     static_assert(NUM_SLAVES > 0, "I2CMaster::NUM_SLAVES must be greater than 0 to use I2C");
 
-    // repeating_timer_t update_slave_timer_;
     uint32_t tid_update_slave_;
     bool update_slave_status_{false};
 
     std::atomic<bool> i2c_enabled_{false};
-    std::atomic<bool> notify_deinit_{false};
+    // std::atomic<bool> notify_deinit_{false};
     std::array<Slave, NUM_SLAVES> slaves_;  
 
     static bool slave_detected(uint8_t address);
-    static void update_slave_status(Slave& slave);
-    static bool update_slave_enabled(uint8_t address, bool enabled);
-    static bool update_slave_timer_cb(repeating_timer_t* rt);
+
+    void check_slave_status(Slave& slave);
+    bool notify_disable(Slave& slave);
+    SlaveStatus notify_enable(uint8_t address);
+    // bool send_packet_status(uint8_t address, PacketID packet_id);
+    SlaveStatus get_slave_status(uint8_t address);
 
     bool send_packet_in(Slave& slave, Gamepad& gamepad);
     bool get_packet_out(Slave& slave, Gamepad& gamepad);
-    void notify_tud_deinit();
 };
 
 #endif // I2C_MASTER_4CH_H

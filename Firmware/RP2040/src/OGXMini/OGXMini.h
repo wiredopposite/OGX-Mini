@@ -7,8 +7,6 @@
 
 namespace OGXMini
 {
-    enum class TUDStatus { INIT, DEINIT, NOCHANGE };
-
     static constexpr int32_t FEEDBACK_DELAY_MS = 150;
     static constexpr int32_t TUD_CHECK_DELAY_MS = 500;
 

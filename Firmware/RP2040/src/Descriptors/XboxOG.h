@@ -99,15 +99,12 @@ namespace XboxOG
             .bDeviceSubClass = 0x00,
             .bDeviceProtocol = 0x00,
             .bMaxPacketSize0 = CFG_TUD_ENDPOINT0_SIZE,
-
             .idVendor = 0x045E,
             .idProduct = 0x0289,
             .bcdDevice = 0x0121,
-
             .iManufacturer = 0x00,
             .iProduct = 0x00,
             .iSerialNumber = 0x00,
-
             .bNumConfigurations = 0x01
         };
 
@@ -184,8 +181,6 @@ namespace XboxOG
     {
         static constexpr uint16_t AIMING_MID = 32768;
         static constexpr uint16_t BUTTONS2_TOGGLE_MID = 0xFFFC;
-        static constexpr int16_t DEFAULT_DEADZONE = 7500;
-        static constexpr uint16_t DEFAULT_SENSE = 400;
 
         namespace Buttons0
         {

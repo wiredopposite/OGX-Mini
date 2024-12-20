@@ -33,25 +33,31 @@ static constexpr DeviceDriver::Type VALID_DRIVER_TYPES[] =
 #if defined(CONFIG_EN_4CH)
     DeviceDriver::Type::XBOXOG, 
     DeviceDriver::Type::XBOXOG_SB, 
-    DeviceDriver::Type::XBOXOG_XR,
+    DeviceDriver::Type::XINPUT,
     DeviceDriver::Type::PS3,
+    DeviceDriver::Type::PSCLASSIC, 
     DeviceDriver::Type::WEBAPP,
-    
+    #if defined(XREMOTE_ROM_AVAILABLE)
+        DeviceDriver::Type::XBOXOG_XR,
+    #endif
+
 #elif MAX_GAMEPADS > 1
     DeviceDriver::Type::DINPUT, 
     DeviceDriver::Type::SWITCH, 
     DeviceDriver::Type::WEBAPP,
 
-#else
+#else // MAX_GAMEPADS == 1
     DeviceDriver::Type::XBOXOG, 
     DeviceDriver::Type::XBOXOG_SB, 
-    DeviceDriver::Type::XBOXOG_XR,
-    // DeviceDriver::Type::DINPUT, 
+    DeviceDriver::Type::DINPUT, 
     DeviceDriver::Type::SWITCH, 
     DeviceDriver::Type::WEBAPP,
     DeviceDriver::Type::PS3,
     DeviceDriver::Type::PSCLASSIC, 
     DeviceDriver::Type::XINPUT,
+    #if defined(XREMOTE_ROM_AVAILABLE)
+        DeviceDriver::Type::XBOXOG_XR,
+    #endif
 
 #endif
 };
@@ -59,14 +65,14 @@ static constexpr DeviceDriver::Type VALID_DRIVER_TYPES[] =
 struct ComboMap { uint32_t combo; DeviceDriver::Type driver; };
 static constexpr std::array<ComboMap, 9> BUTTON_COMBO_MAP = 
 {{
-    { ButtonCombo::XBOXOG, DeviceDriver::Type::XBOXOG },
+    { ButtonCombo::XBOXOG,    DeviceDriver::Type::XBOXOG    },
     { ButtonCombo::XBOXOG_SB, DeviceDriver::Type::XBOXOG_SB },
     { ButtonCombo::XBOXOG_XR, DeviceDriver::Type::XBOXOG_XR },
-    { ButtonCombo::WEBAPP, DeviceDriver::Type::WEBAPP },
-    { ButtonCombo::DINPUT, DeviceDriver::Type::DINPUT },
-    { ButtonCombo::SWITCH, DeviceDriver::Type::SWITCH },
-    { ButtonCombo::XINPUT, DeviceDriver::Type::XINPUT },
-    { ButtonCombo::PS3, DeviceDriver::Type::PS3 },
+    { ButtonCombo::WEBAPP,    DeviceDriver::Type::WEBAPP    },
+    { ButtonCombo::DINPUT,    DeviceDriver::Type::DINPUT    },
+    { ButtonCombo::SWITCH,    DeviceDriver::Type::SWITCH    },
+    { ButtonCombo::XINPUT,    DeviceDriver::Type::XINPUT    },
+    { ButtonCombo::PS3,       DeviceDriver::Type::PS3       },
     { ButtonCombo::PSCLASSIC, DeviceDriver::Type::PSCLASSIC }
 }};
 
@@ -166,8 +172,6 @@ bool UserSettings::write_firmware_version_safe()
 
 DeviceDriver::Type UserSettings::get_current_driver()
 {
-    return DeviceDriver::Type::XINPUT;
-    
     if (current_driver_ != DeviceDriver::Type::NONE)
     {
         return current_driver_;
@@ -431,4 +435,16 @@ UserProfile UserSettings::get_profile_by_id(const uint8_t profile_id)
 DeviceDriver::Type UserSettings::get_default_driver()
 {
     return VALID_DRIVER_TYPES[0];
+}
+
+bool UserSettings::valid_mode(DeviceDriver::Type mode)
+{
+    for (const auto& driver : VALID_DRIVER_TYPES)
+    {
+        if (mode == driver)
+        {
+            return true;
+        }
+    }
+    return false;
 }

@@ -1,14 +1,24 @@
+#include <functional>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
 #include "c_wrapper.h"
-#include "I2CDriver/I2CDriver.h"
+#include "sdkconfig.h"
 #include "Bluepad32/Bluepad32.h"
 
-void run_bluepad32()
+void bp32_run_task(void* parameter)
 {
-    bluepad32::run_task();
+    BP32::run_task();
 }
 
-void run_i2c()
+void cpp_main()
 {
-    I2CDriver i2c_driver;
-    i2c_driver.run_task();
+    xTaskCreatePinnedToCore(
+        bp32_run_task,
+        "bp32",
+        2048 * 4,
+        NULL,
+        configMAX_PRIORITIES-4,
+        NULL,
+        0 );
 }

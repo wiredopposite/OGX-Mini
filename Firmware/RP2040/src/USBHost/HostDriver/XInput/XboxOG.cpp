@@ -7,7 +7,7 @@
 
 void XboxOGHost::initialize(Gamepad& gamepad, uint8_t address, uint8_t instance, const uint8_t* report_desc, uint16_t desc_len)
 {
-    gamepad.set_analog_enabled(true);
+    gamepad.set_analog_host(true);
     std::memset(&prev_in_report_, 0, sizeof(XboxOG::GP::InReport));
     tuh_xinput::receive_report(address, instance);
 }

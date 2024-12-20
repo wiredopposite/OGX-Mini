@@ -77,10 +77,10 @@ namespace tuh_xinput
             static constexpr tusb_control_request_t INIT_5   = { .bmRequestType = 0x40, .bRequest = 0xA1, .wValue = 0x0000, .wIndex = 0xE416, .wLength = 2 };
             static constexpr tusb_control_request_t INIT_6   = { .bmRequestType = 0xC0, .bRequest = 0xA1, .wValue = 0x0000, .wIndex = 0xE416, .wLength = 2 };
             //wValue in xbox360_wired_chatpad_command can be replaced with CHATPAD_CMD constants for different functions
-            static constexpr tusb_control_request_t CMD          = { .bmRequestType = 0x41, .bRequest = 0x00, .wValue = 0x0000, .wIndex = 0x0002, .wLength = 0 };
+            static constexpr tusb_control_request_t CMD         = { .bmRequestType = 0x41, .bRequest = 0x00, .wValue = 0x0000, .wIndex = 0x0002, .wLength = 0 };
             static constexpr tusb_control_request_t KEEPALIVE_1 = { .bmRequestType = 0x41, .bRequest = 0x00, .wValue = 0x001F, .wIndex = 0x0002, .wLength = 0 };
             static constexpr tusb_control_request_t KEEPALIVE_2 = { .bmRequestType = 0x41, .bRequest = 0x00, .wValue = 0x001E, .wIndex = 0x0002, .wLength = 0 };
-            static constexpr tusb_control_request_t LEDS_1B      = { .bmRequestType = 0x41, .bRequest = 0x00, .wValue = 0x001B, .wIndex = 0x0002, .wLength = 0 };
+            static constexpr tusb_control_request_t LEDS_1B     = { .bmRequestType = 0x41, .bRequest = 0x00, .wValue = 0x001B, .wIndex = 0x0002, .wLength = 0 };
         }
     }
 

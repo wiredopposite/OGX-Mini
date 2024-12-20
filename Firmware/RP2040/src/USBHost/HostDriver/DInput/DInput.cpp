@@ -7,7 +7,7 @@
 
 void DInputHost::initialize(Gamepad& gamepad, uint8_t address, uint8_t instance, const uint8_t* report_desc, uint16_t desc_len) 
 {
-    gamepad.set_analog_enabled(true);
+    gamepad.set_analog_host(true);
     tuh_hid_receive_report(address, instance);
 }
 

@@ -3,12 +3,12 @@
 
 #include <cstdint>
 #include <cstring>
-#include <atomic>
+#include <functional>
 #include <driver/i2c.h>
 
-#include "Reports.h"
+#include "sdkconfig.h"
+#include "RingBuffer.h"
 
-//Will probably refactor this to be event driven
 class I2CDriver 
 {
 public:
@@ -19,14 +19,67 @@ public:
         true;
 #endif
 
-    I2CDriver() = default;
-    ~I2CDriver() { i2c_driver_delete(I2C_NUM_0); }
+    enum class PacketID : uint8_t { UNKNOWN = 0, SET_PAD, GET_PAD };
 
-    void run_task();
+    #pragma pack(push, 1)
+    struct PacketIn
+    {
+        uint8_t packet_len;
+        uint8_t packet_id;
+        uint8_t index;
+        uint8_t dpad;
+        uint16_t buttons;
+        uint8_t trigger_l;
+        uint8_t trigger_r;
+        int16_t joystick_lx;
+        int16_t joystick_ly;
+        int16_t joystick_rx;
+        int16_t joystick_ry;
+
+        PacketIn()
+        {
+            std::memset(this, 0, sizeof(PacketIn));
+            packet_len = sizeof(PacketIn);
+            packet_id = static_cast<uint8_t>(PacketID::SET_PAD);
+        }
+    };
+    static_assert(sizeof(PacketIn) == 16, "PacketIn is misaligned");
+
+    struct PacketOut
+    {
+        uint8_t packet_len;
+        uint8_t packet_id;
+        uint8_t index;
+        uint8_t rumble_l;
+        uint8_t rumble_r;
+        uint8_t reserved[3];
+
+        PacketOut()
+        {
+            std::memset(this, 0, sizeof(PacketOut));
+            packet_len = sizeof(PacketOut);
+            packet_id = static_cast<uint8_t>(PacketID::GET_PAD);
+        }
+    };
+    static_assert(sizeof(PacketOut) == 8, "PacketOut is misaligned");
+    #pragma pack(pop)
+
+    I2CDriver() = default;
+    ~I2CDriver();
 
     void initialize_i2c();
 
-    static inline esp_err_t i2c_write_blocking(uint8_t address, const uint8_t* buffer, size_t len) 
+    //Does not return
+    static void run_tasks(void* parameter);
+
+    //Thread safe
+    inline void push_task(std::function<void()> task)
+    { 
+        task_queue_.push(task); 
+    }
+
+    //Don't call directly from another thread, use in push_task
+    inline esp_err_t i2c_write_blocking(uint8_t address, const uint8_t* buffer, size_t len) 
     {
         i2c_cmd_handle_t cmd = i2c_cmd_link_create();
         i2c_master_start(cmd);
@@ -39,7 +92,8 @@ public:
         return ret;
     }
 
-    static inline esp_err_t i2c_read_blocking(uint8_t address, uint8_t* buffer, size_t len) 
+    //Don't call directly from another thread, use in push_task
+    inline esp_err_t i2c_read_blocking(uint8_t address, uint8_t* buffer, size_t len) 
     {
         i2c_cmd_handle_t cmd = i2c_cmd_link_create();
         i2c_master_start(cmd);
@@ -59,17 +113,8 @@ public:
     }
 
 private:
-//     static constexpr bool MULTI_SLAVE = 
-// #if CONFIG_MULTI_SLAVE_MODE == 0
-//         false;
-// #else
-//         true;
-// #endif
-    // std::array<ReportIn, CONFIG_BLUEPAD32_MAX_DEVICES> report_in_buffer_{};
-    // std::array<std::atomic<bool>, CONFIG_BLUEPAD32_MAX_DEVICES> new_report_in_{false};
-    // std::array<ReportOut, CONFIG_BLUEPAD32_MAX_DEVICES> report_out_buffer_{};
-
-
+    using TaskQueue = RingBuffer<std::function<void()>, 6>;
+    static TaskQueue task_queue_;
 };
 
 #endif // _I2C_DRIVER_H_

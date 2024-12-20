@@ -5,6 +5,7 @@
 #include <atomic>
 #include <limits>
 #include <cstring>
+#include <array>
 #include <pico/mutex.h>
 
 #include "Scale.h"
@@ -38,16 +39,16 @@ public:
     static constexpr uint16_t BUTTON_SYS   = 0x0400;
     static constexpr uint16_t BUTTON_MISC  = 0x0800;
 
-    static constexpr uint8_t ANALOG_OFF_UP    = 1;
-    static constexpr uint8_t ANALOG_OFF_DOWN  = 2;
-    static constexpr uint8_t ANALOG_OFF_LEFT  = 3;
-    static constexpr uint8_t ANALOG_OFF_RIGHT = 4;
-    static constexpr uint8_t ANALOG_OFF_A     = 5;
-    static constexpr uint8_t ANALOG_OFF_B     = 6;
-    static constexpr uint8_t ANALOG_OFF_X     = 7;
-    static constexpr uint8_t ANALOG_OFF_Y     = 8;
-    static constexpr uint8_t ANALOG_OFF_LB    = 9;
-    static constexpr uint8_t ANALOG_OFF_RB    = 10;
+    static constexpr uint8_t ANALOG_OFF_UP    = 0;
+    static constexpr uint8_t ANALOG_OFF_DOWN  = 1;
+    static constexpr uint8_t ANALOG_OFF_LEFT  = 2;
+    static constexpr uint8_t ANALOG_OFF_RIGHT = 3;
+    static constexpr uint8_t ANALOG_OFF_A     = 4;
+    static constexpr uint8_t ANALOG_OFF_B     = 5;
+    static constexpr uint8_t ANALOG_OFF_X     = 6;
+    static constexpr uint8_t ANALOG_OFF_Y     = 7;
+    static constexpr uint8_t ANALOG_OFF_LB    = 8;
+    static constexpr uint8_t ANALOG_OFF_RB    = 9;
 
     //Mappings used by host to set buttons
 
@@ -97,7 +98,7 @@ public:
         int16_t joystick_ly;
         int16_t joystick_rx;
         int16_t joystick_ry;
-        uint8_t chatpad[3];
+        // uint8_t chatpad[3];
         uint8_t analog[10];
     
         PadIn()
@@ -116,15 +117,20 @@ public:
             std::memset(this, 0, sizeof(PadOut));
         }
     };
+
+    using ChatpadIn = std::array<uint8_t, 3>;
+
 #pragma pack(pop)
 
     Gamepad()
     {
         mutex_init(&pad_in_mutex_);
         mutex_init(&pad_out_mutex_);
+        mutex_init(&chatpad_in_mutex_);
         reset_pad_in();
         reset_pad_out();
-        setup_deadzones(profile_);
+        reset_chatpad_in();
+        setup_deadzones();
     };
 
     ~Gamepad() = default;
@@ -132,42 +138,70 @@ public:
     //Get
     inline bool new_pad_in() const { return new_pad_in_.load(); }
     inline bool new_pad_out() const { return new_pad_out_.load(); }
+
+    //True if both host and device have enabled analog
     inline bool analog_enabled() const { return analog_enabled_.load(std::memory_order_relaxed); }
 
     inline PadIn get_pad_in()
     {
         PadIn pad_in;
-        {
-            mutex_enter_blocking(&pad_in_mutex_);
-            pad_in = pad_in_;
-            new_pad_in_.store(false);
-            mutex_exit(&pad_in_mutex_);
-        }
+
+        mutex_enter_blocking(&pad_in_mutex_);
+        pad_in = pad_in_;
+        new_pad_in_.store(false);
+        mutex_exit(&pad_in_mutex_);
+
         return pad_in;
     }
 
     inline PadOut get_pad_out()
     {
         PadOut pad_out;
+
         mutex_enter_blocking(&pad_out_mutex_);
         pad_out = pad_out_;
         new_pad_out_.store(false);
         mutex_exit(&pad_out_mutex_);
+
         return pad_out;
+    }
+
+    inline ChatpadIn get_chatpad_in()
+    {
+        ChatpadIn chatpad_in;
+
+        mutex_enter_blocking(&chatpad_in_mutex_);
+        chatpad_in = chatpad_in_;
+        mutex_exit(&chatpad_in_mutex_);
+
+        return chatpad_in;
     }
 
     //Set
 
-    void set_analog_enabled(bool value) 
+    void set_analog_device(bool value) 
     { 
-        analog_enabled_.store(value); 
+        analog_device_.store(value); 
+        if (analog_host_.load() && analog_device_.load() && profile_.analog_enabled)
+        {
+            analog_enabled_.store(true);
+        }
+    }
+
+    void set_analog_host(bool value) 
+    { 
+        analog_host_.store(value); 
+        if (analog_host_.load() && analog_device_.load() && profile_.analog_enabled)
+        {
+            analog_enabled_.store(true);
+        }
     }
 
     void set_profile(const UserProfile& user_profile) 
     { 
         profile_ = user_profile; 
-        setup_mappings(profile_);
-        setup_deadzones(profile_);
+        setup_mappings();
+        setup_deadzones();
     }
 
     inline void set_pad_in(PadIn pad_in)
@@ -180,26 +214,32 @@ public:
         pad_in.joystick_ry = (pad_in.joystick_ry < dz_.joystick_r_neg || pad_in.joystick_ry > dz_.joystick_r_pos) ? pad_in.joystick_ry : INT_16::MID;
         pad_in.joystick_ly = profile_.invert_ly ? Scale::invert_joy(pad_in.joystick_ly) : pad_in.joystick_ly;
         pad_in.joystick_ry = profile_.invert_ry ? Scale::invert_joy(pad_in.joystick_ry) : pad_in.joystick_ry;
-        {
-            mutex_enter_blocking(&pad_in_mutex_);
-            pad_in_ = pad_in;
-            mutex_exit(&pad_in_mutex_);
-        }
+
+        mutex_enter_blocking(&pad_in_mutex_);
+        pad_in_ = pad_in;
         new_pad_in_.store(true);
+        mutex_exit(&pad_in_mutex_);
     }
 
-    inline void set_pad_out(PadOut pad_out)
+    inline void set_pad_out(const PadOut& pad_out)
     {
         mutex_enter_blocking(&pad_out_mutex_);
         pad_out_ = pad_out;
-        mutex_exit(&pad_out_mutex_);
         new_pad_out_.store(true);
+        mutex_exit(&pad_out_mutex_);
+    }
+
+    inline void set_chatpad_in(const ChatpadIn& chatpad_in)
+    {
+        mutex_enter_blocking(&chatpad_in_mutex_);
+        chatpad_in_ = chatpad_in;
+        mutex_exit(&chatpad_in_mutex_);
     }
 
     inline void reset_pad_in() 
 	{ 
         mutex_enter_blocking(&pad_in_mutex_);
-        std::memset(&pad_in_, 0, sizeof(pad_in_));
+        std::memset(reinterpret_cast<void*>(&pad_in_), 0, sizeof(pad_in_));
         mutex_exit(&pad_in_mutex_);
         new_pad_in_.store(true);
     }
@@ -207,21 +247,33 @@ public:
     inline void reset_pad_out()
     {
         mutex_enter_blocking(&pad_out_mutex_);
-        std::memset(&pad_out_, 0, sizeof(pad_out_));
-        mutex_exit(&pad_out_mutex_);
+        std::memset(reinterpret_cast<void*>(&pad_out_), 0, sizeof(pad_out_));
         new_pad_out_.store(true);
+        mutex_exit(&pad_out_mutex_);
+    }
+
+    inline void reset_chatpad_in()
+    {
+        mutex_enter_blocking(&chatpad_in_mutex_);
+        chatpad_in_.fill(0);
+        mutex_exit(&chatpad_in_mutex_);
     }
 
 private:
     mutex_t pad_in_mutex_;
     mutex_t pad_out_mutex_;
+    mutex_t chatpad_in_mutex_;
 
     PadOut pad_out_;
     PadIn pad_in_;
+    ChatpadIn chatpad_in_;
 
     std::atomic<bool> new_pad_in_{false};
     std::atomic<bool> new_pad_out_{false};
+
     std::atomic<bool> analog_enabled_{false};
+    std::atomic<bool> analog_host_{false};
+    std::atomic<bool> analog_device_{false};
 
     UserProfile profile_;
 
@@ -235,44 +287,44 @@ private:
         int16_t joystick_r_pos{0};
     } dz_;
 
-    void setup_mappings(const UserProfile& profile)
+    void setup_mappings()
     {
-        MAP_DPAD_UP         = profile.dpad_up;
-        MAP_DPAD_DOWN       = profile.dpad_down;
-        MAP_DPAD_LEFT       = profile.dpad_left;
-        MAP_DPAD_RIGHT      = profile.dpad_right;
-        MAP_DPAD_UP_LEFT    = profile.dpad_up | profile.dpad_left;
-        MAP_DPAD_UP_RIGHT   = profile.dpad_up | profile.dpad_right;
-        MAP_DPAD_DOWN_LEFT  = profile.dpad_down | profile.dpad_left;
-        MAP_DPAD_DOWN_RIGHT = profile.dpad_down | profile.dpad_right;
+        MAP_DPAD_UP         = profile_.dpad_up;
+        MAP_DPAD_DOWN       = profile_.dpad_down;
+        MAP_DPAD_LEFT       = profile_.dpad_left;
+        MAP_DPAD_RIGHT      = profile_.dpad_right;
+        MAP_DPAD_UP_LEFT    = profile_.dpad_up | profile_.dpad_left;
+        MAP_DPAD_UP_RIGHT   = profile_.dpad_up | profile_.dpad_right;
+        MAP_DPAD_DOWN_LEFT  = profile_.dpad_down | profile_.dpad_left;
+        MAP_DPAD_DOWN_RIGHT = profile_.dpad_down | profile_.dpad_right;
         MAP_DPAD_NONE       = 0;
 
-        MAP_BUTTON_A     = profile.button_a;
-        MAP_BUTTON_B     = profile.button_b;
-        MAP_BUTTON_X     = profile.button_x;
-        MAP_BUTTON_Y     = profile.button_y;
-        MAP_BUTTON_L3    = profile.button_l3;
-        MAP_BUTTON_R3    = profile.button_r3;
-        MAP_BUTTON_BACK  = profile.button_back;
-        MAP_BUTTON_START = profile.button_start;
-        MAP_BUTTON_LB    = profile.button_lb;
-        MAP_BUTTON_RB    = profile.button_rb;
-        MAP_BUTTON_SYS   = profile.button_sys;
-        MAP_BUTTON_MISC  = profile.button_misc;
+        MAP_BUTTON_A     = profile_.button_a;
+        MAP_BUTTON_B     = profile_.button_b;
+        MAP_BUTTON_X     = profile_.button_x;
+        MAP_BUTTON_Y     = profile_.button_y;
+        MAP_BUTTON_L3    = profile_.button_l3;
+        MAP_BUTTON_R3    = profile_.button_r3;
+        MAP_BUTTON_BACK  = profile_.button_back;
+        MAP_BUTTON_START = profile_.button_start;
+        MAP_BUTTON_LB    = profile_.button_lb;
+        MAP_BUTTON_RB    = profile_.button_rb;
+        MAP_BUTTON_SYS   = profile_.button_sys;
+        MAP_BUTTON_MISC  = profile_.button_misc;
 
-        MAP_ANALOG_OFF_UP    = profile.analog_off_up;
-        MAP_ANALOG_OFF_DOWN  = profile.analog_off_down;
-        MAP_ANALOG_OFF_LEFT  = profile.analog_off_left;
-        MAP_ANALOG_OFF_RIGHT = profile.analog_off_right;
-        MAP_ANALOG_OFF_A     = profile.analog_off_a;
-        MAP_ANALOG_OFF_B     = profile.analog_off_b;
-        MAP_ANALOG_OFF_X     = profile.analog_off_x;
-        MAP_ANALOG_OFF_Y     = profile.analog_off_y;
-        MAP_ANALOG_OFF_LB    = profile.analog_off_lb;
-        MAP_ANALOG_OFF_RB    = profile.analog_off_rb;
+        MAP_ANALOG_OFF_UP    = profile_.analog_off_up;
+        MAP_ANALOG_OFF_DOWN  = profile_.analog_off_down;
+        MAP_ANALOG_OFF_LEFT  = profile_.analog_off_left;
+        MAP_ANALOG_OFF_RIGHT = profile_.analog_off_right;
+        MAP_ANALOG_OFF_A     = profile_.analog_off_a;
+        MAP_ANALOG_OFF_B     = profile_.analog_off_b;
+        MAP_ANALOG_OFF_X     = profile_.analog_off_x;
+        MAP_ANALOG_OFF_Y     = profile_.analog_off_y;
+        MAP_ANALOG_OFF_LB    = profile_.analog_off_lb;
+        MAP_ANALOG_OFF_RB    = profile_.analog_off_rb;
     }
 
-    void setup_deadzones(const UserProfile& profile) //Deadzones in the profile are 0-255 (0-100%)
+    void setup_deadzones() //Deadzones in the profile are 0-255 (0-100%)
     {
         dz_.trigger_l = profile_.dz_trigger_l;
         dz_.trigger_r = profile_.dz_trigger_r;

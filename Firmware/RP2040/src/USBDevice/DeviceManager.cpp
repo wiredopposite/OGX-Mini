@@ -16,44 +16,56 @@
 #include "USBDevice/DeviceDriver/UARTBridge/UARTBridge.h"
 #endif // defined(CONFIG_EN_UART_BRIDGE)
 
-void DeviceManager::initialize_driver(DeviceDriver::Type driver_type)
+void DeviceManager::initialize_driver(DeviceDriver::Type driver_type, Gamepad(&gamepads)[MAX_GAMEPADS])
 {
+    bool has_analog = false; //TODO: Put gamepad setup in the drivers themselves
     switch (driver_type)
     {
         case DeviceDriver::Type::DINPUT:
-            device_driver_ = new DInputDevice();
+            has_analog = true;
+            device_driver_ = std::make_unique<DInputDevice>();
             break;
         case DeviceDriver::Type::PS3:
-            device_driver_ = new PS3Device();
+            has_analog = true;
+            device_driver_ = std::make_unique<PS3Device>();
             break;
         case DeviceDriver::Type::PSCLASSIC:
-            device_driver_ = new PSClassicDevice();
+            device_driver_ = std::make_unique<PSClassicDevice>();
             break;
         case DeviceDriver::Type::SWITCH:
-            device_driver_ = new SwitchDevice();
+            device_driver_ = std::make_unique<SwitchDevice>();
             break;
         case DeviceDriver::Type::XINPUT:
-            device_driver_ = new XInputDevice();
+            device_driver_ = std::make_unique<XInputDevice>();
             break;
         case DeviceDriver::Type::XBOXOG:
-            device_driver_ = new XboxOGDevice();
+            has_analog = true;
+            device_driver_ = std::make_unique<XboxOGDevice>();
             break;
         case DeviceDriver::Type::XBOXOG_SB:
-            device_driver_ = new XboxOGSBDevice();
+            device_driver_ = std::make_unique<XboxOGSBDevice>();
             break;
         case DeviceDriver::Type::XBOXOG_XR:
-            device_driver_ = new XboxOGXRDevice();
+            device_driver_ = std::make_unique<XboxOGXRDevice>();
             break;
         case DeviceDriver::Type::WEBAPP:
-            device_driver_ = new WebAppDevice();
+            device_driver_ = std::make_unique<WebAppDevice>();
             break;
 #if defined(CONFIG_EN_UART_BRIDGE)
         case DeviceDriver::Type::UART_BRIDGE:
-            device_driver_ = new UARTBridgeDevice();
+            device_driver_ = std::make_unique<UARTBridgeDevice>();
             break;
 #endif //defined(CONFIG_EN_UART_BRIDGE)
         default:
             return;
+    }
+
+    if (has_analog)
+    {
+        for (size_t i = 0; i < MAX_GAMEPADS; ++i)
+        {
+            gamepads[i].set_analog_device(true);
+        }
     }
 
     device_driver_->initialize();

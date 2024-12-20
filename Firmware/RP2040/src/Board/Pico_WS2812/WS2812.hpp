@@ -1,3 +1,8 @@
+/*  
+    Copyright ForsakenNGS 2021
+    https://github.com/ForsakenNGS/Pico_WS2812 
+*/
+
 #ifndef WS2812_H
 #define WS2812_H
 
@@ -48,7 +53,7 @@ class WS2812 {
         PIO pio;
         uint sm;
         DataByte bytes[4];
-        std::array<uint32_t, 20> data;
+        uint32_t *data;
 
         void initialize(uint pin, uint length, PIO pio, uint sm, DataByte b1, DataByte b2, DataByte b3, DataByte b4);
         uint32_t convertData(uint32_t rgbw);

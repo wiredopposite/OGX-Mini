@@ -7,8 +7,7 @@
 extern "C" {
 #endif
 
-void run_bluepad32();
-void run_i2c();
+void cpp_main();
 
 #ifdef __cplusplus
 }

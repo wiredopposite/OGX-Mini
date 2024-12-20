@@ -29,8 +29,10 @@ struct BTDevice
 };
 
 BTDevice bt_devices_[MAX_GAMEPADS];
+btstack_timer_source_t feedback_timer_;
 btstack_timer_source_t led_timer_;
 bool led_timer_set_{false};
+bool feedback_timer_set_{false};
 
 //This solves a function pointer/crash issue with bluepad32
 void set_rumble(uni_hid_device_t* bp_device, uint16_t length, uint8_t rumble_l, uint8_t rumble_r)
@@ -117,11 +119,7 @@ static void init_complete_cb(void)
 {
     uni_bt_enable_new_connections_unsafe(true);
 
-    // Based on runtime condition, you can delete or list the stored BT keys.
-    if (1)
-        uni_bt_del_keys_unsafe();
-    else
-        uni_bt_list_keys_unsafe();
+    // uni_bt_del_keys_unsafe();
 
     uni_property_dump_all();
 }
@@ -155,6 +153,11 @@ static void device_disconnected_cb(uni_hid_device_t* device)
         btstack_run_loop_set_timer(&led_timer_, LED_CHECK_TIME_MS);
         btstack_run_loop_add_timer(&led_timer_);
     }
+    if (feedback_timer_set_ && !any_connected())
+    {
+        feedback_timer_set_ = false;
+        btstack_run_loop_remove_timer(&feedback_timer_);
+    }
 }
 
 static uni_error_t device_ready_cb(uni_hid_device_t* device) 
@@ -171,6 +174,14 @@ static uni_error_t device_ready_cb(uni_hid_device_t* device)
         led_timer_set_ = false;
         btstack_run_loop_remove_timer(&led_timer_);
         board_api::set_led(true);
+    }
+    if (!feedback_timer_set_)
+    {
+        feedback_timer_set_ = true;
+        feedback_timer_.process = send_feedback_cb;
+        feedback_timer_.context = nullptr;
+        btstack_run_loop_set_timer(&feedback_timer_, FEEDBACK_TIME_MS);
+        btstack_run_loop_add_timer(&feedback_timer_);
     }
     return UNI_ERROR_SUCCESS;
 }
@@ -283,12 +294,6 @@ void run_task(Gamepad (&gamepads)[MAX_GAMEPADS])
     uni_platform_set_custom(get_driver());
     uni_init(0, nullptr);
 
-    btstack_timer_source_t feedback_timer;
-    feedback_timer.process = send_feedback_cb;
-    feedback_timer.context = nullptr;
-    btstack_run_loop_set_timer(&feedback_timer, FEEDBACK_TIME_MS);
-    btstack_run_loop_add_timer(&feedback_timer);
-
     led_timer_set_ = true;
     led_timer_.process = check_led_cb;
     led_timer_.context = nullptr;
@@ -296,16 +301,6 @@ void run_task(Gamepad (&gamepads)[MAX_GAMEPADS])
     btstack_run_loop_add_timer(&led_timer_);
 
     btstack_run_loop_execute();
-}
-
-std::array<bool, MAX_GAMEPADS> get_connected_map()
-{
-    std::array<bool, MAX_GAMEPADS> mounted_map;
-    for (uint8_t i = 0; i < MAX_GAMEPADS; ++i)
-    {
-        mounted_map[i] = bt_devices_[i].connected;
-    }
-    return mounted_map;
 }
 
 bool any_connected()

@@ -8,10 +8,9 @@ void WebAppDevice::initialize()
 {
     class_driver_ = 
     {
-    #if CFG_TUSB_DEBUG >= 2
-        .name = "WEBAPP",
-    #endif
+        .name = TUD_DRV_NAME("WEBAPP"),
         .init = cdcd_init,
+        .deinit = cdcd_deinit,
         .reset = cdcd_reset,
         .open = cdcd_open,
         .control_xfer_cb = cdcd_control_xfer_cb,
@@ -36,7 +35,7 @@ void WebAppDevice::process(const uint8_t idx, Gamepad& gamepad)
     switch (in_report_.report_id)
     {
         case ReportID::INIT_READ:
-            in_report_.input_mode = static_cast<uint8_t>(driver_type_);
+            in_report_.input_mode = static_cast<uint8_t>(user_settings_.get_current_driver());
             in_report_.player_idx = 0;
             in_report_.report_id = ReportID::RESP_OK;
             in_report_.max_gamepads = MAX_GAMEPADS;
@@ -49,7 +48,7 @@ void WebAppDevice::process(const uint8_t idx, Gamepad& gamepad)
             break;
 
         case ReportID::READ_PROFILE:
-            in_report_.input_mode = static_cast<uint8_t>(driver_type_);
+            in_report_.input_mode = static_cast<uint8_t>(user_settings_.get_current_driver());
             in_report_.profile = user_settings_.get_profile_by_id(in_report_.profile.id);
             in_report_.report_id = ReportID::RESP_OK;
 
@@ -58,7 +57,7 @@ void WebAppDevice::process(const uint8_t idx, Gamepad& gamepad)
             break;
 
         case ReportID::WRITE_PROFILE:
-            if (in_report_.input_mode != static_cast<uint8_t>(driver_type_) && in_report_.input_mode != 0)
+            if (user_settings_.valid_mode(static_cast<DeviceDriver::Type>(in_report_.input_mode)))
             {
                 success = user_settings_.store_profile_and_driver_type_safe(static_cast<DeviceDriver::Type>(in_report_.input_mode), in_report_.player_idx, in_report_.profile);
             }
@@ -93,50 +92,47 @@ bool WebAppDevice::vendor_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_co
 
 const uint16_t * WebAppDevice::get_descriptor_string_cb(uint8_t index, uint16_t langid) 
 {
-	size_t chr_count;
+    static uint16_t desc_str[32 + 1];
+    size_t char_count = 0;
 
-	switch ( index ) 
-	{
-		case CDCDesc::STRID_LANGID:
-			std::memcpy(&CDCDesc::_desc_str[1], CDCDesc::STRING_DESCRIPTORS[0], 2);
-			chr_count = 1;
-			break;
+    switch(index)
+    {
+        case 0:
+            std::memcpy(&desc_str[1], CDCDesc::DESC_STRING[0], 2);
+            char_count = 1;
+            break;
 
-		case CDCDesc::STRID_SERIAL:
-			chr_count = board_usb_get_serial(CDCDesc::_desc_str + 1, 32);
-			break;
+        case 3:
+            char_count = board_usb_get_serial(&desc_str[1], 32);
+            break;
 
-		default:
-			if ( !(index < sizeof(CDCDesc::STRING_DESCRIPTORS) / sizeof(CDCDesc::STRING_DESCRIPTORS[0])) ) 
+        default:
+            if (index >= sizeof(CDCDesc::DESC_STRING) / sizeof(CDCDesc::DESC_STRING[0]))
             {
-                return NULL;
+                return nullptr;
+            }
+            const char *str = reinterpret_cast<const char *>(CDCDesc::DESC_STRING[index]);
+            char_count = std::strlen(str);
+            const size_t max_count = sizeof(desc_str) / sizeof(desc_str[0]) - 1;    
+            if (char_count > max_count)
+            {
+                char_count = max_count;
             }
 
-			const char *str = CDCDesc::STRING_DESCRIPTORS[index];
-
-			chr_count = strlen(str);
-			size_t const max_count = sizeof(CDCDesc::_desc_str) / sizeof(CDCDesc::_desc_str[0]) - 1;
-
-			if ( chr_count > max_count ) 
+            for (size_t i = 0; i < char_count; i++)
             {
-                chr_count = max_count;
+                desc_str[1 + i] = str[i];
             }
+            break;
+    }
 
-			for ( size_t i = 0; i < chr_count; i++ ) 
-            {
-				CDCDesc::_desc_str[1 + i] = str[i];
-			}
-			break;
-	}
-
-	CDCDesc::_desc_str[0] = (uint16_t) ((TUSB_DESC_STRING << 8) | (2 * chr_count + 2));
-
-	return CDCDesc::_desc_str;
+    desc_str[0] = static_cast<uint16_t>((TUSB_DESC_STRING << 8) | (2 * char_count + 2));
+    return desc_str;
 }
 
 const uint8_t * WebAppDevice::get_descriptor_device_cb() 
 {
-    return reinterpret_cast<const uint8_t*>(&CDCDesc::DEVICE_DESCRIPTORS);
+    return reinterpret_cast<const uint8_t*>(&CDCDesc::DESC_DEVICE);
 }
 
 const uint8_t * WebAppDevice::get_hid_descriptor_report_cb(uint8_t itf) 
@@ -146,7 +142,7 @@ const uint8_t * WebAppDevice::get_hid_descriptor_report_cb(uint8_t itf)
 
 const uint8_t * WebAppDevice::get_descriptor_configuration_cb(uint8_t index) 
 {
-    return CDCDesc::CONFIGURATION_DESCRIPTORS;
+    return CDCDesc::DESC_CONFIG;
 }
 
 const uint8_t * WebAppDevice::get_descriptor_device_qualifier_cb() 

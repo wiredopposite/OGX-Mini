@@ -1,4 +1,5 @@
 #include <cstring>
+#include <algorithm>
 
 #include "USBDevice/DeviceDriver/PS3/PS3.h"
 
@@ -6,9 +7,7 @@ void PS3Device::initialize()
 {
 	class_driver_ = 
     {
-	#if CFG_TUSB_DEBUG >= 2
-		.name = "PS3",
-	#endif
+		.name = TUD_DRV_NAME("PS3"),
 		.init = hidd_init,
         .deinit = hidd_deinit,
 		.reset = hidd_reset,
@@ -17,25 +16,6 @@ void PS3Device::initialize()
 		.xfer_cb = hidd_xfer_cb,
 		.sof = NULL
 	};
-
-    in_report_ = PS3::InReport();
-
-    // bt_info_ = 
-    // {
-    //     .reserved0 = {0xFF,0xFF},
-    //     .device_address = { 0x00, 0x20, 0x40, 0xCE, 0x00, 0x00, 0x00 },
-    //     .host_address = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
-    // };
-
-    // for (uint8_t addr = 0; addr < 3; addr++) 
-    // {
-    //     bt_info_.device_address[4 + addr] = static_cast<uint8_t>(get_rand_32() % 0xFF);
-    // }
-
-    // for (uint8_t addr = 0; addr < 6; addr++) 
-    // {
-    //     bt_info_.host_address[1 + addr] = static_cast<uint8_t>(get_rand_32() % 0xFF);
-    // }
 }
 
 void PS3Device::process(const uint8_t idx, Gamepad& gamepad) 
@@ -43,180 +23,117 @@ void PS3Device::process(const uint8_t idx, Gamepad& gamepad)
     if (gamepad.new_pad_in())
     {
         Gamepad::PadIn gp_in = gamepad.get_pad_in();
-        std::memset(in_report_.buttons, 0, sizeof(in_report_.buttons));
+        report_in_ = PS3::InReport();
 
         switch (gp_in.dpad)
         {
             case Gamepad::DPAD_UP:
-                in_report_.buttons[0] = PS3::Buttons0::DPAD_UP;
+                report_in_.buttons[0] = PS3::Buttons0::DPAD_UP;
                 break;
             case Gamepad::DPAD_DOWN:
-                in_report_.buttons[0] = PS3::Buttons0::DPAD_DOWN;
+                report_in_.buttons[0] = PS3::Buttons0::DPAD_DOWN;
                 break;
             case Gamepad::DPAD_LEFT:
-                in_report_.buttons[0] = PS3::Buttons0::DPAD_LEFT;
+                report_in_.buttons[0] = PS3::Buttons0::DPAD_LEFT;
                 break;
             case Gamepad::DPAD_RIGHT:
-                in_report_.buttons[0] = PS3::Buttons0::DPAD_RIGHT;
+                report_in_.buttons[0] = PS3::Buttons0::DPAD_RIGHT;
                 break;
             case Gamepad::DPAD_UP_LEFT:
-                in_report_.buttons[0] = PS3::Buttons0::DPAD_UP | PS3::Buttons0::DPAD_LEFT;
+                report_in_.buttons[0] = PS3::Buttons0::DPAD_UP | PS3::Buttons0::DPAD_LEFT;
                 break;
             case Gamepad::DPAD_UP_RIGHT:
-                in_report_.buttons[0] = PS3::Buttons0::DPAD_UP | PS3::Buttons0::DPAD_RIGHT;
+                report_in_.buttons[0] = PS3::Buttons0::DPAD_UP | PS3::Buttons0::DPAD_RIGHT;
                 break;
             case Gamepad::DPAD_DOWN_LEFT:
-                in_report_.buttons[0] = PS3::Buttons0::DPAD_DOWN | PS3::Buttons0::DPAD_LEFT;
+                report_in_.buttons[0] = PS3::Buttons0::DPAD_DOWN | PS3::Buttons0::DPAD_LEFT;
                 break;
             case Gamepad::DPAD_DOWN_RIGHT:
-                in_report_.buttons[0] = PS3::Buttons0::DPAD_DOWN | PS3::Buttons0::DPAD_RIGHT;
+                report_in_.buttons[0] = PS3::Buttons0::DPAD_DOWN | PS3::Buttons0::DPAD_RIGHT;
                 break;
             default:
                 break;
         }
 
-        if (gp_in.buttons & Gamepad::BUTTON_X)        in_report_.buttons[1] |= PS3::Buttons1::SQUARE;
-        if (gp_in.buttons & Gamepad::BUTTON_A)        in_report_.buttons[1] |= PS3::Buttons1::CROSS;
-        if (gp_in.buttons & Gamepad::BUTTON_Y)        in_report_.buttons[1] |= PS3::Buttons1::TRIANGLE;
-        if (gp_in.buttons & Gamepad::BUTTON_B)        in_report_.buttons[1] |= PS3::Buttons1::CIRCLE;
-        if (gp_in.buttons & Gamepad::BUTTON_LB)       in_report_.buttons[1] |= PS3::Buttons1::L1;
-        if (gp_in.buttons & Gamepad::BUTTON_RB)       in_report_.buttons[1] |= PS3::Buttons1::R1;
-        if (gp_in.buttons & Gamepad::BUTTON_BACK)     in_report_.buttons[0] |= PS3::Buttons0::SELECT;
-        if (gp_in.buttons & Gamepad::BUTTON_START)    in_report_.buttons[0] |= PS3::Buttons0::START;
-        if (gp_in.buttons & Gamepad::BUTTON_L3)       in_report_.buttons[0] |= PS3::Buttons0::L3;
-        if (gp_in.buttons & Gamepad::BUTTON_R3)       in_report_.buttons[0] |= PS3::Buttons0::R3;
-        if (gp_in.buttons & Gamepad::BUTTON_SYS)      in_report_.buttons[2] |= PS3::Buttons2::PS;
-        if (gp_in.buttons & Gamepad::BUTTON_MISC)     in_report_.buttons[2] |= PS3::Buttons2::TP;
+        if (gp_in.buttons & Gamepad::BUTTON_X)        report_in_.buttons[1] |= PS3::Buttons1::SQUARE;
+        if (gp_in.buttons & Gamepad::BUTTON_A)        report_in_.buttons[1] |= PS3::Buttons1::CROSS;
+        if (gp_in.buttons & Gamepad::BUTTON_Y)        report_in_.buttons[1] |= PS3::Buttons1::TRIANGLE;
+        if (gp_in.buttons & Gamepad::BUTTON_B)        report_in_.buttons[1] |= PS3::Buttons1::CIRCLE;
+        if (gp_in.buttons & Gamepad::BUTTON_LB)       report_in_.buttons[1] |= PS3::Buttons1::L1;
+        if (gp_in.buttons & Gamepad::BUTTON_RB)       report_in_.buttons[1] |= PS3::Buttons1::R1;
+        if (gp_in.buttons & Gamepad::BUTTON_BACK)     report_in_.buttons[0] |= PS3::Buttons0::SELECT;
+        if (gp_in.buttons & Gamepad::BUTTON_START)    report_in_.buttons[0] |= PS3::Buttons0::START;
+        if (gp_in.buttons & Gamepad::BUTTON_L3)       report_in_.buttons[0] |= PS3::Buttons0::L3;
+        if (gp_in.buttons & Gamepad::BUTTON_R3)       report_in_.buttons[0] |= PS3::Buttons0::R3;
+        if (gp_in.buttons & Gamepad::BUTTON_SYS)      report_in_.buttons[2] |= PS3::Buttons2::PS;
+        if (gp_in.buttons & Gamepad::BUTTON_MISC)     report_in_.buttons[2] |= PS3::Buttons2::TP;
 
-        if (gp_in.trigger_l) in_report_.buttons[1] |= PS3::Buttons1::L2;
-        if (gp_in.trigger_r) in_report_.buttons[1] |= PS3::Buttons1::R2;
+        if (gp_in.trigger_l) report_in_.buttons[1] |= PS3::Buttons1::L2;
+        if (gp_in.trigger_r) report_in_.buttons[1] |= PS3::Buttons1::R2;
 
-        in_report_.joystick_lx = Scale::int16_to_uint8(gp_in.joystick_lx);
-        in_report_.joystick_ly = Scale::int16_to_uint8(gp_in.joystick_ly);
-        in_report_.joystick_rx = Scale::int16_to_uint8(gp_in.joystick_rx);
-        in_report_.joystick_ry = Scale::int16_to_uint8(gp_in.joystick_ry);
+        report_in_.joystick_lx = Scale::int16_to_uint8(gp_in.joystick_lx);
+        report_in_.joystick_ly = Scale::int16_to_uint8(gp_in.joystick_ly);
+        report_in_.joystick_rx = Scale::int16_to_uint8(gp_in.joystick_rx);
+        report_in_.joystick_ry = Scale::int16_to_uint8(gp_in.joystick_ry);
 
         if (gamepad.analog_enabled())
         {
-            in_report_.up_axis      = gp_in.analog[Gamepad::ANALOG_OFF_UP];
-            in_report_.down_axis    = gp_in.analog[Gamepad::ANALOG_OFF_DOWN];
-            in_report_.right_axis   = gp_in.analog[Gamepad::ANALOG_OFF_RIGHT];
-            in_report_.left_axis    = gp_in.analog[Gamepad::ANALOG_OFF_LEFT];
+            report_in_.up_axis      = gp_in.analog[Gamepad::ANALOG_OFF_UP];
+            report_in_.down_axis    = gp_in.analog[Gamepad::ANALOG_OFF_DOWN];
+            report_in_.right_axis   = gp_in.analog[Gamepad::ANALOG_OFF_RIGHT];
+            report_in_.left_axis    = gp_in.analog[Gamepad::ANALOG_OFF_LEFT];
 
-            in_report_.triangle_axis = gp_in.analog[Gamepad::ANALOG_OFF_Y];
-            in_report_.circle_axis   = gp_in.analog[Gamepad::ANALOG_OFF_B];
-            in_report_.cross_axis    = gp_in.analog[Gamepad::ANALOG_OFF_A];
-            in_report_.square_axis   = gp_in.analog[Gamepad::ANALOG_OFF_X];
+            report_in_.triangle_axis = gp_in.analog[Gamepad::ANALOG_OFF_Y];
+            report_in_.circle_axis   = gp_in.analog[Gamepad::ANALOG_OFF_B];
+            report_in_.cross_axis    = gp_in.analog[Gamepad::ANALOG_OFF_A];
+            report_in_.square_axis   = gp_in.analog[Gamepad::ANALOG_OFF_X];
 
-            in_report_.r1_axis = gp_in.analog[Gamepad::ANALOG_OFF_RB];
-            in_report_.l1_axis = gp_in.analog[Gamepad::ANALOG_OFF_LB];
+            report_in_.r1_axis = gp_in.analog[Gamepad::ANALOG_OFF_RB];
+            report_in_.l1_axis = gp_in.analog[Gamepad::ANALOG_OFF_LB];
         }
         else
         {
-            in_report_.up_axis       = (gp_in.dpad & Gamepad::DPAD_UP)    ? 0xFF : 0;
-            in_report_.down_axis     = (gp_in.dpad & Gamepad::DPAD_DOWN)  ? 0xFF : 0;
-            in_report_.right_axis    = (gp_in.dpad & Gamepad::DPAD_RIGHT) ? 0xFF : 0;
-            in_report_.left_axis     = (gp_in.dpad & Gamepad::DPAD_LEFT)  ? 0xFF : 0;
+            report_in_.up_axis       = (gp_in.dpad & Gamepad::DPAD_UP)    ? 0xFF : 0;
+            report_in_.down_axis     = (gp_in.dpad & Gamepad::DPAD_DOWN)  ? 0xFF : 0;
+            report_in_.right_axis    = (gp_in.dpad & Gamepad::DPAD_RIGHT) ? 0xFF : 0;
+            report_in_.left_axis     = (gp_in.dpad & Gamepad::DPAD_LEFT)  ? 0xFF : 0;
 
-            in_report_.triangle_axis = (gp_in.buttons & Gamepad::BUTTON_Y) ? 0xFF : 0;
-            in_report_.circle_axis   = (gp_in.buttons & Gamepad::BUTTON_X) ? 0xFF : 0;
-            in_report_.cross_axis    = (gp_in.buttons & Gamepad::BUTTON_B) ? 0xFF : 0;
-            in_report_.square_axis   = (gp_in.buttons & Gamepad::BUTTON_A) ? 0xFF : 0;
+            report_in_.triangle_axis = (gp_in.buttons & Gamepad::BUTTON_Y) ? 0xFF : 0;
+            report_in_.circle_axis   = (gp_in.buttons & Gamepad::BUTTON_X) ? 0xFF : 0;
+            report_in_.cross_axis    = (gp_in.buttons & Gamepad::BUTTON_B) ? 0xFF : 0;
+            report_in_.square_axis   = (gp_in.buttons & Gamepad::BUTTON_A) ? 0xFF : 0;
 
-            in_report_.r1_axis = (gp_in.buttons & Gamepad::BUTTON_RB) ? 0xFF : 0;
-            in_report_.l1_axis = (gp_in.buttons & Gamepad::BUTTON_LB) ? 0xFF : 0;
-        }
-
-        if (tud_suspended())
-        {
-            tud_remote_wakeup();
-        }
-
-        if (tud_hid_ready())
-        {
-            tud_hid_report(0, reinterpret_cast<uint8_t*>(&in_report_), sizeof(PS3::InReport));
+            report_in_.r1_axis = (gp_in.buttons & Gamepad::BUTTON_RB) ? 0xFF : 0;
+            report_in_.l1_axis = (gp_in.buttons & Gamepad::BUTTON_LB) ? 0xFF : 0;
         }
     }
 
-    if (new_out_report_)
+    if (tud_suspended())
+    {
+        tud_remote_wakeup();
+    }
+
+    if (tud_hid_ready())
+    {
+        //PS3 seems to start using stale data if a report isn't sent every frame
+        tud_hid_report(0, reinterpret_cast<uint8_t*>(&report_in_), sizeof(PS3::InReport));
+    }
+
+    if (new_report_out_)
     {
         Gamepad::PadOut gp_out;
-        gp_out.rumble_l = out_report_.rumble.left_motor_force;
-        gp_out.rumble_r = out_report_.rumble.right_motor_on ? 0xFF : 0;
+        gp_out.rumble_l = report_out_.rumble.left_motor_force;
+        gp_out.rumble_r = report_out_.rumble.right_motor_on ? UINT_8::MAX : 0;
         gamepad.set_pad_out(gp_out);
-        new_out_report_ = false;
+        new_report_out_ = false;
     }
 }
-
-static constexpr uint8_t output_ps3_0x01[] = 
-{
-    0x01, 0x04, 0x00, 0x0b, 0x0c, 0x01, 0x02, 0x18, 
-    0x18, 0x18, 0x18, 0x09, 0x0a, 0x10, 0x11, 0x12,
-    0x13, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x02,
-    0x02, 0x02, 0x02, 0x00, 0x00, 0x00, 0x04, 0x04,
-    0x04, 0x04, 0x00, 0x00, 0x04, 0x00, 0x01, 0x02,
-    0x07, 0x00, 0x17, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-};
-
-// calibration data
-static constexpr uint8_t output_ps3_0xef[] = 
-{
-    0xef, 0x04, 0x00, 0x0b, 0x03, 0x01, 0xa0, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x01, 0xff, 0x01, 0xff, 0x01, 0xff, 0x01, 0xff,
-    0x01, 0xff, 0x01, 0xff, 0x01, 0xff, 0x01, 0xff,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06,
-};
-
-// unknown
-static constexpr uint8_t output_ps3_0xf5[] = 
-{
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // host address - must match 0xf2
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-};
-
-// unknown
-static constexpr uint8_t output_ps3_0xf7[] = 
-{
-    0x02, 0x01, 0xf8, 0x02, 0xe2, 0x01, 0x05, 0xff,
-    0x04, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-};
-
-// unknown
-static constexpr uint8_t output_ps3_0xf8[] = 
-{
-    0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-};
-
-/* Based on: https://github.com/OpenStickCommunity/GP2040-CE/blob/main/src/drivers/ps3/PS3Driver.cpp */
 
 uint16_t PS3Device::get_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t report_type, uint8_t *buffer, uint16_t reqlen) 
 {
     if (report_type == HID_REPORT_TYPE_INPUT) 
     {
-        std::memcpy(buffer, &in_report_, sizeof(PS3::InReport));
+        std::memcpy(buffer, &report_in_, sizeof(PS3::InReport));
         return sizeof(PS3::InReport);
     } 
     else if (report_type == HID_REPORT_TYPE_FEATURE) 
@@ -228,43 +145,37 @@ uint16_t PS3Device::get_report_cb(uint8_t itf, uint8_t report_id, hid_report_typ
         {
             case PS3::ReportID::FEATURE_01:
                 resp_len = reqlen;
-                std::memcpy(buffer, output_ps3_0x01, resp_len);
+                std::memcpy(buffer, PS3::OUTPUT_0x01, resp_len);
                 return resp_len;
-
             case PS3::ReportID::FEATURE_EF:
                 resp_len = reqlen;
-                std::memcpy(buffer, output_ps3_0xef, resp_len);
+                std::memcpy(buffer, PS3::OUTPUT_0xEF, resp_len);
                 buffer[6] = ef_byte_;
                 return resp_len;
-
             case PS3::ReportID::GET_PAIRING_INFO:
                 resp_len = reqlen;
                 std::memcpy(buffer, &bt_info_, resp_len);
                 return resp_len;
-
             case PS3::ReportID::FEATURE_F5:
                 resp_len = reqlen;
-                std::memcpy(buffer, output_ps3_0xf5, resp_len);
-
+                std::memcpy(buffer, PS3::OUTPUT_0xF5, resp_len);
                 for (ctr = 0; ctr < 6; ctr++) 
                 {
-                    buffer[1 + ctr] = bt_info_.host_address[ctr];
+                    buffer[1+ctr] = bt_info_.host_address[ctr];
                 }
                 return resp_len;
-
             case PS3::ReportID::FEATURE_F7:
                 resp_len = reqlen;
-                std::memcpy(buffer, output_ps3_0xf7, resp_len);
+                std::memcpy(buffer, PS3::OUTPUT_0xF7, resp_len);
                 return resp_len;
-
             case PS3::ReportID::FEATURE_F8:
                 resp_len = reqlen;
-                std::memcpy(buffer, output_ps3_0xf8, resp_len);
+                std::memcpy(buffer, PS3::OUTPUT_0xF8, resp_len);
                 buffer[6] = ef_byte_;
                 return resp_len;
         }
     }
-    return -1;
+    return 0;
 }
 
 void PS3Device::set_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t report_type, uint8_t const *buffer, uint16_t bufsize) 
@@ -278,7 +189,7 @@ void PS3Device::set_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t 
                 break;
         }
     } 
-    else if (report_type == HID_REPORT_TYPE_OUTPUT ) 
+    else if (report_type == HID_REPORT_TYPE_OUTPUT) 
     {
         // DS3 command
         uint8_t const *buf = buffer;
@@ -288,12 +199,11 @@ void PS3Device::set_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t 
             bufsize = bufsize - 1;
             buf = &buffer[1];
         }
-
         switch(report_id) 
         {
             case PS3::ReportID::FEATURE_01:
-                std::memcpy(&out_report_, buf, std::min(bufsize, static_cast<uint16_t>(sizeof(PS3::OutReport))));
-                new_out_report_ = true;
+                new_report_out_ = true;
+                std::memcpy(&report_out_, buf, std::min(bufsize, static_cast<uint16_t>(sizeof(PS3::OutReport))));
                 break;
         }
     }

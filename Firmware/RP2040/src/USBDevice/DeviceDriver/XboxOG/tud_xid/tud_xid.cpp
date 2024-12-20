@@ -609,6 +609,12 @@ static void xid_init()
     }
 }
 
+static bool xid_deinit()
+{
+    xid_init();
+    return true;
+}
+
 static void xid_reset(uint8_t rhport)
 {
     xid_init();
@@ -834,8 +840,11 @@ static const usbd_class_driver_t tud_xid_class_driver_ =
 {
 #if CFG_TUSB_DEBUG >= 2
     .name = "XID DRIVER (DUKE,SB OR XREMOTE)",
+#else
+    .name = nullptr,
 #endif
     .init = xid_init,
+    .deinit = xid_deinit,
     .reset = xid_reset,
     .open = xid_open,
     .control_xfer_cb = xid_control_xfer_cb,

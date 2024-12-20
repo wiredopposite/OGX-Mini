@@ -1,8 +1,10 @@
 #ifndef _DEVICE_MANAGER_H_
 #define _DEVICE_MANAGER_H_
 
+#include <cstdint>
 #include <memory>
 
+#include "Gamepad.h"
 #include "USBDevice/DeviceDriver/DeviceDriver.h"
 
 class DeviceManager 
@@ -18,14 +20,15 @@ public:
 	}
 
 	//Must be called before any other method
-	void initialize_driver(DeviceDriver::Type driver_type);
+	void initialize_driver(DeviceDriver::Type driver_type, Gamepad(&gamepads)[MAX_GAMEPADS]);
 	
-	DeviceDriver* get_driver() { return device_driver_; }
+	DeviceDriver* get_driver() { return device_driver_.get(); }
 	
 private:
-    DeviceManager() {}
-	~DeviceManager() { delete device_driver_; }
-    DeviceDriver* device_driver_{nullptr};
+    DeviceManager() = default;
+	~DeviceManager() = default;
+
+	std::unique_ptr<DeviceDriver> device_driver_{nullptr};
 };
 
 #endif // _DEVICE_MANAGER_H_

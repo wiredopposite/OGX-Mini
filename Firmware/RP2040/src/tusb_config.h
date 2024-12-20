@@ -130,27 +130,24 @@
 // Enable host stack with pio-usb if Pico-PIO-USB library is available
 #define CFG_TUH_ENABLED     1
 #define CFG_TUH_RPI_PIO_USB 1
-// #define PICO_DEFAULT_PIO_USB_DP_PIN PIO_USB_DP_PIN
 
 #define TUH_OPT_RHPORT 1
 
 // Size of buffer to hold descriptors and other data used for enumeration
 #define CFG_TUH_ENUMERATION_BUFSIZE 512
 
-#define CFG_TUH_HUB             0
+#define CFG_TUH_HUB             1
 #define CFG_TUH_CDC             0
 
 #if defined(CONFIG_EN_4CH)
-#define CFG_TUH_HID             0
+#define CFG_TUH_HID             1
 #else
 #define CFG_TUH_HID             MAX_GAMEPADS
 #endif
 
 #define CFG_TUH_MSC             0
 #define CFG_TUH_VENDOR          0
-#define CFG_TUH_XINPUT          4
-
-#define CFG_TUH_XINPUT_WIRED_CHATPAD_EN 0
+#define CFG_TUH_XINPUT          MAX_GAMEPADS
 
 // max device support (excluding hub device)
 #define CFG_TUH_DEVICE_MAX          (CFG_TUH_HUB ? 4 : 1) // hub typically has 4 ports

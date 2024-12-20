@@ -4,10 +4,10 @@ export const DEVICE_MODE_KEY_VALUE =
     "Xbox OG: Steel Battalion" : 8,
     "Xbox OG: XRemote" : 9,
     "XInput" : 6,
-    "PS3" : 2,
+    "PS3" : 1,
     "PS Classic" : 5,
     "Switch" : 4,
-    "WebApp" : 99,
+    "WebApp" : 100,
 };
 
 export const PROFILE_ID_KEY_VALUE = 

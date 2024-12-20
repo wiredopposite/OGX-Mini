@@ -30,22 +30,27 @@ public:
     const uint8_t* get_descriptor_device_qualifier_cb() override;
 
 private:
+    static constexpr int16_t DEFAULT_DEADZONE = 7500;
+    static constexpr uint16_t DEFAULT_SENSE = 400;
+
     int32_t vmouse_x_ = XboxOG::SB::AIMING_MID;
     int32_t vmouse_y_ = XboxOG::SB::AIMING_MID;
-    uint16_t sensitivity_ = XboxOG::SB::DEFAULT_SENSE;
+    uint16_t sensitivity_ = DEFAULT_SENSE;
     uint32_t aim_reset_timer_ = 0;
+    bool dpad_reset_ = true;
+    
 
     XboxOG::SB::InReport in_report_;
     XboxOG::SB::InReport prev_in_report_;
     XboxOG::SB::OutReport out_report_;
 
-    static inline bool chatpad_pressed(const uint8_t* chatpad_array, const uint16_t keycode)
+    static inline bool chatpad_pressed(const Gamepad::ChatpadIn& chatpad, const uint16_t keycode)
     {
-        if (std::accumulate(chatpad_array, chatpad_array + 3, 0) == 0) 
+        if (std::accumulate(std::begin(chatpad), std::end(chatpad), 0) == 0) 
         {
             return false;
         }
-        else if (keycode < 17 && (chatpad_array[0] & keycode)) 
+        else if (keycode < 17 && (chatpad[0] & keycode)) 
         {
             return true;
         }
@@ -53,11 +58,11 @@ private:
         {
             return false;
         }
-        else if (chatpad_array[1] == keycode)
+        else if (chatpad[1] == keycode)
         {
             return true;
         }
-        else if (chatpad_array[2] == keycode)
+        else if (chatpad[2] == keycode)
         {
             return true;
         }

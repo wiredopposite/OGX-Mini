@@ -29,6 +29,12 @@ static void init(void)
     std::memset(out_buffer_, 0, ENDPOINT_SIZE);
 }
 
+static bool deinit(void)
+{
+    init();
+    return true;
+}
+
 static void reset(uint8_t rhport)
 {
     init();
@@ -84,10 +90,13 @@ const usbd_class_driver_t* class_driver()
 {
     static const usbd_class_driver_t tud_class_driver_ =
     {
-        #if CFG_TUSB_DEBUG >= 2
+    #if CFG_TUSB_DEBUG >= 2
         .name = "XINPUT",
-        #endif
+    #else
+        .name = NULL,
+    #endif
         .init = init,
+        .deinit = deinit,
         .reset = reset,
         .open = open,
         .control_xfer_cb = control_xfer_cb,

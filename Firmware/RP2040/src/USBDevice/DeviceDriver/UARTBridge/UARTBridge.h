@@ -20,7 +20,7 @@ public:
     const uint8_t* get_descriptor_device_qualifier_cb() override;
 
 private:
-    bool uart_initialized_ = false;
+    bool task_running_ = false;
 };
 
 #endif // _UART_BRIDGE_DEVICE_H_

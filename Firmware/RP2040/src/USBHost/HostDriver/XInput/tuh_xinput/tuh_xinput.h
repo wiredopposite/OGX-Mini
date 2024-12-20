@@ -72,8 +72,8 @@ namespace tuh_xinput
         uint8_t ep_in{0xFF};
         uint8_t ep_out{0xFF};
 
-        uint8_t ep_in_size{0xFF};
-        uint8_t ep_out_size{0xFF};
+        uint16_t ep_in_size{0xFF};
+        uint16_t ep_out_size{0xFF};
 
         std::array<uint8_t, ENDPOINT_SIZE> ep_in_buffer{0};
         std::array<uint8_t, ENDPOINT_SIZE> ep_out_buffer{0};
@@ -82,10 +82,14 @@ namespace tuh_xinput
     // API
 
     const usbh_class_driver_t* class_driver();
+
     bool send_report(uint8_t address, uint8_t instance, const uint8_t* report, uint16_t len);
     bool receive_report(uint8_t address, uint8_t instance);
     bool set_rumble(uint8_t address, uint8_t instance, uint8_t rumble_l, uint8_t rumble_r, bool block);
     bool set_led(uint8_t address, uint8_t instance, uint8_t led_number, bool block);
+
+    //Wireless only atm
+    void xbox360_chatpad_init(uint8_t address, uint8_t instance); 
     bool xbox360_chatpad_keepalive(uint8_t address, uint8_t instance);
 
     // User implemented callbacks

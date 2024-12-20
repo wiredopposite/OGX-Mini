@@ -16,12 +16,14 @@ const tusb_control_request_t PS3Host::RUMBLE_REQUEST =
 
 void PS3Host::initialize(Gamepad& gamepad, uint8_t address, uint8_t instance, const uint8_t* report_desc, uint16_t desc_len) 
 {
-    gamepad.set_analog_enabled(true);
+    gamepad.set_analog_host(true);
     
-    std::memcpy(&out_report_, PS3::DEFAULT_OUT_REPORT, std::min(sizeof(PS3::OutReport), sizeof(PS3::DEFAULT_OUT_REPORT)));
+    std::memcpy(reinterpret_cast<uint8_t*>(&out_report_), 
+                PS3::DEFAULT_OUT_REPORT, 
+                std::min(sizeof(PS3::OutReport), sizeof(PS3::DEFAULT_OUT_REPORT)));
 
     out_report_.leds_bitmap = 0x1 << (idx_ + 1);
-    out_report_.led[idx_].time_enabled = 0xFF;
+    out_report_.leds[idx_].time_enabled = 0xFF;
 
     init_state_.out_report = &out_report_;
     init_state_.dev_addr = address;
@@ -154,12 +156,13 @@ bool PS3Host::send_feedback(Gamepad& gamepad, uint8_t address, uint8_t instance)
     static uint32_t last_rumble_ms = 0;
 
     uint32_t current_ms = time_us_32() / 1000;
-    Gamepad::PadOut gp_out = gamepad.get_pad_out();
     
-    //Spamming control xfers doesn't work, limit the rate
+    //Spamming set_report doesn't work, limit the rate
     if (init_state_.reports_enabled &&
         current_ms - last_rumble_ms >= 300)
     {
+        Gamepad::PadOut gp_out = gamepad.get_pad_out();
+
         out_report_.rumble.right_duration    = (gp_out.rumble_r > 0) ? 20 : 0;
         out_report_.rumble.right_motor_on    = (gp_out.rumble_r > 0) ? 1  : 0;
 

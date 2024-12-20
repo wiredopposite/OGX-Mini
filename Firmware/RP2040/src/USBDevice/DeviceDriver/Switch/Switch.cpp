@@ -6,10 +6,9 @@ void SwitchDevice::initialize()
 {
 	class_driver_ = 
     {
-	#if CFG_TUSB_DEBUG >= 2
-		.name = "SWITCH",
-	#endif
+		.name = TUD_DRV_NAME("SWITCH"),
 		.init = hidd_init,
+        .deinit = hidd_deinit,
 		.reset = hidd_reset,
 		.open = hidd_open,
 		.control_xfer_cb = hidd_control_xfer_cb,
@@ -22,67 +21,66 @@ void SwitchDevice::initialize()
 
 void SwitchDevice::process(const uint8_t idx, Gamepad& gamepad) 
 {
-    if (!gamepad.new_pad_in())
-    {
-        return;
-    }
-
-    Gamepad::PadIn gp_in = gamepad.get_pad_in();
     SwitchWired::InReport& in_report = in_report_[idx];
 
-    switch (gp_in.dpad)
+    if (gamepad.new_pad_in())
     {
-        case Gamepad::DPAD_UP:
-            in_report.dpad = SwitchWired::DPad::UP;
-            break;
-        case Gamepad::DPAD_DOWN:
-            in_report.dpad = SwitchWired::DPad::DOWN;
-            break;
-        case Gamepad::DPAD_LEFT:
-            in_report.dpad = SwitchWired::DPad::LEFT;
-            break;
-        case Gamepad::DPAD_RIGHT:
-            in_report.dpad = SwitchWired::DPad::RIGHT;
-            break;
-        case Gamepad::DPAD_UP_LEFT:
-            in_report.dpad = SwitchWired::DPad::UP_LEFT;
-            break;
-        case Gamepad::DPAD_UP_RIGHT:
-            in_report.dpad = SwitchWired::DPad::UP_RIGHT;
-            break;
-        case Gamepad::DPAD_DOWN_LEFT:
-            in_report.dpad = SwitchWired::DPad::DOWN_LEFT;
-            break;
-        case Gamepad::DPAD_DOWN_RIGHT:
-            in_report.dpad = SwitchWired::DPad::DOWN_RIGHT;
-            break;
-        default:
-            in_report.dpad = SwitchWired::DPad::CENTER;
-            break;
+        Gamepad::PadIn gp_in = gamepad.get_pad_in();
+    
+        switch (gp_in.dpad)
+        {
+            case Gamepad::DPAD_UP:
+                in_report.dpad = SwitchWired::DPad::UP;
+                break;
+            case Gamepad::DPAD_DOWN:
+                in_report.dpad = SwitchWired::DPad::DOWN;
+                break;
+            case Gamepad::DPAD_LEFT:
+                in_report.dpad = SwitchWired::DPad::LEFT;
+                break;
+            case Gamepad::DPAD_RIGHT:
+                in_report.dpad = SwitchWired::DPad::RIGHT;
+                break;
+            case Gamepad::DPAD_UP_LEFT:
+                in_report.dpad = SwitchWired::DPad::UP_LEFT;
+                break;
+            case Gamepad::DPAD_UP_RIGHT:
+                in_report.dpad = SwitchWired::DPad::UP_RIGHT;
+                break;
+            case Gamepad::DPAD_DOWN_LEFT:
+                in_report.dpad = SwitchWired::DPad::DOWN_LEFT;
+                break;
+            case Gamepad::DPAD_DOWN_RIGHT:
+                in_report.dpad = SwitchWired::DPad::DOWN_RIGHT;
+                break;
+            default:
+                in_report.dpad = SwitchWired::DPad::CENTER;
+                break;
+        }
+
+        in_report.buttons = 0;
+
+        if (gp_in.buttons & Gamepad::BUTTON_X)        in_report.buttons |= SwitchWired::Buttons::Y;
+        if (gp_in.buttons & Gamepad::BUTTON_A)        in_report.buttons |= SwitchWired::Buttons::B;
+        if (gp_in.buttons & Gamepad::BUTTON_Y)        in_report.buttons |= SwitchWired::Buttons::X;
+        if (gp_in.buttons & Gamepad::BUTTON_B)        in_report.buttons |= SwitchWired::Buttons::A;
+        if (gp_in.buttons & Gamepad::BUTTON_LB)       in_report.buttons |= SwitchWired::Buttons::L;
+        if (gp_in.buttons & Gamepad::BUTTON_RB)       in_report.buttons |= SwitchWired::Buttons::R;
+        if (gp_in.buttons & Gamepad::BUTTON_BACK)     in_report.buttons |= SwitchWired::Buttons::MINUS;
+        if (gp_in.buttons & Gamepad::BUTTON_START)    in_report.buttons |= SwitchWired::Buttons::PLUS;
+        if (gp_in.buttons & Gamepad::BUTTON_L3)       in_report.buttons |= SwitchWired::Buttons::L3;
+        if (gp_in.buttons & Gamepad::BUTTON_R3)       in_report.buttons |= SwitchWired::Buttons::R3;
+        if (gp_in.buttons & Gamepad::BUTTON_SYS)      in_report.buttons |= SwitchWired::Buttons::HOME;
+        if (gp_in.buttons & Gamepad::BUTTON_MISC)     in_report.buttons |= SwitchWired::Buttons::CAPTURE;
+
+        if (gp_in.trigger_l) in_report.buttons |= SwitchWired::Buttons::ZL;
+        if (gp_in.trigger_r) in_report.buttons |= SwitchWired::Buttons::ZR;
+
+        in_report.joystick_lx = Scale::int16_to_uint8(gp_in.joystick_lx);
+        in_report.joystick_ly = Scale::int16_to_uint8(gp_in.joystick_ly);
+        in_report.joystick_rx = Scale::int16_to_uint8(gp_in.joystick_rx);
+        in_report.joystick_ry = Scale::int16_to_uint8(gp_in.joystick_ry);
     }
-
-    in_report.buttons = 0;
-
-    if (gp_in.buttons & Gamepad::BUTTON_X)        in_report.buttons |= SwitchWired::Buttons::Y;
-    if (gp_in.buttons & Gamepad::BUTTON_A)        in_report.buttons |= SwitchWired::Buttons::B;
-    if (gp_in.buttons & Gamepad::BUTTON_Y)        in_report.buttons |= SwitchWired::Buttons::X;
-    if (gp_in.buttons & Gamepad::BUTTON_B)        in_report.buttons |= SwitchWired::Buttons::A;
-    if (gp_in.buttons & Gamepad::BUTTON_LB)       in_report.buttons |= SwitchWired::Buttons::L;
-    if (gp_in.buttons & Gamepad::BUTTON_RB)       in_report.buttons |= SwitchWired::Buttons::R;
-    if (gp_in.buttons & Gamepad::BUTTON_BACK)     in_report.buttons |= SwitchWired::Buttons::MINUS;
-    if (gp_in.buttons & Gamepad::BUTTON_START)    in_report.buttons |= SwitchWired::Buttons::PLUS;
-    if (gp_in.buttons & Gamepad::BUTTON_L3)       in_report.buttons |= SwitchWired::Buttons::L3;
-    if (gp_in.buttons & Gamepad::BUTTON_R3)       in_report.buttons |= SwitchWired::Buttons::R3;
-    if (gp_in.buttons & Gamepad::BUTTON_SYS)      in_report.buttons |= SwitchWired::Buttons::HOME;
-    if (gp_in.buttons & Gamepad::BUTTON_MISC)     in_report.buttons |= SwitchWired::Buttons::CAPTURE;
-
-    if (gp_in.trigger_l) in_report.buttons |= SwitchWired::Buttons::ZL;
-    if (gp_in.trigger_r) in_report.buttons |= SwitchWired::Buttons::ZR;
-
-    in_report.joystick_lx = Scale::int16_to_uint8(gp_in.joystick_lx);
-    in_report.joystick_ly = Scale::int16_to_uint8(gp_in.joystick_ly);
-    in_report.joystick_rx = Scale::int16_to_uint8(gp_in.joystick_rx);
-    in_report.joystick_ry = Scale::int16_to_uint8(gp_in.joystick_ry);
 
 	if (tud_suspended())
     {

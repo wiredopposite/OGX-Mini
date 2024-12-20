@@ -26,6 +26,8 @@ public:
     bool verify_firmware_version();
     bool write_firmware_version_safe();
 
+    bool valid_mode(DeviceDriver::Type mode);
+
     DeviceDriver::Type get_current_driver();
     bool check_for_driver_change(Gamepad& gamepad);
     

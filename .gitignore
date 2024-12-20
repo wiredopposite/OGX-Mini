@@ -1,13 +1,11 @@
+Firmware/.vscode
 Firmware/RP2040/build
 Firmware/RP2040/.ignore
 Firmware/RP2040/src/USBDevice/DeviceDriver/XboxOG/tud_xid/tud_xid_xremote_rom.h
-
 Firmware/ESP32/.ignore
 Firmware/ESP32/build
 Firmware/ESP32/components/btstack
 Firmware/ESP32/sdkconfig.old
-
 Firmware/external/pico-sdk
 Firmware/external/picotool
-
 Tools/dvd-dongle-rom.bin
