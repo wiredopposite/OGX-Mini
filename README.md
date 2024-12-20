@@ -74,6 +74,7 @@ Please visit [this page](https://bluepad32.readthedocs.io/en/latest/supported_ga
 - Bluetooth functionality for the Pico W and Pico+ESP32.
 - Web application for configuring deadzones and buttons mappings, supports up to 8 saved profiles.
 - Pi Pico 2 (RP2350) support.
+- Reduced latency by about 3-4 ms, graphs showing comparisons are coming
 - 4 channel functionality, connect 4 Picos and use one Xbox 360 wireless adapter to control all 4.
 - Delayed USB mount until a controller is plugged in, useful for internal installation (non-Bluetooth boards only). 
 - Generic HID controller support.
