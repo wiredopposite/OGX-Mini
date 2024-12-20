@@ -216,7 +216,9 @@ void init_board()
 
     mutex_exit(&gpio_mutex_);
 
+#if (OGXM_BOARD != PI_PICOW)
     set_led(false);
+#endif
 
     OGXM_LOG("Board initialized\n");
 }

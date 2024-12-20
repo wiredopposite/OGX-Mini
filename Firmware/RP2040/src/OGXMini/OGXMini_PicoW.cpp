@@ -24,8 +24,8 @@ void update_tud_status(bool host_mounted) { }
 void core1_task()
 {
     if (cyw43_arch_init() != 0)
-    {        
-        return;
+    {  
+        panic("CYW43 init failed");
     }
 
     //Doesn't return, don't do anything with core1 unless it's executing within the BTStack loop

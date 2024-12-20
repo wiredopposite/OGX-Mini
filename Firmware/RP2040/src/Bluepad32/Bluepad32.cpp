@@ -119,7 +119,7 @@ static void init_complete_cb(void)
 {
     uni_bt_enable_new_connections_unsafe(true);
 
-    // uni_bt_del_keys_unsafe();
+    uni_bt_del_keys_unsafe();
 
     uni_property_dump_all();
 }

@@ -1,4 +1,5 @@
 #include <cstring>
+#include <cstdlib>
 #include <pico/time.h>
 
 #include "Descriptors/XInput.h"

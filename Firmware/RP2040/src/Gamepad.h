@@ -86,7 +86,6 @@ public:
     uint8_t MAP_ANALOG_OFF_LB    = ANALOG_OFF_LB   ;
     uint8_t MAP_ANALOG_OFF_RB    = ANALOG_OFF_RB   ;
 
-    //
 #pragma pack(push, 1)
     struct PadIn
     {

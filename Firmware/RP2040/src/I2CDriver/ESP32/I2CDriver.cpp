@@ -21,7 +21,7 @@ struct PacketIn
     uint8_t packet_len;
     uint8_t packet_id;
     uint8_t index;
-    uint8_t gp_data[sizeof(Gamepad::PadIn) - sizeof(Gamepad::PadIn::analog) - sizeof(Gamepad::PadIn::chatpad)];
+    uint8_t gp_data[sizeof(Gamepad::PadIn) - sizeof(Gamepad::PadIn::analog)];
 
     PacketIn()
     {
