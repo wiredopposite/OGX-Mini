@@ -14,8 +14,6 @@
 namespace bluepad32 
 {
     void run_task(Gamepad (&gamepads)[MAX_GAMEPADS]);
-    bool any_connected();
-
-} //namespace bluepad32
+} 
 
 #endif // _BLUEPAD_32_H_

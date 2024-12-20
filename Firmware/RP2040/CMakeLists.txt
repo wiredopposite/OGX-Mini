@@ -237,6 +237,7 @@ if(EXISTS ${SRC}/USBDevice/DeviceDriver/XboxOG/tud_xid/tud_xid_xremote_rom.h)
 endif()
 
 if(NOT EN_BLUETOOTH)
+    add_compile_definitions(PICO_BOOT_STAGE2_CHOOSE_GENERIC_03H=1)
     add_compile_definitions(PICO_XOSC_STARTUP_DELAY_MULTIPLIER=64)
 endif()
 

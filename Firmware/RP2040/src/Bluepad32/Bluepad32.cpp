@@ -34,6 +34,18 @@ btstack_timer_source_t led_timer_;
 bool led_timer_set_{false};
 bool feedback_timer_set_{false};
 
+bool any_connected()
+{
+    for (auto& device : bt_devices_)
+    {
+        if (device.connected)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 //This solves a function pointer/crash issue with bluepad32
 void set_rumble(uni_hid_device_t* bp_device, uint16_t length, uint8_t rumble_l, uint8_t rumble_r)
 {
@@ -145,6 +157,9 @@ static void device_disconnected_cb(uni_hid_device_t* device)
     {
         return;
     }
+
+    bt_devices_[idx].connected = false;
+
     if (!led_timer_set_)
     {
         led_timer_set_ = true;
@@ -169,6 +184,7 @@ static uni_error_t device_ready_cb(uni_hid_device_t* device)
     }
 
     bt_devices_[idx].connected = true;
+
     if (led_timer_set_)
     {
         led_timer_set_ = false;
@@ -301,18 +317,6 @@ void run_task(Gamepad (&gamepads)[MAX_GAMEPADS])
     btstack_run_loop_add_timer(&led_timer_);
 
     btstack_run_loop_execute();
-}
-
-bool any_connected()
-{
-    for (auto& device : bt_devices_)
-    {
-        if (device.connected)
-        {
-            return true;
-        }
-    }
-    return false;
 }
 
 } // namespace bluepad32 
