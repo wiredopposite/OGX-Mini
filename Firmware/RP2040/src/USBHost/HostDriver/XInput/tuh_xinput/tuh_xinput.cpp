@@ -5,7 +5,6 @@
 #include <cstring>
 #include <chrono>
 
-#include "Board/board_api.h"
 #include "USBHost/HostDriver/XInput/tuh_xinput/tuh_xinput.h"
 #include "USBHost/HostDriver/XInput/tuh_xinput/tuh_xinput_cmd.h"
 
@@ -283,11 +282,11 @@ static bool xfer_cb(uint8_t dev_addr, uint8_t ep_addr, xfer_result_t result, uin
     {
         if (dir == TUSB_DIR_IN)
         {
-            report_received_cb(dev_addr, instance, interface->ep_in_buffer.data(), static_cast<uint16_t>(interface->ep_in_size));
+            report_received_cb(dev_addr, instance, interface->ep_in_buffer.data(), interface->ep_in_size);
         }
         else if (report_sent_cb)
         {
-            report_sent_cb(dev_addr, instance, interface->ep_out_buffer.data(), static_cast<uint16_t>(interface->ep_out_size));
+            report_sent_cb(dev_addr, instance, interface->ep_out_buffer.data(), interface->ep_out_size);
         }
     }
 

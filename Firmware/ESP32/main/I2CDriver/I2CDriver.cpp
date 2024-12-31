@@ -7,8 +7,6 @@
 #include "I2CDriver/I2CDriver.h"
 #include "Bluepad32/Bluepad32.h"
 
-I2CDriver::TaskQueue I2CDriver::task_queue_;
-
 I2CDriver::~I2CDriver()
 {
     i2c_driver_delete(I2C_NUM_0);
@@ -30,7 +28,7 @@ void I2CDriver::initialize_i2c()
     i2c_driver_install(I2C_NUM_0, conf.mode, 0, 0, 0);
 }
 
-void I2CDriver::run_tasks(void* parameter)
+void I2CDriver::run_tasks()
 {
     std::function<void()> task;
 

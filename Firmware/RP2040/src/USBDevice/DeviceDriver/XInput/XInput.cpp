@@ -6,14 +6,15 @@
 void XInputDevice::initialize() 
 {
     class_driver_ = *tud_xinput::class_driver();
-    in_report_.report_size = XInput::ENDPOINT_IN_SIZE;
 }
 
 void XInputDevice::process(const uint8_t idx, Gamepad& gamepad)
 {
     if (gamepad.new_pad_in())
     {
-        std::memset(&in_report_.buttons, 0, sizeof(in_report_.buttons));
+        in_report_.buttons[0] = 0;
+        in_report_.buttons[1] = 0;
+
         Gamepad::PadIn gp_in = gamepad.get_pad_in();
 
         switch (gp_in.dpad)
@@ -71,10 +72,8 @@ void XInputDevice::process(const uint8_t idx, Gamepad& gamepad)
         {
             tud_remote_wakeup();
         }
-        if (tud_xinput::send_report_ready())
-        { 
-            tud_xinput::send_report(reinterpret_cast<uint8_t*>(&in_report_), sizeof(XInput::InReport));
-        }
+
+        tud_xinput::send_report((uint8_t*)&in_report_, sizeof(XInput::InReport));
     }
 
     if (tud_xinput::receive_report(reinterpret_cast<uint8_t*>(&out_report_), sizeof(XInput::OutReport)) &&
@@ -89,7 +88,7 @@ void XInputDevice::process(const uint8_t idx, Gamepad& gamepad)
 
 uint16_t XInputDevice::get_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t report_type, uint8_t *buffer, uint16_t reqlen) 
 {
-    std::memcpy(buffer, &in_report_, sizeof(in_report_));
+    std::memcpy(buffer, &in_report_, sizeof(XInput::InReport));
 	return sizeof(XInput::InReport);
 }
 
@@ -102,13 +101,13 @@ bool XInputDevice::vendor_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_co
 
 const uint16_t * XInputDevice::get_descriptor_string_cb(uint8_t index, uint16_t langid) 
 {
-	const char *value = (const char *)XInput::STRING_DESCRIPTORS[index];
+	const char *value = reinterpret_cast<const char*>(XInput::DESC_STRING[index]);
 	return get_string_descriptor(value, index);
 }
 
 const uint8_t * XInputDevice::get_descriptor_device_cb() 
 {
-    return XInput::DEVICE_DESCRIPTORS;
+    return XInput::DESC_DEVICE;
 }
 
 const uint8_t * XInputDevice::get_hid_descriptor_report_cb(uint8_t itf) 
@@ -118,7 +117,7 @@ const uint8_t * XInputDevice::get_hid_descriptor_report_cb(uint8_t itf)
 
 const uint8_t * XInputDevice::get_descriptor_configuration_cb(uint8_t index) 
 {
-    return XInput::CONFIGURATION_DESCRIPTORS;
+    return XInput::DESC_CONFIGURATION;
 }
 
 const uint8_t * XInputDevice::get_descriptor_device_qualifier_cb() 

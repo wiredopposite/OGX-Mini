@@ -12,7 +12,7 @@
 #include "Board/board_api.h"
 
 #ifndef CONFIG_BLUEPAD32_PLATFORM_CUSTOM
-#error "Pico W must use BLUEPAD32_PLATFORM_CUSTOM"
+    #error "Pico W must use BLUEPAD32_PLATFORM_CUSTOM"
 #endif
 
 static_assert((CONFIG_BLUEPAD32_MAX_DEVICES == MAX_GAMEPADS), "Mismatch between BP32 and Gamepad max devices");
@@ -124,7 +124,14 @@ static void check_led_cb(btstack_timer_source *ts)
 
 static void init(int argc, const char** arg_V)
 {
-
+    if (!led_timer_set_)
+    {
+        led_timer_set_ = true;
+        led_timer_.process = check_led_cb;
+        led_timer_.context = nullptr;
+        btstack_run_loop_set_timer(&led_timer_, LED_CHECK_TIME_MS);
+        btstack_run_loop_add_timer(&led_timer_);
+    }
 }
 
 static void init_complete_cb(void) 
@@ -309,12 +316,6 @@ void run_task(Gamepad (&gamepads)[MAX_GAMEPADS])
 
     uni_platform_set_custom(get_driver());
     uni_init(0, nullptr);
-
-    led_timer_set_ = true;
-    led_timer_.process = check_led_cb;
-    led_timer_.context = nullptr;
-    btstack_run_loop_set_timer(&led_timer_, LED_CHECK_TIME_MS);
-    btstack_run_loop_add_timer(&led_timer_);
 
     btstack_run_loop_execute();
 }

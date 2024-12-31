@@ -45,6 +45,7 @@ static inline void send_feedback_cb(void* context)
     }
 }
 
+//This will have to be changed once full support for multiple devices is added
 static inline void feedback_timer_cb(btstack_timer_source *ts)
 {
     static btstack_context_callback_registration_t cb_registration[MAX_DEVICES];
@@ -63,18 +64,13 @@ static inline void feedback_timer_cb(btstack_timer_source *ts)
         cb_registration[i].callback = send_feedback_cb;
         cb_registration[i].context = reinterpret_cast<void*>(&packets_out[i]);
         
-        //Get i2c rumble packet then register callback on BTStack thread
-        i2c_driver_.push_task([i]
-        {
-            I2CDriver::PacketOut packet_out;
-            if (i2c_driver_.i2c_read_blocking(  I2CDriver::MULTI_SLAVE ? i + 1 : 0x01, 
-                                                reinterpret_cast<uint8_t*>(&packet_out), 
-                                                sizeof(I2CDriver::PacketOut)) == ESP_OK)
-            {
-                packets_out[i].store(packet_out);
-                btstack_run_loop_execute_on_main_thread(&cb_registration[i]);
-            }
-        });
+        //Register a read on i2c thread, with callback to send feedback on btstack thread
+        i2c_driver_.i2c_read_blocking_safe( I2CDriver::MULTI_SLAVE ? i + 1 : 0x01,
+                                            [i](const I2CDriver::PacketOut& packet_out)
+                                            {
+                                                packets_out[i].store(packet_out);
+                                                btstack_run_loop_execute_on_main_thread(&cb_registration[i]);
+                                            });
     }
 
     btstack_run_loop_set_timer(ts, FEEDBACK_TIME_MS);
@@ -160,12 +156,7 @@ void device_disconnected_cb(uni_hid_device_t* device)
     I2CDriver::PacketIn packet_in = I2CDriver::PacketIn();
     packet_in.index = static_cast<uint8_t>(idx);
     
-    i2c_driver_.push_task([packet_in]
-    {
-        i2c_driver_.i2c_write_blocking( I2CDriver::MULTI_SLAVE ? packet_in.index + 1 : 0x01, 
-                                        reinterpret_cast<const uint8_t*>(&packet_in), 
-                                        sizeof(I2CDriver::PacketIn));
-    });
+    i2c_driver_.i2c_write_blocking_safe(I2CDriver::MULTI_SLAVE ? packet_in.index + 1 : 0x01, packet_in);
 }
 
 static uni_error_t device_ready_cb(uni_hid_device_t* device) 
@@ -258,12 +249,7 @@ static inline void controller_data_cb(uni_hid_device_t* device, uni_controller_t
     packet_in.joystick_rx = Scale::int10_to_int16(uni_gp->axis_rx);
     packet_in.joystick_ry = Scale::int10_to_int16(uni_gp->axis_ry);
 
-    i2c_driver_.push_task([packet_in]
-    {
-        i2c_driver_.i2c_write_blocking( I2CDriver::MULTI_SLAVE ? packet_in.index + 1 : 0x01, 
-                                        reinterpret_cast<const uint8_t*>(&packet_in), 
-                                        sizeof(I2CDriver::PacketIn));
-    });
+    i2c_driver_.i2c_write_blocking_safe(I2CDriver::MULTI_SLAVE ? packet_in.index + 1 : 0x01, packet_in);
 
     std::memcpy(&prev_uni_gps[idx], uni_gp, sizeof(uni_gamepad_t));
 }
@@ -296,6 +282,12 @@ uni_platform* get_driver()
     return &driver;
 }
 
+void run_i2c_task(void* parameter)
+{
+    i2c_driver_.initialize_i2c();
+    i2c_driver_.run_tasks();
+}
+
 //Public
 
 bool any_connected()
@@ -319,10 +311,8 @@ void run_task()
 {
     board_api::init_pins(); 
 
-    i2c_driver_.initialize_i2c();
-
     xTaskCreatePinnedToCore(
-        i2c_driver_.run_tasks,
+        run_i2c_task,
         "i2c",
         2048 * 2,
         nullptr,

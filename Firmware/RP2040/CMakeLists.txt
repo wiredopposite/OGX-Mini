@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.13)
 
 set(FW_NAME "OGX-Mini")
-set(FW_VERSION "v1.0.0a")
+set(FW_VERSION "v1.0.0a2")
 
 set(CMAKE_C_COMPILER arm-none-eabi-gcc)
 set(CMAKE_CXX_COMPILER arm-none-eabi-g++)
@@ -13,9 +13,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(SRC ${CMAKE_CURRENT_LIST_DIR}/src)
 set(EXTERNAL_DIR ${CMAKE_CURRENT_LIST_DIR}/../external)
 
+include(${EXTERNAL_DIR}/init_submodules.cmake)
 include(${EXTERNAL_DIR}/patch_libs.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/get_pico_sdk.cmake)
 
+init_git_submodules(${EXTERNAL_DIR})
 apply_lib_patches(${EXTERNAL_DIR})
 get_pico_sdk(${EXTERNAL_DIR})
 

@@ -6,7 +6,6 @@
 
 #include "Gamepad.h"
 #include "board_config.h"
-#include "UserSettings/UserProfile.h"
 
 /*  NOTE: Everything bluepad32/uni needs to be wrapped
     and kept away from tinyusb due to naming conflicts */

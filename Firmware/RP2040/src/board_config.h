@@ -1,18 +1,20 @@
-#ifndef _BOARD_CONFIG_H_
-#define _BOARD_CONFIG_H_
+#ifndef _OGXM_BOARD_CONFIG_H_
+#define _OGXM_BOARD_CONFIG_H_
 
 /*  Don't edit this file directly, instead use CMake to configure the board.
     Add args -DOGXM_BOARD=PI_PICO and -DMAX_GAMEPADS=1 (or = whatever option you want)
     to set the board and the number of gamepads.
     If you're setting MAX_GAMEPADS > 1 only D-Input, Switch, and WebApp device drivers will work. */
 
-#define ADA_FEATHER 1
-#define PI_PICO 2
-#define RP_ZERO 3
-#define PI_PICOW 4
-#define INTERNAL_4CH 5
-#define EXTERNAL_4CH 6
-#define W_ESP32 7
+#define PI_PICO 1
+#define PI_PICO2 2
+#define PI_PICOW 3
+#define PI_PICOW2 4
+#define RP_ZERO 5
+#define ADA_FEATHER 6
+#define INTERNAL_4CH 7
+#define EXTERNAL_4CH 8
+#define W_ESP32 9
 
 #define SYSCLOCK_KHZ 240000
 
@@ -24,17 +26,11 @@
     #define OGXM_BOARD PI_PICO
 #endif
 
-#if OGXM_BOARD == ADA_FEATHER
-    #define RGB_PWR_PIN 20
-    #define RGB_PXL_PIN 21 
-
-    #define PIO_USB_DP_PIN    16 // DM = 17
-    #define LED_INDICATOR_PIN 13
-    #define VCC_EN_PIN        18
-
-#elif OGXM_BOARD == PI_PICO || OGXM_BOARD == PI_PICO2
+#if OGXM_BOARD == PI_PICO || OGXM_BOARD == PI_PICO2
     #define PIO_USB_DP_PIN      0 // DM = 1
     #define LED_INDICATOR_PIN   25
+
+#elif OGXM_BOARD == PI_PICOW || OGXM_BOARD == PI_PICOW2
 
 #elif OGXM_BOARD == RP_ZERO
     #define RGB_PXL_PIN 16 
@@ -42,7 +38,13 @@
     #define PIO_USB_DP_PIN    10 // DM = 11
     #define LED_INDICATOR_PIN 14
 
-#elif OGXM_BOARD == PI_PICOW
+#elif OGXM_BOARD == ADA_FEATHER
+    #define RGB_PWR_PIN 20
+    #define RGB_PXL_PIN 21 
+
+    #define PIO_USB_DP_PIN    16 // DM = 17
+    #define LED_INDICATOR_PIN 13
+    #define VCC_EN_PIN        18
 
 #elif OGXM_BOARD == INTERNAL_4CH
     #define PIO_USB_DP_PIN    16 // DM = 17 
@@ -63,7 +65,7 @@
 #elif OGXM_BOARD == W_ESP32
     #define I2C_SDA_PIN     18 // SCL = 19
     #define UART0_TX_PIN    16 // RX = 17
-    #define UART0_RX_PIN (UART0_TX_PIN + 1)
+    #define UART0_RX_PIN    (UART0_TX_PIN + 1)
     #define MODE_SEL_PIN    21
     #define ESP_PROG_PIN    20 // ESP32 IO0
     #define ESP_RST_PIN     8  // ESP32 EN
@@ -114,4 +116,4 @@
     #define DEBUG_UART_PORT __CONCAT(uart,PICO_DEFAULT_UART)
 #endif // defined(OGXM_DEBUG)
 
-#endif // _BOARD_CONFIG_H_
+#endif // _OGXM_BOARD_CONFIG_H_

@@ -3,7 +3,7 @@
 
 Firmware for the RP2040, capable of emulating gamepads for several game consoles. The firmware comes in many flavors, supported on the [Adafruit Feather USB Host board](https://www.adafruit.com/product/5723), Pi Pico, Pi Pico 2, Waveshare RP2040-Zero, Pi Pico W, RP2040/ESP32 hybrid, and a 4-Channel RP2040-Zero setup.
 
-Visit the web app here: [https://wiredopposite.github.io/OGX-Mini-WebApp/](https://wiredopposite.github.io/OGX-Mini-WebApp/) to change your mappings and deadzone settings. To pair the OGX-Mini with the web app, plug your controller in, then connect it to your PC, hold **Start + Left Bumper + Right Bumper** to enter Web app mode. Click "Connect" in the web app and select the OGX-Mini.
+Visit the web app here: [https://wiredopposite.github.io/OGX-Mini-WebApp/](https://wiredopposite.github.io/OGX-Mini-WebApp/) to change your mappings and deadzone settings. To pair the OGX-Mini with the web app, plug your controller in, then connect it to your PC, hold **Start + Left Bumper + Right Bumper** to enter web app mode. Click "Connect" in the web app and select the OGX-Mini.
 
 ## Supported platforms
 - Original Xbox
@@ -127,4 +127,8 @@ Or just install the GCC ARM toolchain and use the CMake Tools extension in VSCod
 CMake scripts will patch some files in TinyUSB, Bluepad32 and BTStack. If the patches fail, it's because of a text encoding issue, so open each .diff file in ```OGX-Mini/Firmware/external/patches``` in Notepad++. At the top of the window, click Encoding > UTF-8 and save. They should work after that. 
 
 ### ESP32
-You will need ESP-IDF v5.1 and esptools installed. If you use VSCode you can install the ESP-IDF extension and configure the project for v5.1, it'll download everything for you and then you just click the build button at the bottom of the window.
+Please see the Hardware directory for a schematic showing how to hookup the ESP32 to your RP2040.
+
+You will need ESP-IDF v5.1, esptools, and python3 installed. If you use VSCode you can install the ESP-IDF extension and configure the project for v5.1, it'll download everything for you and then you just click the build button at the bottom of the window.
+
+When you build with ESP-IDF, Cmake will run a python script that copies the necessary BTStack files components directory, this is needed since BTStack isn't configured as an IDF component when you download it. 

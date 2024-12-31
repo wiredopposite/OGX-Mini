@@ -191,9 +191,12 @@ void init_board()
         return;
     }
 
-    if (!set_sys_clock_khz(SYSCLOCK_KHZ, true) && !set_sys_clock_khz(120000, true))
+    if (!set_sys_clock_khz(SYSCLOCK_KHZ, true))
     {
-        panic("Failed to set sys clock");
+        if (!set_sys_clock_khz((SYSCLOCK_KHZ / 2), true))
+        {
+            panic("Failed to set sys clock");
+        }
     }
 
     stdio_init_all();
@@ -216,7 +219,7 @@ void init_board()
 
     mutex_exit(&gpio_mutex_);
 
-#if (OGXM_BOARD != PI_PICOW)
+#if (OGXM_BOARD != PI_PICOW) // cyw43_arch needs to be inited from core1 first
     set_led(false);
 #endif
 

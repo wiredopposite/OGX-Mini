@@ -108,15 +108,26 @@ namespace XInput
 		int16_t joystick_rx;
 		int16_t joystick_ry;
 		uint8_t reserved[6];
+
+		InReport()
+		{
+			std::memset(this, 0, sizeof(InReport));
+			report_size = sizeof(InReport);
+		}
 	};
-	static_assert(sizeof(InReport) == 20, "XInput::InReport is not the correct size");
+	static_assert(sizeof(InReport) == 20, "XInput::InReport is misaligned");
 
 	struct WiredChatpadReport
 	{
 		uint8_t report_id;
 		uint8_t chatpad[3];
+
+		WiredChatpadReport()
+		{
+			std::memset(this, 0, sizeof(WiredChatpadReport));
+		}
 	};
-	static_assert(sizeof(WiredChatpadReport) == 4, "XInput::WiredChatpadReport is not the correct size");
+	static_assert(sizeof(WiredChatpadReport) == 4, "XInput::WiredChatpadReport is misaligned");
 
 	struct InReportWireless
 	{
@@ -137,9 +148,10 @@ namespace XInput
 		InReportWireless()
 		{
 			std::memset(this, 0, sizeof(InReportWireless));
+			report_size = sizeof(InReportWireless);
 		}
 	};
-	static_assert(sizeof(InReportWireless) == 28, "XInput::InReportWireless is not the correct size");
+	static_assert(sizeof(InReportWireless) == 28, "XInput::InReportWireless is misaligned");
 
 	struct OutReport
 	{
@@ -149,8 +161,13 @@ namespace XInput
 		uint8_t rumble_l;
 		uint8_t rumble_r;
 		uint8_t reserved[3];
+
+		OutReport()
+		{
+			std::memset(this, 0, sizeof(OutReport));
+		}
 	};
-	static_assert(sizeof(OutReport) == 8, "XInput::OutReport is not the correct size");
+	static_assert(sizeof(OutReport) == 8, "XInput::OutReport is misaligned");
 	#pragma pack(pop)
 
 	static const uint8_t STRING_LANGUAGE[]     = { 0x09, 0x04 };
@@ -158,7 +175,7 @@ namespace XInput
 	static const uint8_t STRING_PRODUCT[]      = "XInput STANDARD GAMEPAD";
 	static const uint8_t STRING_VERSION[]      = "1.0";
 
-	static const uint8_t *STRING_DESCRIPTORS[] __attribute__((unused)) =
+	static const uint8_t *DESC_STRING[] __attribute__((unused)) =
 	{
 		STRING_LANGUAGE,
 		STRING_MANUFACTURER,
@@ -166,7 +183,7 @@ namespace XInput
 		STRING_VERSION
 	};
 
-	static const uint8_t DEVICE_DESCRIPTORS[] =
+	static const uint8_t DESC_DEVICE[] =
 	{
 		0x12,       // bLength
 		0x01,       // bDescriptorType (Device)
@@ -184,7 +201,7 @@ namespace XInput
 		0x01,       // bNumConfigurations 1
 	};
 
-	static const uint8_t CONFIGURATION_DESCRIPTORS[] =
+	static const uint8_t DESC_CONFIGURATION[] =
 	{
 		0x09,        // bLength
 		0x02,        // bDescriptorType (Configuration)

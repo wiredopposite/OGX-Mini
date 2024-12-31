@@ -195,9 +195,7 @@ public:
 		{
 			if (device_slot.address == address)
 			{
-				TU_LOG2("Deinit driver\r\n");
 				device_slot.reset();
-				TU_LOG2("Driver deinitialized\r\n");
 			}
 		}
 	}

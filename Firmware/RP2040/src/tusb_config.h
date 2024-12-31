@@ -110,8 +110,6 @@
 #define CFG_TUD_XID     1
 #define CFG_TUD_XINPUT  1
 
-#define CFG_TUD_XID_XREMOTE_ENABLE 1
-
 // HID buffer size Should be sufficient to hold ID (if any) + Data
 #define CFG_TUD_HID_EP_BUFSIZE 64
 #define CFG_TUD_CDC_EP_BUFSIZE 64

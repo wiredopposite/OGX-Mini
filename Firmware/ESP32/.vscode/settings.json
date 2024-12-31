@@ -100,5 +100,7 @@
     },
     "idf.portWin": "COM26",
     "idf.flashType": "UART",
-    "C_Cpp.intelliSenseEngine": "default"
+    "C_Cpp.intelliSenseEngine": "default",
+    "idf.espIdfPathWin": "C:\\Programming\\esp\\v5.1\\esp-idf",
+    "idf.toolsPathWin": "C:\\Programming\\.espressif"
 }

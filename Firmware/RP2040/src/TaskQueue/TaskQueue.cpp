@@ -282,7 +282,7 @@ private:
         }
         return -1;
     }
-};
+}; // class CoreQueue
 
 CoreQueue* CoreQueue::instances_[static_cast<uint8_t>(CoreQueue::CoreNum::Core1) + 1]{nullptr};
 

@@ -1,454 +1,4 @@
-// #include "tusb_option.h"
-
-// #if (TUSB_OPT_DEVICE_ENABLED && CFG_TUD_XID)
-
-// #include <cstring>
-
-// #include "USBDevice/DeviceDriver/XboxOG/tud_xid/tud_xid.h"
-// #include "Descriptors/XboxOG.h"
-
-// #ifndef CFG_TUD_XID_XREMOTE_ENABLE
-//     #define CFG_TUD_XID_XREMOTE_ENABLE 0
-// #endif
-
-// #ifdef XREMOTE_ROM_AVAILABLE
-//     #define XREMOTE_ENABLED (CFG_TUD_XID_XREMOTE_ENABLE ? 1 : 0)
-//     #include "USBDevice/DeviceDriver/XboxOG/tud_xid/tud_xid_xremote_rom.h"
-// #else
-//     #define XREMOTE_ENABLED 0
-// #endif
-
-// namespace tud_xid {
-
-// static constexpr uint8_t ENDPOINT_SIZE = 32;
-// static constexpr uint8_t INTERFACE_MULT = XREMOTE_ENABLED + 1;
-// static constexpr uint8_t INTERFACE_CLASS = 0x58;
-// static constexpr uint8_t INTERFACE_SUBCLASS = 0x42;
-
-// enum class RequestType { SET_REPORT, GET_REPORT, GET_DESC, GET_CAPABILITIES_IN, GET_CAPABILITIES_OUT, UNKNOWN };
-
-// struct Interface
-// {
-//     Type type{Type::GAMEPAD};
-
-//     uint8_t itf_num{0xFF};
-    
-//     uint8_t ep_in{0xFF};
-//     uint8_t ep_out{0xFF};
-
-//     uint8_t ep_in_size{0xFF};
-//     uint8_t ep_out_size{0xFF};
-
-//     std::array<uint8_t, ENDPOINT_SIZE> ep_out_buffer;
-//     std::array<uint8_t, ENDPOINT_SIZE> gp_in_buffer;
-//     std::array<uint8_t, ENDPOINT_SIZE> gp_out_buffer;
-
-//     Interface()
-//     {
-//         ep_out_buffer.fill(0);
-//         gp_in_buffer.fill(0);
-//         gp_out_buffer.fill(0);
-//     }
-// };
-
-// static std::array<Interface, CFG_TUD_XID * INTERFACE_MULT> interfaces_;
-// static Type xid_type_{Type::GAMEPAD};
-
-// static inline RequestType get_request_type(const tusb_control_request_t *request)
-// {
-//     if (request->bmRequestType == XboxOG::GET_REPORT_REQ_TYPE && request->bRequest == XboxOG::GET_REPORT_REQ && request->wValue == XboxOG::GET_REPORT_VALUE)
-//     {
-//         return RequestType::GET_REPORT;
-//     }
-//     if (request->bmRequestType == XboxOG::SET_REPORT_REQ_TYPE && request->bRequest == XboxOG::SET_REPORT_REQ && request->wValue == XboxOG::SET_REPORT_VALUE && request->wLength == static_cast<uint16_t>(0x06))
-//     {
-//         return RequestType::SET_REPORT;
-//     }
-//     if (request->bmRequestType == XboxOG::GET_DESC_REQ_TYPE && request->bRequest == XboxOG::GET_DESC_REQ && request->wValue == XboxOG::GET_DESC_VALUE)
-//     {
-//         return RequestType::GET_DESC;
-//     }
-//     if (request->bmRequestType == XboxOG::GET_CAP_REQ_TYPE && request->bRequest == XboxOG::GET_CAP_REQ)
-//     {
-//         if (request->wValue == XboxOG::GET_CAP_VALUE_IN)
-//         {
-//             return RequestType::GET_CAPABILITIES_IN;
-//         }
-//         else if (request->wValue == XboxOG::GET_CAP_VALUE_OUT)
-//         {
-//             return RequestType::GET_CAPABILITIES_OUT;
-//         }
-//     }
-//     return RequestType::UNKNOWN;
-// }
-
-// static inline uint8_t get_idx_by_itf(uint8_t itf)
-// {
-//     for (uint8_t i = 0; i < interfaces_.size(); i++)
-//     {
-//         if (interfaces_[i].itf_num == itf)
-//         {
-//             return i;
-//         }
-//         if (interfaces_[i].type == Type::XREMOTE)
-//         {
-//             if (itf == interfaces_[i].itf_num + 1)
-//             {
-//                 return i;
-//             }
-//         }
-//     }
-//     return 0xFF;
-// }
-
-// static inline uint8_t get_idx_by_edpt(uint8_t edpt)
-// {
-//     for (uint8_t i = 0; i < interfaces_.size(); i++)
-//     {
-//         if (interfaces_[i].ep_in == edpt || interfaces_[i].ep_out == edpt)
-//         {
-//             return i;
-//         }
-//     }
-//     return 0xFF;
-// }
-
-// uint8_t get_index_by_type(uint8_t type_idx, Type type)
-// {
-//     uint8_t type_idx_ = 0;
-//     for (uint8_t i = 0; i < interfaces_.size(); i++)
-//     {
-//         if (interfaces_[i].type == type)
-//         {
-//             if (type_idx_ == type_idx)
-//             {
-//                 return i;
-//             }
-//             type_idx_++;
-//         }
-//     }
-//     return 0xFF;
-// }
-
-// static inline Interface* find_available_interface()
-// {
-//     for (Interface &itf : interfaces_)
-//     {
-//         if (itf.itf_num == 0xFF)
-//         {
-//             return &itf;
-//         }
-//     }
-//     return nullptr;
-// }
-
-// const uint8_t *xremote_get_rom()
-// {
-// #if XREMOTE_ENABLED
-//     return XRemote::ROM;
-// #else
-//     return nullptr;
-// #endif 
-// }
-
-// //Class driver
-
-// static void xid_init()
-// {
-//     for (Interface &itf : interfaces_)
-//     {
-//         itf = Interface();
-//         itf.type = xid_type_;
-//     }
-// }
-
-// static void xid_reset(uint8_t rhport)
-// {
-//     xid_init();
-// }
-
-// static uint16_t xid_open(uint8_t rhport, tusb_desc_interface_t const *itf_desc, uint16_t max_len)
-// {
-//     TU_VERIFY(itf_desc->bInterfaceClass == INTERFACE_CLASS, 0);
-//     TU_VERIFY(itf_desc->bInterfaceSubClass == INTERFACE_SUBCLASS, 0);
-
-//     Interface *interface = find_available_interface();
-//     TU_ASSERT(interface != nullptr, 0);
-
-//     uint16_t driver_len = 0;
-
-//     switch (interface->type)
-//     {
-//         case Type::GAMEPAD:
-//             driver_len = XboxOG::GP::DRIVER_LEN;
-//             break;
-//         case Type::STEELBATTALION:
-//             driver_len = XboxOG::SB::DRIVER_LEN;
-//             break;
-//         case Type::XREMOTE:
-//             driver_len = XboxOG::XR::DRIVER_LEN;
-//             break;
-//     }
-
-//     TU_ASSERT(max_len >= driver_len, 0);
-
-//     interface->itf_num = itf_desc->bInterfaceNumber;
-
-//     tusb_desc_endpoint_t *ep_desc;
-//     ep_desc = (tusb_desc_endpoint_t *)tu_desc_next(itf_desc);
-
-//     if (tu_desc_type(ep_desc) == TUSB_DESC_ENDPOINT)
-//     {
-//         usbd_edpt_open(rhport, ep_desc);
-//         (ep_desc->bEndpointAddress & 0x80) ? (interface->ep_in  = ep_desc->bEndpointAddress) :
-//                                              (interface->ep_out = ep_desc->bEndpointAddress);
-//     }
-
-//     TU_VERIFY(itf_desc->bNumEndpoints >= 2, driver_len);
-//     ep_desc = (tusb_desc_endpoint_t *)tu_desc_next(ep_desc);
-
-//     if (tu_desc_type(ep_desc) == TUSB_DESC_ENDPOINT)
-//     {
-//         usbd_edpt_open(rhport, ep_desc);
-//         (ep_desc->bEndpointAddress & 0x80) ? (interface->ep_in  = ep_desc->bEndpointAddress) :
-//                                              (interface->ep_out = ep_desc->bEndpointAddress);
-//     }
-
-//     return driver_len;
-// }
-
-// static bool xid_xfer_cb(uint8_t rhport, uint8_t ep_addr, xfer_result_t result, uint32_t xferred_bytes)
-// {
-//     uint8_t index = get_idx_by_edpt(ep_addr);
-
-//     TU_VERIFY(result == XFER_RESULT_SUCCESS, true);
-//     TU_VERIFY(index != 0xFF, true);
-//     TU_VERIFY(xferred_bytes < ENDPOINT_SIZE, true);
-
-//     if (ep_addr == interfaces_[index].ep_out)
-//     {
-//         std::memcpy(interfaces_[index].gp_out_buffer.data(), interfaces_[index].ep_out_buffer.data(), std::min(static_cast<uint8_t>(xferred_bytes), ENDPOINT_SIZE));
-//     }
-
-//     return true;
-// }
-
-// bool xremote_control_xfer(uint8_t rhport, uint8_t stage, tusb_control_request_t const *request, Interface *interface)
-// {
-//     if (request->bmRequestType == 0xC1 && request->bRequest == 0x01 && request->wIndex == 1 && request->wValue == 0x0000)
-//     {
-//         if (stage == CONTROL_STAGE_SETUP)
-//         {
-//             TU_LOG1("Sending XREMOTE INFO\r\n");
-//             const uint8_t *rom = xremote_get_rom();
-//             if (rom == nullptr)
-//             {
-//                 return false; //STALL
-//             }
-//             tud_control_xfer(rhport, request, const_cast<uint8_t*>(&rom[0]), request->wLength);
-//         }
-//         return true;
-//     }
-//     //ROM DATA (Interface 1)
-//     else if (request->bmRequestType == 0xC1 && request->bRequest == 0x02 && request->wIndex == 1)
-//     {
-//         if (stage == CONTROL_STAGE_SETUP)
-//         {
-//             const uint8_t *rom = xremote_get_rom();
-//             if (rom == nullptr)
-//             {
-//                 return false; //STALL
-//             }
-//             tud_control_xfer(rhport, request, const_cast<uint8_t*>(&rom[request->wValue * 1024]), request->wLength);
-//         }
-//         return true;
-//     }
-
-//     return false;
-// }
-
-// bool xid_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_request_t const *request)
-// {
-//     TU_VERIFY(request->bmRequestType_bit.recipient == TUSB_REQ_RCPT_INTERFACE);
-
-//     uint8_t index = get_idx_by_itf(static_cast<uint8_t>(request->wIndex));
-//     TU_VERIFY(index != 0xFF, false);
-
-//     void* desc_buffer;
-//     uint16_t desc_buffer_len;
-
-//     switch (get_request_type(request))
-//     {
-//         case RequestType::GET_REPORT:
-//             if (stage == CONTROL_STAGE_SETUP)
-//             {
-//                 tud_control_xfer(rhport, request, interfaces_[index].gp_in_buffer.data(), std::min(static_cast<uint8_t>(request->wLength), ENDPOINT_SIZE));
-//             }
-//             return true;
-
-//         case RequestType::SET_REPORT:
-//             if (stage == CONTROL_STAGE_SETUP) //Getting rumble report
-//             {
-//                 tud_control_xfer(rhport, request, interfaces_[index].ep_out_buffer.data(), std::min(static_cast<uint8_t>(request->wLength), ENDPOINT_SIZE));
-//             }
-//             else if (stage == CONTROL_STAGE_ACK) //Got rumble report
-//             {
-//                 std::memcpy(interfaces_[index].gp_out_buffer.data(), interfaces_[index].ep_out_buffer.data(), std::min(static_cast<uint8_t>(request->wLength), ENDPOINT_SIZE));
-//             }
-//             return true;
-
-//         case RequestType::GET_DESC:
-//             if (stage == CONTROL_STAGE_SETUP)
-//             {
-//                 switch (interfaces_[index].type)
-//                 {
-//                     case Type::GAMEPAD:
-//                         desc_buffer = (void*)XboxOG::GP::XID_DEVICE_DESCRIPTORS;
-//                         desc_buffer_len = sizeof(XboxOG::GP::XID_DEVICE_DESCRIPTORS);
-//                         break;
-//                     case Type::STEELBATTALION:
-//                         desc_buffer = (void*)XboxOG::SB::XID_DEVICE_DESCRIPTORS;
-//                         desc_buffer_len = sizeof(XboxOG::SB::XID_DEVICE_DESCRIPTORS);
-//                         break;
-//                     case Type::XREMOTE:
-//                         desc_buffer = (void*)XboxOG::XR::XID_DEVICE_DESCRIPTORS;
-//                         desc_buffer_len = sizeof(XboxOG::XR::XID_DEVICE_DESCRIPTORS);
-//                         break;
-//                     default:
-//                         return false;
-//                 }
-
-//                 tud_control_xfer(rhport, request, desc_buffer, desc_buffer_len);
-//             }
-//             return true;
-
-//         case RequestType::GET_CAPABILITIES_IN:
-//             if (stage == CONTROL_STAGE_SETUP)
-//             {
-//                 switch (interfaces_[index].type)
-//                 {
-//                     case Type::GAMEPAD:
-//                         desc_buffer = (void*)XboxOG::GP::XID_CAPABILITIES_IN;
-//                         desc_buffer_len = sizeof(XboxOG::GP::XID_CAPABILITIES_IN);
-//                         break;
-//                     case Type::STEELBATTALION:
-//                         desc_buffer = (void*)XboxOG::SB::XID_CAPABILITIES_IN;
-//                         desc_buffer_len = sizeof(XboxOG::SB::XID_CAPABILITIES_IN);
-//                         break;
-//                     default:
-//                         return false;
-//                 }
-
-//                 tud_control_xfer(rhport, request, desc_buffer, desc_buffer_len);
-//             }
-//             return true;
-
-//         case RequestType::GET_CAPABILITIES_OUT:
-//             if (stage == CONTROL_STAGE_SETUP)
-//             {
-//                 switch (interfaces_[index].type)
-//                 {
-//                     case Type::GAMEPAD:
-//                         desc_buffer = (void*)XboxOG::GP::XID_CAPABILITIES_OUT;
-//                         desc_buffer_len = sizeof(XboxOG::GP::XID_CAPABILITIES_OUT);
-//                         break;
-//                     case Type::STEELBATTALION:
-//                         desc_buffer = (void*)XboxOG::SB::XID_CAPABILITIES_OUT;
-//                         desc_buffer_len = sizeof(XboxOG::SB::XID_CAPABILITIES_OUT);
-//                         break;
-//                     default:
-//                         return false;
-//                 }
-
-//                 tud_control_xfer(rhport, request, desc_buffer, desc_buffer_len);
-//             }
-//             return true;
-
-//         default:
-//             if (interfaces_[index].type != Type::XREMOTE)
-//             {
-//                 return false;
-//             }
-//             return xremote_control_xfer(rhport, stage, request, &interfaces_[index]);
-//     }
-
-//     return false;
-// }
-
-// static const usbd_class_driver_t tud_xid_class_driver_ =
-// {
-// #if CFG_TUSB_DEBUG >= 2
-//     .name = "XID DRIVER (DUKE,SB OR XREMOTE)",
-// #endif
-//     .init = xid_init,
-//     .reset = xid_reset,
-//     .open = xid_open,
-//     .control_xfer_cb = xid_control_xfer_cb,
-//     .xfer_cb = xid_xfer_cb,
-//     .sof = NULL
-// };
-
-// //Public API
-
-// //Call first before device stack is initialized with tud_init(), will default to Duke/Gamepad otherwise
-// void initialize(Type xid_type)
-// {
-//     xid_type_ = xid_type;
-// }
-
-// const usbd_class_driver_t* class_driver()
-// {
-//     return &tud_xid_class_driver_;
-// }
-
-// bool send_report_ready(uint8_t index)
-// {
-//     TU_VERIFY(index < interfaces_.size(), false);
-//     TU_VERIFY(interfaces_[index].ep_in != 0xFF, false);
-//     return (tud_ready() && !usbd_edpt_busy(BOARD_TUD_RHPORT, interfaces_[index].ep_in));
-// }
-
-// bool send_report(uint8_t index, const uint8_t* report, uint16_t len)
-// {
-//     TU_VERIFY(len < ENDPOINT_SIZE, false);
-//     TU_VERIFY(send_report_ready(index), false);
-
-//     if (tud_suspended())
-//     {
-//         tud_remote_wakeup();
-//     }
-
-//     std::memcpy(interfaces_[index].gp_in_buffer.data(), report, len);
-
-//     return usbd_edpt_xfer(BOARD_TUD_RHPORT, interfaces_[index].ep_in, interfaces_[index].gp_in_buffer.data(), len);
-// }
-
-// bool receive_report(uint8_t index, uint8_t *report, uint16_t len)
-// {
-//     TU_VERIFY(index < interfaces_.size(), false);
-//     TU_VERIFY(interfaces_[index].ep_out != 0xFF, false);
-//     TU_VERIFY(len < ENDPOINT_SIZE, false);
-
-//     std::memcpy(report, interfaces_[index].gp_out_buffer.data(), len);
-
-//     if (tud_ready() && !usbd_edpt_busy(BOARD_TUD_RHPORT, interfaces_[index].ep_out))
-//     {
-//         usbd_edpt_xfer(BOARD_TUD_RHPORT, interfaces_[index].ep_out, interfaces_[index].ep_out_buffer.data(), len);
-//     }
-//     return true;
-// }
-
-// bool xremote_rom_available()
-// {
-//     return (xremote_get_rom() != nullptr);
-// }
-
-// } // namespace TUDXID
-
-// #endif // TUSB_OPT_DEVICE_ENABLED && CFG_TUD_XID
-
 #include "tusb_option.h"
-
 #if (TUSB_OPT_DEVICE_ENABLED && CFG_TUD_XID)
 
 #include <cstring>
@@ -456,12 +6,8 @@
 #include "USBDevice/DeviceDriver/XboxOG/tud_xid/tud_xid.h"
 #include "Descriptors/XboxOG.h"
 
-#ifndef CFG_TUD_XID_XREMOTE_ENABLE
-    #define CFG_TUD_XID_XREMOTE_ENABLE 0
-#endif
-
-#ifdef XREMOTE_ROM_AVAILABLE
-    #define XREMOTE_ENABLED (CFG_TUD_XID_XREMOTE_ENABLE ? 1 : 0)
+#if defined(XREMOTE_ROM_AVAILABLE)
+    #define XREMOTE_ENABLED 1
     #include "USBDevice/DeviceDriver/XboxOG/tud_xid/tud_xid_xremote_rom.h"
 #else
     #define XREMOTE_ENABLED 0
@@ -469,7 +15,7 @@
 
 namespace tud_xid {
 
-static constexpr uint8_t ENDPOINT_SIZE = 32;
+static constexpr uint16_t ENDPOINT_SIZE = 32;
 static constexpr uint8_t INTERFACE_MULT = XREMOTE_ENABLED + 1;
 static constexpr uint8_t INTERFACE_CLASS = 0x58;
 static constexpr uint8_t INTERFACE_SUBCLASS = 0x42;
@@ -680,44 +226,6 @@ static uint16_t xid_open(uint8_t rhport, tusb_desc_interface_t const *itf_desc, 
         endpoint++;
     }
 
-    // interface->itf_num = itf_desc->bInterfaceNumber;
-
-    // tusb_desc_endpoint_t *ep_desc;
-    // ep_desc = (tusb_desc_endpoint_t *)tu_desc_next(itf_desc);
-
-    // if (tu_desc_type(ep_desc) == TUSB_DESC_ENDPOINT)
-    // {
-    //     TU_VERIFY(usbd_edpt_open(rhport, ep_desc), 0);
-    //     if (tu_edpt_dir(ep_desc->bEndpointAddress) == TUSB_DIR_IN)
-    //     {
-    //         interface->ep_in = ep_desc->bEndpointAddress;
-    //         interface->ep_in_size = ep_desc->wMaxPacketSize;
-    //     }
-    //     else
-    //     {
-    //         interface->ep_out = ep_desc->bEndpointAddress;
-    //         interface->ep_out_size = ep_desc->wMaxPacketSize;
-    //     }
-    // }
-
-    // TU_VERIFY(itf_desc->bNumEndpoints >= 2, driver_len);
-    // ep_desc = (tusb_desc_endpoint_t *)tu_desc_next(ep_desc);
-
-    // if (tu_desc_type(ep_desc) == TUSB_DESC_ENDPOINT)
-    // {
-    //     TU_VERIFY(usbd_edpt_open(rhport, ep_desc), driver_len);
-    //     if (tu_edpt_dir(ep_desc->bEndpointAddress) == TUSB_DIR_IN)
-    //     {
-    //         interface->ep_in = ep_desc->bEndpointAddress;
-    //         interface->ep_in_size = ep_desc->wMaxPacketSize;
-    //     }
-    //     else
-    //     {
-    //         interface->ep_out = ep_desc->bEndpointAddress;
-    //         interface->ep_out_size = ep_desc->wMaxPacketSize;
-    //     }
-    // }
-
     return driver_len;
 }
 
@@ -836,22 +344,6 @@ bool xid_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_request_t c
     return true;
 }
 
-static const usbd_class_driver_t tud_xid_class_driver_ =
-{
-#if CFG_TUSB_DEBUG >= 2
-    .name = "XID DRIVER (DUKE,SB OR XREMOTE)",
-#else
-    .name = nullptr,
-#endif
-    .init = xid_init,
-    .deinit = xid_deinit,
-    .reset = xid_reset,
-    .open = xid_open,
-    .control_xfer_cb = xid_control_xfer_cb,
-    .xfer_cb = xid_xfer_cb,
-    .sof = NULL
-};
-
 //Public API
 
 //Call first before device stack is initialized with tud_init(), will default to Duke/Gamepad otherwise
@@ -862,7 +354,22 @@ void initialize(Type xid_type)
 
 const usbd_class_driver_t* class_driver()
 {
-    return &tud_xid_class_driver_;
+    static const usbd_class_driver_t tud_xid_class_driver =
+    {
+    #if CFG_TUSB_DEBUG >= 2
+        .name = "XID",
+    #else
+        .name = nullptr,
+    #endif
+        .init = xid_init,
+        .deinit = xid_deinit,
+        .reset = xid_reset,
+        .open = xid_open,
+        .control_xfer_cb = xid_control_xfer_cb,
+        .xfer_cb = xid_xfer_cb,
+        .sof = NULL
+    };
+    return &tud_xid_class_driver;
 }
 
 bool send_report_ready(uint8_t index)
@@ -882,7 +389,7 @@ bool send_report(uint8_t index, const uint8_t* report, uint16_t len)
         tud_remote_wakeup();
     }
 
-    uint16_t size = std::min(len, static_cast<uint16_t>(interfaces_[index].ep_in_size));
+    uint16_t size = std::min(len, interfaces_[index].ep_in_size);
 
     std::memcpy(interfaces_[index].ep_in_buffer.data(), report, size);
 
@@ -895,7 +402,7 @@ bool receive_report(uint8_t index, uint8_t *report, uint16_t len)
     TU_VERIFY(interfaces_[index].ep_out != 0xFF);
     TU_VERIFY(len < ENDPOINT_SIZE);
 
-    uint16_t size = std::min(len, static_cast<uint16_t>(interfaces_[index].ep_out_size));
+    uint16_t size = std::min(len, interfaces_[index].ep_out_size);
 
     if (tud_ready() && !usbd_edpt_busy(BOARD_TUD_RHPORT, interfaces_[index].ep_out))
     {

@@ -4,9 +4,11 @@ set(CMAKE_CXX_STANDARD 17)
 
 set(EXTERNAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../external)
 
+include(${EXTERNAL_DIR}/init_submodules.cmake)
 include(${EXTERNAL_DIR}/patch_libs.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/integrate_btstack.cmake)
 
+init_git_submodules(${EXTERNAL_DIR})
 apply_lib_patches(${EXTERNAL_DIR})
 integrate_btstack(${EXTERNAL_DIR})
 

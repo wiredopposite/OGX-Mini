@@ -70,15 +70,32 @@ public:
     void initialize_i2c();
 
     //Does not return
-    static void run_tasks(void* parameter);
+    void run_tasks();
 
-    //Thread safe
-    inline void push_task(std::function<void()> task)
-    { 
-        task_queue_.push(task); 
+    inline void i2c_write_blocking_safe(uint8_t address, const PacketIn& packet_in) 
+    {
+        task_queue_.push([this, address, packet_in]() 
+        {
+            i2c_write_blocking(address, reinterpret_cast<const uint8_t*>(&packet_in), sizeof(PacketIn));
+        });
     }
 
-    //Don't call directly from another thread, use in push_task
+    inline void i2c_read_blocking_safe(uint8_t address, std::function<void(const PacketOut&)> callback) 
+    {
+        task_queue_.push([this, address, callback]() 
+        {
+            PacketOut packet_out;
+            if (i2c_read_blocking(address, reinterpret_cast<uint8_t*>(&packet_out), sizeof(PacketOut)) == ESP_OK)
+            {
+                callback(packet_out);
+            }
+        });
+    }
+
+private:
+    using TaskQueue = RingBuffer<std::function<void()>, 6>;
+    TaskQueue task_queue_;
+
     inline esp_err_t i2c_write_blocking(uint8_t address, const uint8_t* buffer, size_t len) 
     {
         i2c_cmd_handle_t cmd = i2c_cmd_link_create();
@@ -92,7 +109,6 @@ public:
         return ret;
     }
 
-    //Don't call directly from another thread, use in push_task
     inline esp_err_t i2c_read_blocking(uint8_t address, uint8_t* buffer, size_t len) 
     {
         i2c_cmd_handle_t cmd = i2c_cmd_link_create();
@@ -111,10 +127,6 @@ public:
         i2c_cmd_link_delete(cmd);
         return ret;
     }
-
-private:
-    using TaskQueue = RingBuffer<std::function<void()>, 6>;
-    static TaskQueue task_queue_;
 };
 
 #endif // _I2C_DRIVER_H_
