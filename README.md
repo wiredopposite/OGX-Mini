@@ -127,6 +127,6 @@ Or just install the GCC ARM toolchain and use the CMake Tools extension in VSCod
 ### ESP32
 Please see the Hardware directory for a schematic showing how to hookup the ESP32 to your RP2040.
 
-You will need ESP-IDF v5.1, esptools, and python3 installed. If you use VSCode you can install the ESP-IDF extension and configure the project for v5.1, it'll download everything for you and then you just click the build button at the bottom of the window.
+You will need ESP-IDF v5.1, esptool, python3, and git installed. If you use VSCode you can install the ESP-IDF extension and configure the project for v5.1, it'll download everything for you and then you just click the build button at the bottom of the window.
 
-When you build with ESP-IDF, Cmake will run a python script that copies the necessary BTStack files components directory, this is needed since BTStack isn't configured as an IDF component when you download it. 
+When you build with ESP-IDF, Cmake will run a python script that copies the necessary BTStack files into the components directory, this is needed since BTStack isn't configured as an ESP-IDF component when you download it. 

@@ -2,7 +2,7 @@ menu "OGXMini Options"
 
     config RESET_PIN
         int "Set reset pin"
-        default 15
+        default 9
 
     config MULTI_SLAVE_MODE
         bool "Enable multiple slave devices"

@@ -7,7 +7,7 @@
         "PICO_SDK_PATH": "C:/Programming/pico-sdk"
     },
     "cmake.configureArgs": [
-        "-DOGXM_BOARD=PI_PICO",
+        "-DOGXM_BOARD=W_ESP32",
         "-DMAX_GAMEPADS=1"
     ],
     "files.associations": {
