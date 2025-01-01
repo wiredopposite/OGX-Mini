@@ -17,7 +17,6 @@
 namespace OGXMini {
 
 Gamepad gamepads_[MAX_GAMEPADS];
-std::atomic<bool> tud_inited_{false};
 
 void core1_task()
 {
@@ -45,9 +44,11 @@ void core1_task()
 //Called by tusb host or i2c driver so we know to connect or disconnect usb
 void update_tud_status(bool host_mounted)
 {
+    static bool tud_is_inited = false;
+
     board_api::set_led(host_mounted);
 
-    if (!host_mounted && tud_inited_.load())
+    if (!host_mounted && tud_is_inited)
     {
         TaskQueue::Core0::queue_task([]()
         {
@@ -58,12 +59,12 @@ void update_tud_status(bool host_mounted)
             board_api::reboot();
         });
     }
-    else if (!tud_inited_.load())
+    else if (!tud_is_inited)
     {
-        TaskQueue::Core0::queue_task([]()
+        if (TaskQueue::Core0::queue_task([]() { tud_init(BOARD_TUD_RHPORT); }))
         {
-            tud_init(BOARD_TUD_RHPORT);
-        });
+            tud_is_inited = true;
+        }
     }
 }
 
@@ -109,8 +110,6 @@ void run_program()
         TaskQueue::Core0::process_tasks();
         sleep_ms(100);
     }
-
-    tud_inited_.store(true);
 
     while (true)
     {

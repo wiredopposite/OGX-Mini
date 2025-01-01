@@ -50,14 +50,16 @@ static const HardwareID PSCLASSIC_IDS[] =
 
 static const HardwareID SWITCH_PRO_IDS[] =
 {
-    {0x057E, 0x2009} // Switch Pro
+    {0x057E, 0x2009}, // Switch Pro
+    // {0x20D6, 0xA711}, // OpenSteamController, emulated pro controller
 };
 
 static const HardwareID SWITCH_WIRED_IDS[] =
 {
     {0x20D6, 0xA719}, // PowerA wired
     {0x20D6, 0xA713}, // PowerA Enhanced wired
-    {0x0F0D, 0x0092}  // Hori Pokken wired, I don't have this one so not 100% on if it'll work
+    {0x0F0D, 0x0092}, // Hori Pokken Tournament Pro
+    {0x0F0D, 0x00C1}, // Hori Pokken Horipad
 };
 
 static const HardwareID N64_IDS[] =

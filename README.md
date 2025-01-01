@@ -115,7 +115,7 @@ You can compile this for different boards with the CMake argument ```OGXM_BOARD`
 ```PI_PICO``` ```RP_ZERO``` ```ADA_FEATHER``` ```PI_PICOW``` ```W_ESP32``` ```EXTERNAL_4CH```
 You can also set ```MAX_GAMEPADS``` which, if greater than one, will only support DInput (PS3) and Switch.
 
-You'll need CMake, Ninja and the GCC ARM toolchain installed. Here's an example on Windows:
+You'll need git, python3, CMake, Ninja and the GCC ARM toolchain installed. CMake scripts will patch some files in Bluepad32 and BTStack, and also init the git submodules to make sure everything's there. Here's an example on Windows:
 ```
 git clone --recursive https://github.com/wiredopposite/OGX-Mini.git
 cd OGX-Mini/Firmware/RP2040
@@ -123,8 +123,6 @@ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DOGXM_BOARD=PI_PICOW -D
 cmake --build build
 ```
 Or just install the GCC ARM toolchain and use the CMake Tools extension in VSCode.
-
-CMake scripts will patch some files in TinyUSB, Bluepad32 and BTStack. If the patches fail, it's because of a text encoding issue, so open each .diff file in ```OGX-Mini/Firmware/external/patches``` in Notepad++. At the top of the window, click Encoding > UTF-8 and save. They should work after that. 
 
 ### ESP32
 Please see the Hardware directory for a schematic showing how to hookup the ESP32 to your RP2040.
