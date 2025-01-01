@@ -204,8 +204,7 @@ namespace PS3
 			std::memset(this, 0, sizeof(BTInfo));
 			std::memcpy(device_address, DEFAULT_BT_INFO_HEADER, sizeof(DEFAULT_BT_INFO_HEADER));
 
-            std::random_device rd;
-            std::mt19937 gen(rd());
+            std::mt19937 gen(12345);
             std::uniform_int_distribution<uint8_t> dist(0, 0xFF);
 
 			for (uint8_t addr = 0; addr < 3; addr++) 
