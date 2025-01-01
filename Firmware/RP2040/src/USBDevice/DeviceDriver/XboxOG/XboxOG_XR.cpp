@@ -1,7 +1,6 @@
 #include <cstring>
-#include <vector>
-#include "pico/stdlib.h"
 
+#include "Board/board_api.h"
 #include "USBDevice/DeviceDriver/XboxOG/tud_xid/tud_xid.h"
 #include "USBDevice/DeviceDriver/XboxOG/XboxOG_XR.h"
 
@@ -21,7 +20,7 @@ void XboxOGXRDevice::process(const uint8_t idx, Gamepad& gamepad)
         return;
     }
 
-    uint32_t time_elapsed = to_ms_since_boot(get_absolute_time()) - ms_timer_;
+    uint32_t time_elapsed = board_api::ms_since_boot() - ms_timer_;
     uint8_t index = tud_xid::get_index_by_type(0, tud_xid::Type::XREMOTE);
 
     if (index == 0xFF || !gamepad.new_pad_in() || time_elapsed < 64)
@@ -72,7 +71,7 @@ void XboxOGXRDevice::process(const uint8_t idx, Gamepad& gamepad)
     if (tud_xid::send_report_ready(index) &&
         tud_xid::send_report(index, reinterpret_cast<uint8_t*>(&in_report_), sizeof(XboxOG::XR::InReport)))
     {
-        ms_timer_ = to_ms_since_boot(get_absolute_time());
+        ms_timer_ = board_api::ms_since_boot();
     }
 }
 

@@ -33,7 +33,7 @@ namespace DInput
         static constexpr uint8_t START  = 0x02;
         static constexpr uint8_t L3     = 0x04;
         static constexpr uint8_t R3     = 0x08;
-        static constexpr uint8_t PS     = 0x10;
+        static constexpr uint8_t SYS    = 0x10;
         static constexpr uint8_t TP     = 0x20;
     };
 

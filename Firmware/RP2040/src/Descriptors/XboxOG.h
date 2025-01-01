@@ -447,42 +447,6 @@ namespace XboxOG
 
         static constexpr uint16_t DRIVER_LEN = 9+7+9;
 
-        // enum xboxog_xremote_xid_interface
-        // {
-        //     ITF_NUM_XID_XREMOTE = 0,
-        //     ITF_NUM_XID_XREMOTE_ROM,
-        //     XID_REMOTE_ITF_NUM_TOTAL
-        // };
-
-        // #define TUD_XID_XREMOTE_DESC_LEN  (9+7+9)
-
-        // #define TUD_XID_XREMOTE_DESCRIPTOR(_itfnum, _epin) \
-        //     /* Interface 0 (HID DATA)*/\
-        //     9, TUSB_DESC_INTERFACE, _itfnum, 0, 1, XID_REMOTE_INTERFACE_CLASS, XID_REMOTE_INTERFACE_SUBCLASS, 0x00, 0x00,\
-        //     /* Endpoint In */\
-        //     7, TUSB_DESC_ENDPOINT, _epin, TUSB_XFER_INTERRUPT, U16_TO_U8S_LE(8), 16, \
-        //     /* Interface 1 (ROM DATA)*/\
-        //     9, TUSB_DESC_INTERFACE, _itfnum + 1, 0, 0, XID_XREMOTE_ROM_CLASS, 0x00, 0x00, 0x00
-
-
-        // #define XID_REMOTE_CONFIG_TOTAL_LEN \
-        //     (TUD_CONFIG_DESC_LEN) + \
-        //     (TUD_XID_XREMOTE_DESC_LEN)
-
-        // static const uint8_t CONFIGURATION_DESCRIPTORS[] =
-        // {
-        //     // Config number, interface count, string index, total length, attribute, power in mA
-        //     TUD_CONFIG_DESCRIPTOR(  1, 
-        //                             XID_REMOTE_ITF_NUM_TOTAL, 
-        //                             0, 
-        //                             XID_REMOTE_CONFIG_TOTAL_LEN, 
-        //                             TUSB_DESC_CONFIG_ATT_REMOTE_WAKEUP, 
-        //                             500),
-
-        //     TUD_XID_XREMOTE_DESCRIPTOR( ITF_NUM_XID_XREMOTE, 
-        //                                 0x80 | (ITF_NUM_XID_XREMOTE + 1)),
-        // };
-
         static const uint8_t DEVICE_DESCRIPTORS[] =
         {
             0x12,        // bLength

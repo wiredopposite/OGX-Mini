@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include <cstring>
-#include <pico/rand.h>
+#include <random>
 
 #include "tusb.h"
 
@@ -75,7 +75,7 @@ namespace PS3
 
 	namespace Buttons2
 	{
-		static constexpr uint8_t PS = 0x01;
+		static constexpr uint8_t SYS = 0x01;
 		static constexpr uint8_t TP = 0x02;
 	};
 
@@ -203,13 +203,18 @@ namespace PS3
 		{
 			std::memset(this, 0, sizeof(BTInfo));
 			std::memcpy(device_address, DEFAULT_BT_INFO_HEADER, sizeof(DEFAULT_BT_INFO_HEADER));
+
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::uniform_int_distribution<uint8_t> dist(0, 0xFF);
+
 			for (uint8_t addr = 0; addr < 3; addr++) 
 			{
-				device_address[4 + addr] = static_cast<uint8_t>(get_rand_32() % 0xff);
+				device_address[4 + addr] = dist(gen);
 			}
 			for (uint8_t addr = 0; addr < 6; addr++) 
 			{
-				host_address[1 + addr] = static_cast<uint8_t>(get_rand_32() % 0xff);
+				host_address[1 + addr] = dist(gen);
 			}
 		}
 	};

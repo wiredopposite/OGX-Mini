@@ -92,7 +92,7 @@ void DInputDevice::process(const uint8_t idx, Gamepad& gamepad)
         if (gp_in.buttons & Gamepad::BUTTON_R3)    in_report.buttons[1] |= DInput::Buttons1::R3;
         if (gp_in.buttons & Gamepad::BUTTON_BACK)  in_report.buttons[1] |= DInput::Buttons1::SELECT;
         if (gp_in.buttons & Gamepad::BUTTON_START) in_report.buttons[1] |= DInput::Buttons1::START;
-        if (gp_in.buttons & Gamepad::BUTTON_SYS)   in_report.buttons[1] |= DInput::Buttons1::PS;
+        if (gp_in.buttons & Gamepad::BUTTON_SYS)   in_report.buttons[1] |= DInput::Buttons1::SYS;
         if (gp_in.buttons & Gamepad::BUTTON_MISC)  in_report.buttons[1] |= DInput::Buttons1::TP;
 
         if (gamepad.analog_enabled())

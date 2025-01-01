@@ -184,6 +184,11 @@ void reboot()
     while(1);
 }
 
+uint32_t ms_since_boot()
+{
+    return to_ms_since_boot(get_absolute_time());
+}
+
 void init_board()
 {
     if (inited_)

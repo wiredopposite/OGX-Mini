@@ -121,7 +121,7 @@ void PS3Host::process_report(Gamepad& gamepad, uint8_t address, uint8_t instance
     if (in_report->buttons[1] & PS3::Buttons1::CIRCLE)      gp_in.buttons |= gamepad.MAP_BUTTON_B;
     if (in_report->buttons[1] & PS3::Buttons1::CROSS)       gp_in.buttons |= gamepad.MAP_BUTTON_A;
     if (in_report->buttons[1] & PS3::Buttons1::SQUARE)      gp_in.buttons |= gamepad.MAP_BUTTON_X;
-    if (in_report->buttons[2] & PS3::Buttons2::PS)          gp_in.buttons |= gamepad.MAP_BUTTON_SYS;
+    if (in_report->buttons[2] & PS3::Buttons2::SYS)         gp_in.buttons |= gamepad.MAP_BUTTON_SYS;
 
     if (gamepad.analog_enabled())
     {

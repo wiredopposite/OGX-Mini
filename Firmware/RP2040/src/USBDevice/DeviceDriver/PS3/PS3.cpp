@@ -65,7 +65,7 @@ void PS3Device::process(const uint8_t idx, Gamepad& gamepad)
         if (gp_in.buttons & Gamepad::BUTTON_START)    report_in_.buttons[0] |= PS3::Buttons0::START;
         if (gp_in.buttons & Gamepad::BUTTON_L3)       report_in_.buttons[0] |= PS3::Buttons0::L3;
         if (gp_in.buttons & Gamepad::BUTTON_R3)       report_in_.buttons[0] |= PS3::Buttons0::R3;
-        if (gp_in.buttons & Gamepad::BUTTON_SYS)      report_in_.buttons[2] |= PS3::Buttons2::PS;
+        if (gp_in.buttons & Gamepad::BUTTON_SYS)      report_in_.buttons[2] |= PS3::Buttons2::SYS;
         if (gp_in.buttons & Gamepad::BUTTON_MISC)     report_in_.buttons[2] |= PS3::Buttons2::TP;
 
         if (gp_in.trigger_l) report_in_.buttons[1] |= PS3::Buttons1::L2;

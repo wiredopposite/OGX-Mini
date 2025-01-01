@@ -62,7 +62,7 @@ void DInputHost::process_report(Gamepad& gamepad, uint8_t address, uint8_t insta
     if (in_report->buttons[1] & DInput::Buttons1::R3)       gp_in.buttons |= gamepad.MAP_BUTTON_R3; 
     if (in_report->buttons[1] & DInput::Buttons1::SELECT)   gp_in.buttons |= gamepad.MAP_BUTTON_BACK;
     if (in_report->buttons[1] & DInput::Buttons1::START)    gp_in.buttons |= gamepad.MAP_BUTTON_START;
-    if (in_report->buttons[1] & DInput::Buttons1::PS)       gp_in.buttons |= gamepad.MAP_BUTTON_SYS;
+    if (in_report->buttons[1] & DInput::Buttons1::SYS)      gp_in.buttons |= gamepad.MAP_BUTTON_SYS;
     if (in_report->buttons[1] & DInput::Buttons1::TP)       gp_in.buttons |= gamepad.MAP_BUTTON_MISC;
 
     if (gamepad.analog_enabled())
