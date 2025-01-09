@@ -4,6 +4,7 @@
 #include <cstdint>
 
 #include "sdkconfig.h"
+#include "Range.h"
 #include "UserSettings/UserProfile.h"
 #include "UserSettings/UserSettings.h"
 #include "Board/ogxm_log.h"
@@ -12,34 +13,6 @@
 static_assert(  MAX_GAMEPADS > 0 && 
                 MAX_GAMEPADS <= 4, 
                 "MAX_GAMEPADS must be between 1 and 4");
-
-namespace INT_16
-{
-    static constexpr int16_t MIN = INT16_MIN;
-    static constexpr int16_t MID = 0;
-    static constexpr int16_t MAX = INT16_MAX;
-}
-namespace UINT_16
-{
-    static constexpr uint16_t MIN = 0;
-    static constexpr uint16_t MID = 0x8000;
-    static constexpr uint16_t MAX = 0xFFFF;
-}
-namespace UINT_8
-{
-    static constexpr uint8_t  MAX  = 0xFF;
-    static constexpr uint8_t  MID  = 0x80;
-    static constexpr uint8_t  MIN  = 0x00;
-}
-namespace INT_10
-{
-    static constexpr int32_t  MIN  = -512;
-    static constexpr int32_t  MAX  = 511;
-}
-namespace UINT_10
-{
-    static constexpr int32_t MAX = 1023;
-}
 
 namespace Gamepad
 {
@@ -103,43 +76,225 @@ public:
         set_profile_deadzones(profile);
     }
 
-    inline int16_t joystick_ly(int32_t value_10bit) 
+    /*  Get joy value adjusted for deadzones, scaling, and inversion settings. 
+        <bits> param is optional, used for scaling specific bit values as opposed 
+        to full range values. */
+    template <uint8_t bits = 0, typename T>
+    inline int16_t scale_joystick_rx(T value) const
     {
-        int16_t value = int10_to_int16(value_10bit);
-        value = profile_invert_ly_ ? invert_joy(value) : value;
-        return (value <= dz_.joystick_l_neg || value >= dz_.joystick_l_pos) ? value : INT_16::MID;
-    };
+        int16_t joy_value = 0;
+        if constexpr (bits > 0)
+        {
+            joy_value = Range::scale_from_bits<int16_t, bits>(value);
+        }
+        else if constexpr (!std::is_same_v<T, int16_t>)
+        {
+            joy_value = Range::scale<int16_t>(value);
+        }
+        else
+        {
+            joy_value = value;
+        }
+        if (joy_value > dz_.joystick_r_pos)
+        {
+            joy_value = Range::scale(
+                            joy_value, 
+                            dz_.joystick_r_pos, 
+                            Range::MAX<int16_t>, 
+                            Range::MID<int16_t>, 
+                            Range::MAX<int16_t>);
+        }
+        else if (joy_value < dz_.joystick_r_neg)
+        {
+            joy_value = Range::scale(
+                            joy_value, 
+                            Range::MIN<int16_t>, 
+                            dz_.joystick_r_neg, 
+                            Range::MIN<int16_t>, 
+                            Range::MID<int16_t>);
+        }
+        else
+        {
+            joy_value = 0;
+        }
+        return joy_value;
+    }
 
-    inline int16_t joystick_lx(int32_t value_10bit) 
+    /*  Get joy value adjusted for deadzones, scaling, and inversion settings. 
+        <bits> param is optional, used for scaling specific bit values as opposed 
+        to full range values. */
+    template <uint8_t bits = 0, typename T>
+    inline int16_t scale_joystick_ry(T value, bool invert = false) const
     {
-        int16_t value = int10_to_int16(value_10bit);
-        return (value <= dz_.joystick_l_neg || value >= dz_.joystick_l_pos) ? value : INT_16::MID;
-    };
+        int16_t joy_value = 0;
+        if constexpr (bits > 0)
+        {
+            joy_value = Range::scale_from_bits<int16_t, bits>(value);
+        }
+        else if constexpr (!std::is_same_v<T, int16_t>)
+        {
+            joy_value = Range::scale<int16_t>(value);
+        }
+        else
+        {
+            joy_value = value;
+        }
+        if (joy_value > dz_.joystick_r_pos)
+        {
+            joy_value = Range::scale(
+                            joy_value, 
+                            dz_.joystick_r_pos, 
+                            Range::MAX<int16_t>, 
+                            Range::MID<int16_t>, 
+                            Range::MAX<int16_t>);
+        }
+        else if (joy_value < dz_.joystick_r_neg)
+        {
+            joy_value = Range::scale(
+                            joy_value, 
+                            Range::MIN<int16_t>, 
+                            dz_.joystick_r_neg, 
+                            Range::MIN<int16_t>, 
+                            Range::MID<int16_t>);
+        }
+        else
+        {
+            joy_value = 0;
+        }
+        return profile_invert_ry_ ? (invert ? joy_value : Range::invert(joy_value)) : (invert ? Range::invert(joy_value) : joy_value);
+    }
 
-    inline int16_t joystick_ry(int32_t value_10bit) 
+    /*  Get joy value adjusted for deadzones, scaling, and inversion settings. 
+        <bits> param is optional, used for scaling specific bit values as opposed 
+        to full range values. */
+    template <uint8_t bits = 0, typename T>
+    inline int16_t scale_joystick_lx(T value) const
     {
-        int16_t value = int10_to_int16(value_10bit);
-        value = profile_invert_ry_ ? invert_joy(value) : value;
-        return (value <= dz_.joystick_r_neg || value >= dz_.joystick_r_pos) ? value : INT_16::MID;
-    };
+        int16_t joy_value = 0;
+        if constexpr (bits > 0)
+        {
+            joy_value = Range::scale_from_bits<int16_t, bits>(value);
+        }
+        else if constexpr (!std::is_same_v<T, int16_t>)
+        {
+            joy_value = Range::scale<int16_t>(value);
+        }
+        else
+        {
+            joy_value = value;
+        }
+        if (joy_value > dz_.joystick_l_pos)
+        {
+            joy_value = Range::scale(
+                            joy_value, 
+                            dz_.joystick_l_pos, 
+                            Range::MAX<int16_t>, 
+                            Range::MID<int16_t>, 
+                            Range::MAX<int16_t>);
+        }
+        else if (joy_value < dz_.joystick_l_neg)
+        {
+            joy_value = Range::scale(
+                            joy_value, 
+                            Range::MIN<int16_t>, 
+                            dz_.joystick_l_neg, 
+                            Range::MIN<int16_t>, 
+                            Range::MID<int16_t>);
+        }
+        else
+        {
+            joy_value = 0;
+        }
+        return joy_value;
+    }
 
-    inline int16_t joystick_rx(int32_t value_10bit) 
+    /*  Get joy value adjusted for deadzones, scaling, and inversion settings. 
+        <bits> param is optional, used for scaling specific bit values as opposed 
+        to full range values. */
+    template <uint8_t bits = 0, typename T>
+    inline int16_t scale_joystick_ly(T value, bool invert = false) const
     {
-        int16_t value = int10_to_int16(value_10bit);
-        return (value <= dz_.joystick_r_neg || value >= dz_.joystick_r_pos) ? value : INT_16::MID;
-    };
+        int16_t joy_value = 0;
+        if constexpr (bits > 0)
+        {
+            joy_value = Range::scale_from_bits<int16_t, bits>(value);
+        }
+        else if constexpr (!std::is_same_v<T, int16_t>)
+        {
+            joy_value = Range::scale<int16_t>(value);
+        }
+        else
+        {
+            joy_value = value;
+        }
+        if (joy_value > dz_.joystick_l_pos)
+        {
+            joy_value = Range::scale(
+                            joy_value, 
+                            dz_.joystick_l_pos, 
+                            Range::MAX<int16_t>, 
+                            Range::MID<int16_t>, 
+                            Range::MAX<int16_t>);
+        }
+        else if (joy_value < dz_.joystick_l_neg)
+        {
+            joy_value = Range::scale(
+                            joy_value, 
+                            Range::MIN<int16_t>, 
+                            dz_.joystick_l_neg, 
+                            Range::MIN<int16_t>, 
+                            Range::MID<int16_t>);
+        }
+        else
+        {
+            joy_value = 0;
+        }
+        return profile_invert_ly_ ? (invert ? joy_value : Range::invert(joy_value)) : (invert ? Range::invert(joy_value) : joy_value);
+    }
 
-    inline uint8_t trigger_l(int32_t value_10bit) 
+    /*  Get trigger value adjusted for deadzones, scaling, and inversion. 
+        <bits> param is optional, used for scaling speicifc bit values 
+        as opposed to full range values */
+    template <uint8_t bits = 0, typename T>
+    inline uint8_t scale_trigger_l(T value) const
     {
-        uint8_t value = uint10_to_uint8(value_10bit);
-        return (value >= dz_.trigger_l) ? value : UINT_8::MIN;
-    };
+        uint8_t trigger_value = 0;
+        if constexpr (bits > 0)
+        {
+            trigger_value = Range::scale_from_bits<uint8_t, bits>(value);
+        }
+        else if constexpr (!std::is_same_v<T, uint8_t>)
+        {
+            trigger_value = Range::scale<uint8_t>(value);
+        }
+        else
+        {
+            trigger_value = value;
+        }
+        return trigger_value > dz_.trigger_l ? Range::scale(trigger_value, dz_.trigger_l, Range::MAX<uint8_t>) : 0;
+    }
 
-    inline uint8_t trigger_r(int32_t value_10bit) 
+    /*  Get trigger value adjusted for deadzones, scaling, and inversion. 
+        <bits> param is optional, used for scaling speicifc bit values 
+        as opposed to full range values */
+    template <uint8_t bits = 0, typename T>
+    inline uint8_t scale_trigger_r(T value) const
     {
-        uint8_t value = uint10_to_uint8(value_10bit);
-        return (value >= dz_.trigger_r) ? value : UINT_8::MIN;
-    };
+        uint8_t trigger_value = 0;
+        if constexpr (bits > 0)
+        {
+            trigger_value = Range::scale_from_bits<uint8_t, bits>(value);
+        }
+        else if constexpr (!std::is_same_v<T, uint8_t>)
+        {
+            trigger_value = Range::scale<uint8_t>(value);
+        }
+        else
+        {
+            trigger_value = value;
+        }
+        return trigger_value > dz_.trigger_l ? Range::scale(trigger_value, dz_.trigger_l, Range::MAX<uint8_t>) : 0;
+    }
 
 private:
     bool profile_invert_ly_{false};
@@ -195,50 +350,13 @@ private:
         dz_.trigger_l = profile.dz_trigger_l;
         dz_.trigger_r = profile.dz_trigger_r;
 
-        dz_.joystick_l_pos = uint8_to_int16(profile.dz_joystick_l / 2);
-        dz_.joystick_l_neg = invert_joy(dz_.joystick_l_pos);
-        dz_.joystick_r_pos = uint8_to_int16(profile.dz_joystick_r / 2);
-        dz_.joystick_r_neg = invert_joy(dz_.joystick_r_pos);
+        dz_.joystick_l_pos = profile.dz_joystick_l ? Range::scale<int16_t>(static_cast<int8_t>(profile.dz_joystick_l / 2)) : 0;
+        dz_.joystick_l_neg = Range::invert(dz_.joystick_l_pos);
+        dz_.joystick_r_pos = profile.dz_joystick_r ? Range::scale<int16_t>(static_cast<int8_t>(profile.dz_joystick_r / 2)) : 0;
+        dz_.joystick_r_neg = Range::invert(dz_.joystick_r_pos);
 
-        OGXM_LOG("Deadzones: TL: %i TR: %i JL: %i JR: %i\n", dz_.trigger_l, dz_.trigger_r, dz_.joystick_l_pos, dz_.joystick_r_pos);
-    }
-
-    static inline int16_t int10_to_int16(int32_t value)
-    {
-        constexpr int32_t scale_factor = INT_16::MAX - INT_16::MIN;
-        constexpr int32_t range = INT_10::MAX - INT_10::MIN;
-
-        if (value >= INT_10::MAX)
-        {
-            return INT_16::MAX;
-        }
-        else if (value <= INT_10::MIN)
-        {
-            return INT_16::MIN;
-        }
-
-        int32_t scaled_value = (value - INT_10::MIN) * scale_factor;
-        return static_cast<int16_t>(scaled_value / range + INT_16::MIN);
-    }
-    static inline uint8_t uint10_to_uint8(int32_t value)
-    {
-        if (value > UINT_10::MAX) 
-        {
-            value = UINT_10::MAX;
-        }
-        else if (value < 0) 
-        {
-            value = 0;
-        }
-        return static_cast<uint8_t>(value >> 2);
-    }
-    static inline int16_t uint8_to_int16(uint8_t value)
-    {
-        return static_cast<int16_t>((static_cast<int32_t>(value) << 8) - UINT_16::MID);
-    }
-    static inline int16_t invert_joy(int16_t value) 
-    {    
-        return (value == INT_16::MIN) ? INT_16::MAX : -value; 
+        OGXM_LOG("Deadzones: TL: %i TR: %i JL: %i JR: %i\n", 
+            dz_.trigger_l, dz_.trigger_r, dz_.joystick_l_pos, dz_.joystick_r_pos);
     }
 
 }; // class GamepadMapper

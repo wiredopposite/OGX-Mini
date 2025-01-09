@@ -120,13 +120,13 @@ void BTManager::controller_data_cb(uni_hid_device_t* bp_device, uni_controller_t
     if (uni_gp->misc_buttons & MISC_BUTTON_SYSTEM)  packet_in.buttons |= mapper.BUTTON_SYS;
     if (uni_gp->misc_buttons & MISC_BUTTON_CAPTURE) packet_in.buttons |= mapper.BUTTON_MISC;
 
-    packet_in.trigger_l = mapper.trigger_l(uni_gp->brake);
-    packet_in.trigger_r = mapper.trigger_r(uni_gp->throttle);
+    packet_in.trigger_l = mapper.scale_trigger_l<10>(static_cast<uint16_t>(uni_gp->brake));
+    packet_in.trigger_r = mapper.scale_trigger_r<10>(static_cast<uint16_t>(uni_gp->throttle));
 
-    packet_in.joystick_lx = mapper.joystick_lx(uni_gp->axis_x);
-    packet_in.joystick_ly = mapper.joystick_ly(uni_gp->axis_y);
-    packet_in.joystick_rx = mapper.joystick_rx(uni_gp->axis_rx);
-    packet_in.joystick_ry = mapper.joystick_ry(uni_gp->axis_ry);
+    packet_in.joystick_lx = mapper.scale_joystick_lx<10>(uni_gp->axis_x);
+    packet_in.joystick_ly = mapper.scale_joystick_ly<10>(uni_gp->axis_y);
+    packet_in.joystick_rx = mapper.scale_joystick_rx<10>(uni_gp->axis_rx);
+    packet_in.joystick_ry = mapper.scale_joystick_ry<10>(uni_gp->axis_ry);
 
     i2c_driver_.write_packet(I2CDriver::MULTI_SLAVE ? packet_in.index + 1 : 0x01, packet_in);
 

@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <limits>
 #include <type_traits>
-#include "Board/ogxm_log.h"
 
 namespace Range {
 
@@ -189,62 +188,5 @@ namespace Range {
     }
 
 } // namespace Range
-
-namespace Scale //Scale and invert values
-{
-    static inline uint8_t int16_to_uint8(int16_t value)
-    {
-        uint16_t shifted_value = static_cast<uint16_t>(value + Range::MID<uint16_t>);
-        return static_cast<uint8_t>(shifted_value >> 8);
-    }
-    static inline uint16_t int16_to_uint16(int16_t value)
-    {
-        return static_cast<uint16_t>(value + Range::MID<uint16_t>);
-    }
-    static inline int8_t int16_to_int8(int16_t value)
-    {
-        return static_cast<int8_t>((value + Range::MID<uint16_t>) >> 8);
-    }
-
-    static inline uint8_t uint16_to_uint8(uint16_t value)
-    {
-        return static_cast<uint8_t>(value >> 8);
-    }
-    static inline int16_t uint16_to_int16(uint16_t value)
-    {
-        return static_cast<int16_t>(value - Range::MID<uint16_t>);
-    }
-    static inline int8_t uint16_to_int8(uint16_t value)
-    {
-        return static_cast<int8_t>((value >> 8) - Range::MID<uint8_t>);
-    }
-
-    static inline int16_t uint8_to_int16(uint8_t value)
-    {
-        return static_cast<int16_t>((static_cast<int32_t>(value) << 8) - Range::MID<uint16_t>);
-    }
-    static inline uint16_t uint8_to_uint16(uint8_t value)
-    {
-        return static_cast<uint16_t>(value) << 8;
-    }
-    static inline int8_t uint8_to_int8(uint8_t value)
-    {
-        return static_cast<int8_t>(value - Range::MID<uint8_t>);
-    }
-
-    static inline int16_t int8_to_int16(int8_t value)
-    {
-        return static_cast<int16_t>(value) << 8;
-    }
-    static inline uint16_t int8_to_uint16(int8_t value)
-    {
-        return static_cast<uint16_t>((value + Range::MID<uint8_t>) << 8);
-    }
-    static inline uint8_t int8_to_uint8(int8_t value)
-    {
-        return static_cast<uint8_t>(value + Range::MID<uint8_t>);
-    }
-
-} // namespace Scale
 
 #endif // _RANGE_H_
