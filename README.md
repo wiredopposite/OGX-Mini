@@ -1,9 +1,9 @@
 # OGX-Mini
 ![OGX-Mini Boards](images/OGX-Mini-github.jpg "OGX-Mini Boards")
 
-Firmware for the RP2040, capable of emulating gamepads for several game consoles. The firmware comes in many flavors, supported on the [Adafruit Feather USB Host board](https://www.adafruit.com/product/5723), Pi Pico, Pi Pico 2, Waveshare RP2040-Zero, Pi Pico W, RP2040/ESP32 hybrid, and a 4-Channel RP2040-Zero setup.
+Firmware for the RP2040, capable of emulating gamepads for several game consoles. The firmware comes in many flavors, supported on the [Adafruit Feather USB Host board](https://www.adafruit.com/product/5723), Pi Pico, Pi Pico 2, Pi Pico W, Pi Pico 2 W, Waveshare RP2040-Zero, Pico/ESP32 hybrid, and a 4-Channel RP2040-Zero setup.
 
-Visit the web app here: [**https://wiredopposite.github.io/OGX-Mini-WebApp/**](https://wiredopposite.github.io/OGX-Mini-WebApp/) to change your mappings and deadzone settings. To pair the OGX-Mini with the web app, plug your controller in, then connect it to your PC, hold **Start + Left Bumper + Right Bumper** to enter web app mode. Click "Connect" in the web app and select the OGX-Mini.
+[**Visit the web app here**](https://wiredopposite.github.io/OGX-Mini-WebApp/) to change your mappings and deadzone settings. To pair the OGX-Mini with the web app, plug your controller in, then connect it to your PC, hold **Start + Left Bumper + Right Bumper** to enter web app mode. Click "Connect" in the web app and select the OGX-Mini.
 
 ## Supported platforms
 - Original Xbox
@@ -59,7 +59,7 @@ Note: There are some third party controllers that can change their VID/PID, thes
 - Most wireless adapters that present themselves as Switch/XInput/PlayStation controllers should work
 
 ### Wireless Bluetooth controllers (Pico W & ESP32)
-Note: Bluetooth functionality is in early testing, some may have quirks.
+**Note:** Bluetooth functionality is in early testing, some may have quirks.
 - Xbox Series, One, and Elite 2
 - Dualshock 3
 - Dualshock 4
@@ -74,7 +74,7 @@ Please visit [**this page**](https://bluepad32.readthedocs.io/en/latest/supporte
 ## Features new to v1.0.0
 - Bluetooth functionality for the Pico W and Pico+ESP32.
 - Web application (connectable via USB or Bluetooth) for configuring deadzones and buttons mappings, supports up to 8 saved profiles.
-- Pi Pico 2 (RP2350) support.
+- Pi Pico 2 and Pico 2 W (RP2350) support.
 - Reduced latency by about 3-4 ms, graphs showing comparisons are coming
 - 4 channel functionality, connect 4 Picos and use one Xbox 360 wireless adapter to control all 4.
 - Delayed USB mount until a controller is plugged in, useful for internal installation (non-Bluetooth boards only). 
@@ -101,9 +101,9 @@ For Pi Pico, RP2040-Zero, 4 channel, and ESP32 configurations, please see the ha
 
 I've designed a PCB for the RP2040-Zero so you can make a small form-factor adapter yourself. The gerber files, schematic, and BOM are in Hardware folder.
 
-![OGX-Mini Boards](images/OGX-Mini-rpzero-int.jpg "OGX-Mini Boards")
+<img src="images/OGX-Mini-rpzero-int.jpg" alt="OGX-Mini Boards" width="400">
 
-If you would like a prebuilt unit, you can purchase one, with cable and Xbox adapter included, from my [Etsy store](https://www.etsy.com/listing/1426992904/ogx-mini-controller-adapter-for-original).
+If you would like a prebuilt unit, you can purchase one, with cable and Xbox adapter included, from my [**Etsy store**](https://www.etsy.com/listing/1426992904/ogx-mini-controller-adapter-for-original).
 
 ## Adding supported controllers
 If your third party controller isn't working, but the original version is listed above, send me the device's VID and PID and I'll add it so it's recognized properly.
