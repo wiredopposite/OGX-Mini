@@ -5,7 +5,7 @@
 #include <atomic>
 #include <array>
 
-template<typename Type, size_t Size>
+template<typename Type, size_t SIZE>
 class RingBuffer
 {
 public:
@@ -47,9 +47,7 @@ public:
     }
 
 private:
-    const size_t SIZE = Size;
-
-    std::array<Type, Size> buffer_;
+    std::array<Type, SIZE> buffer_;
     std::atomic<size_t> head_;
     std::atomic<size_t> tail_;
 };

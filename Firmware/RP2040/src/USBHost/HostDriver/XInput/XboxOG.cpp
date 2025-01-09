@@ -48,19 +48,19 @@ void XboxOGHost::process_report(Gamepad& gamepad, uint8_t address, uint8_t insta
         gp_in.analog[gamepad.MAP_ANALOG_OFF_Y]  = in_report->y;
         gp_in.analog[gamepad.MAP_ANALOG_OFF_LB] = in_report->black;
         gp_in.analog[gamepad.MAP_ANALOG_OFF_RB] = in_report->white;
-        gp_in.analog[gamepad.MAP_ANALOG_OFF_UP]    = (in_report->buttons & XboxOG::GP::Buttons::DPAD_UP) ? UINT_8::MAX : UINT_8::MIN;
-        gp_in.analog[gamepad.MAP_ANALOG_OFF_DOWN]  = (in_report->buttons & XboxOG::GP::Buttons::DPAD_DOWN) ? UINT_8::MAX : UINT_8::MIN;
-        gp_in.analog[gamepad.MAP_ANALOG_OFF_LEFT]  = (in_report->buttons & XboxOG::GP::Buttons::DPAD_LEFT) ? UINT_8::MAX : UINT_8::MIN;
-        gp_in.analog[gamepad.MAP_ANALOG_OFF_RIGHT] = (in_report->buttons & XboxOG::GP::Buttons::DPAD_RIGHT) ? UINT_8::MAX : UINT_8::MIN;
+        gp_in.analog[gamepad.MAP_ANALOG_OFF_UP]    = (in_report->buttons & XboxOG::GP::Buttons::DPAD_UP) ? Range::MAX<uint8_t> : Range::MIN<uint8_t>;
+        gp_in.analog[gamepad.MAP_ANALOG_OFF_DOWN]  = (in_report->buttons & XboxOG::GP::Buttons::DPAD_DOWN) ? Range::MAX<uint8_t> : Range::MIN<uint8_t>;
+        gp_in.analog[gamepad.MAP_ANALOG_OFF_LEFT]  = (in_report->buttons & XboxOG::GP::Buttons::DPAD_LEFT) ? Range::MAX<uint8_t> : Range::MIN<uint8_t>;
+        gp_in.analog[gamepad.MAP_ANALOG_OFF_RIGHT] = (in_report->buttons & XboxOG::GP::Buttons::DPAD_RIGHT) ? Range::MAX<uint8_t> : Range::MIN<uint8_t>;
     }
 
-    gp_in.trigger_l = in_report->trigger_l;
-    gp_in.trigger_r = in_report->trigger_r;
+    gp_in.trigger_l = gamepad.scale_trigger_l(in_report->trigger_l);
+    gp_in.trigger_r = gamepad.scale_trigger_r(in_report->trigger_r);
 
-    gp_in.joystick_lx = in_report->joystick_lx;
-    gp_in.joystick_ly = Scale::invert_joy(in_report->joystick_ly);
-    gp_in.joystick_rx = in_report->joystick_rx;
-    gp_in.joystick_ry = Scale::invert_joy(in_report->joystick_ry);
+    gp_in.joystick_lx = gamepad.scale_joystick_lx(in_report->joystick_lx);
+    gp_in.joystick_ly = gamepad.scale_joystick_ly(in_report->joystick_ly, true);
+    gp_in.joystick_rx = gamepad.scale_joystick_rx(in_report->joystick_rx);
+    gp_in.joystick_ry = gamepad.scale_joystick_ry(in_report->joystick_ry, true);
 
     gamepad.set_pad_in(gp_in);
 

@@ -1,25 +1,26 @@
 cmake_minimum_required(VERSION 3.13)
 
-set(FW_NAME "OGX-Mini")
-set(FW_VERSION "v1.0.0a2")
+include(${CMAKE_CURRENT_LIST_DIR}/../FWDefines.cmake)
 
 set(CMAKE_C_COMPILER arm-none-eabi-gcc)
 set(CMAKE_CXX_COMPILER arm-none-eabi-g++)
 
 set(CMAKE_C_STANDARD 11)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(SRC ${CMAKE_CURRENT_LIST_DIR}/src)
 set(EXTERNAL_DIR ${CMAKE_CURRENT_LIST_DIR}/../external)
+set(PICOSDK_VERSION_TAG "2.1.0")
 
-include(${EXTERNAL_DIR}/init_submodules.cmake)
-include(${EXTERNAL_DIR}/patch_libs.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/../cmake/init_submodules.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/../cmake/patch_libs.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/../cmake/generate_gatt_header.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/get_pico_sdk.cmake)
 
+get_pico_sdk(${EXTERNAL_DIR} ${PICOSDK_VERSION_TAG})
 init_git_submodules(${EXTERNAL_DIR})
 apply_lib_patches(${EXTERNAL_DIR})
-get_pico_sdk(${EXTERNAL_DIR})
 
 set(PICO_PIO_USB_PATH ${EXTERNAL_DIR}/Pico-PIO-USB)
 set(PICO_TINYUSB_PATH ${EXTERNAL_DIR}/tinyusb)
@@ -37,8 +38,14 @@ set(SOURCES_BOARD
 
     ${SRC}/TaskQueue/TaskQueue.cpp
 
+    ${SRC}/Board/ogxm_log.cpp
     ${SRC}/Board/board_api.cpp
-
+    ${SRC}/Board/board_api_private/board_api_led.cpp
+    ${SRC}/Board/board_api_private/board_api_rgb.cpp
+    ${SRC}/Board/board_api_private/board_api_bt.cpp
+    ${SRC}/Board/board_api_private/board_api_esp32.cpp
+    ${SRC}/Board/board_api_private/board_api_usbh.cpp
+    
     ${SRC}/UserSettings/UserSettings.cpp
     ${SRC}/UserSettings/UserProfile.cpp
 
@@ -97,6 +104,16 @@ elseif (OGXM_BOARD STREQUAL "PI_PICO2")
     set(PICO_PLATFORM rp2350)
     set(FLASH_SIZE_MB 4)
 
+elseif(OGXM_BOARD STREQUAL "PI_PICOW")
+    set(EN_BLUETOOTH TRUE)
+    set(PICO_BOARD pico_w)
+
+elseif(OGXM_BOARD STREQUAL "PI_PICO2W")
+    set(EN_BLUETOOTH TRUE)
+    set(PICO_BOARD pico2_w)
+    set(PICO_PLATFORM rp2350)
+    set(FLASH_SIZE_MB 4)
+
 elseif(OGXM_BOARD STREQUAL "ADA_FEATHER")
     set(EN_USB_HOST TRUE)
     set(EN_RGB TRUE)
@@ -115,11 +132,7 @@ elseif(OGXM_BOARD STREQUAL "EXTERNAL_4CH")
     set(EN_4CH TRUE)
     set(EN_RGB TRUE)
 
-elseif(OGXM_BOARD STREQUAL "PI_PICOW")
-    set(EN_BLUETOOTH TRUE)
-    set(PICO_BOARD pico_w)
-
-elseif(OGXM_BOARD STREQUAL "W_ESP32")
+elseif(OGXM_BOARD STREQUAL "PICO_ESP32")
     set(EN_ESP32 TRUE)
     set(EN_UART_BRIDGE TRUE)
 
@@ -168,8 +181,12 @@ endif()
 if(EN_BLUETOOTH)
     add_compile_definitions(CONFIG_EN_BLUETOOTH=1)
     message(STATUS "Bluetooth enabled.")
+
+    generate_gatt_header(${BTSTACK_ROOT} ${SRC}/BLEServer/att_delayed_response.gatt ${SRC}/BLEServer/att_delayed_response.h)
+    
     list(APPEND SOURCES_BOARD
         ${SRC}/Bluepad32/Bluepad32.cpp
+        ${SRC}/BLEServer/BLEServer.cpp
     )
     list(APPEND INC_DIRS_BOARD
         ${SRC}
@@ -229,8 +246,10 @@ if(EN_UART_BRIDGE)
     )
 endif()
 
-add_compile_definitions(PICO_FLASH_SIZE_BYTES=${FLASH_SIZE_MB}*1024*1024)
+add_compile_definitions(FIRMWARE_NAME="${FW_NAME}")
 add_compile_definitions(FIRMWARE_VERSION="${FW_VERSION}")
+add_compile_definitions(PICO_FLASH_SIZE_BYTES=${FLASH_SIZE_MB}*1024*1024)
+add_compile_definitions(NVS_SECTORS=4)
 
 # Check for DVD dongle firmware
 if(EXISTS ${SRC}/USBDevice/DeviceDriver/XboxOG/tud_xid/tud_xid_xremote_rom.h)
@@ -246,8 +265,11 @@ endif()
 include(${PICO_SDK_PATH}/pico_sdk_init.cmake)
 
 message("PICO_SDK_VERSION_STRING: ${PICO_SDK_VERSION_STRING}")
-if(PICO_SDK_VERSION_STRING VERSION_LESS "2.1.0")
-    message(FATAL_ERROR "Raspberry Pi Pico SDK version 2.1.0 (or later) required. Your version is ${PICO_SDK_VERSION_STRING}")
+if(PICO_SDK_VERSION_STRING VERSION_LESS "${PICOSDK_VERSION_TAG}")
+    message(FATAL_ERROR 
+        "Raspberry Pi Pico SDK version ${PICOSDK_VERSION_TAG} (or later) required. 
+        Your version is ${PICO_SDK_VERSION_STRING}"
+    )
 endif()
 
 project(${FW_NAME} C CXX ASM)
@@ -259,16 +281,32 @@ add_executable(${FW_NAME} ${SOURCES_BOARD})
 set(BUILD_STR "")
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    if(OGXM_BOARD STREQUAL "PI_PICOW")
+        message(FATAL_ERROR "Debug build will not work with the Pico W currently")
+    endif()
+
+    message(STATUS "Debug build enabled.")
     set(BUILD_STR "-Debug")
+
+    set(TX_PIN 0)
+    set(RX_PIN 1)
+    set(UART_PORT)
+
+    include(${CMAKE_CURRENT_LIST_DIR}/cmake/get_pico_uart_port.cmake)
+    get_pico_uart_port(${TX_PIN} UART_PORT)
+
+    message(STATUS "UART port: ${UART_PORT}, TX: ${TX_PIN}, RX: ${RX_PIN}")
+
     pico_enable_stdio_uart(${FW_NAME} 1)
     target_compile_definitions(${FW_NAME} PRIVATE
-        PICO_DEFAULT_UART=1
-        PICO_DEFAULT_UART_TX_PIN=4
-        PICO_DEFAULT_UART_RX_PIN=5
+        PICO_DEFAULT_UART=${UART_PORT}
+        PICO_DEFAULT_UART_TX_PIN=${TX_PIN}
+        PICO_DEFAULT_UART_RX_PIN=${RX_PIN}
     )
-    add_compile_definitions(LOG=1)
-    add_compile_definitions(CFG_TUSB_DEBUG=1)
+ 
+    add_compile_definitions(CFG_TUSB_DEBUG=2)
     add_compile_definitions(OGXM_DEBUG=1)
+
     target_compile_options(${FW_NAME} PRIVATE
         -Wall                # Enable most warnings
         -Wextra              # Enable extra warnings
@@ -277,12 +315,13 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         -Wno-unused-parameter # Disable warnings for unused parameters
         # -Werror              # Treat warnings as errors
     )
+
 elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
     pico_enable_stdio_uart(${FW_NAME} 0)
     add_compile_definitions(CFG_TUSB_DEBUG=0)
     add_compile_options(
         -O3                     # Optimize for speed
-        -mcpu=cortex-m0plus     # Target ARM Cortex-M0+
+        # -mcpu=cortex-m0plus     # Target ARM Cortex-M0+
         -mthumb                 # Use Thumb instruction set
         -ffunction-sections     # Place each function in its own section
         -fdata-sections         # Place each data item in its own section

@@ -12,18 +12,6 @@ void SwitchProHost::initialize(Gamepad& gamepad, uint8_t address, uint8_t instan
     init_switch_host(gamepad, address, instance);
 }
 
-// bool SwitchProHost::send_handshake(uint8_t address, uint8_t instance)
-// {
-//     std::array<uint8_t, 2> handshake = { SwitchPro::CMD::HID, SwitchPro::CMD::HANDSHAKE };
-//     return tuh_hid_send_report(address, instance, 0, handshake.data(), handshake.size());
-// }
-
-// bool SwitchProHost::disable_timeout(uint8_t address, uint8_t instance)
-// {
-//     std::array<uint8_t, 2> timeout = { SwitchPro::CMD::HID, SwitchPro::CMD::DISABLE_TIMEOUT };
-//     return tuh_hid_send_report(address, instance, 0, timeout.data(), timeout.size());
-// }
-
 uint8_t SwitchProHost::get_output_sequence_counter()
 {
     uint8_t counter = sequence_counter_;
@@ -127,13 +115,14 @@ void SwitchProHost::init_switch_host(Gamepad& gamepad, uint8_t address, uint8_t 
             if (tuh_hid_send_report(address, instance, 0, &out_report_, report_size))
             {
                 init_state_ = InitState::DONE;
+                tuh_hid_receive_report(address, instance);
             }
             break;
         default:
             break;
     }
 
-    tuh_hid_receive_report(address, instance);
+    // tuh_hid_receive_report(address, instance);
 }
 
 void SwitchProHost::process_report(Gamepad& gamepad, uint8_t address, uint8_t instance, const uint8_t* report, uint16_t len)
@@ -171,13 +160,18 @@ void SwitchProHost::process_report(Gamepad& gamepad, uint8_t address, uint8_t in
     if (in_report->buttons[2] & SwitchPro::Buttons2::DPAD_LEFT)  gp_in.dpad |= gamepad.MAP_DPAD_LEFT;
     if (in_report->buttons[2] & SwitchPro::Buttons2::DPAD_RIGHT) gp_in.dpad |= gamepad.MAP_DPAD_RIGHT;
 
-    gp_in.trigger_l = in_report->buttons[2] & SwitchPro::Buttons2::ZL ? UINT_8::MAX : UINT_8::MIN;
-    gp_in.trigger_r = in_report->buttons[0] & SwitchPro::Buttons0::ZR ? UINT_8::MAX : UINT_8::MIN;
+    gp_in.trigger_l = in_report->buttons[2] & SwitchPro::Buttons2::ZL ? Range::MAX<uint8_t> : Range::MIN<uint8_t>;
+    gp_in.trigger_r = in_report->buttons[0] & SwitchPro::Buttons0::ZR ? Range::MAX<uint8_t> : Range::MIN<uint8_t>;
 
-    gp_in.joystick_lx = normalize_axis(in_report->joysticks[0] | ((in_report->joysticks[1] & 0xF) << 8));
-    gp_in.joystick_ly = Scale::invert_joy(normalize_axis((in_report->joysticks[1] >> 4) | (in_report->joysticks[2] << 4)));
-    gp_in.joystick_rx = normalize_axis(in_report->joysticks[3] | ((in_report->joysticks[4] & 0xF) << 8));
-    gp_in.joystick_ry = Scale::invert_joy(normalize_axis((in_report->joysticks[4] >> 4) | (in_report->joysticks[5] << 4)));
+    uint16_t joy_lx = in_report->joysticks[0] | ((in_report->joysticks[1] & 0xF) << 8);
+    uint16_t joy_ly = (in_report->joysticks[1] >> 4) | (in_report->joysticks[2] << 4);
+    uint16_t joy_rx = in_report->joysticks[3] | ((in_report->joysticks[4] & 0xF) << 8);
+    uint16_t joy_ry = (in_report->joysticks[4] >> 4) | (in_report->joysticks[5] << 4);
+
+    gp_in.joystick_lx = gamepad.scale_joystick_lx(normalize_axis(joy_lx));
+    gp_in.joystick_ly = gamepad.scale_joystick_ly(normalize_axis(joy_ly), true);
+    gp_in.joystick_rx = gamepad.scale_joystick_rx(normalize_axis(joy_rx));
+    gp_in.joystick_ry = gamepad.scale_joystick_ry(normalize_axis(joy_ry), true);
 
     gamepad.set_pad_in(gp_in);
 

@@ -78,9 +78,9 @@ void XboxOGDevice::process(const uint8_t idx, Gamepad& gamepad)
         in_report_.trigger_r = gp_in.trigger_r;
 
         in_report_.joystick_lx = gp_in.joystick_lx;
-        in_report_.joystick_ly = Scale::invert_joy(gp_in.joystick_ly);
+        in_report_.joystick_ly = Range::invert(gp_in.joystick_ly);
         in_report_.joystick_rx = gp_in.joystick_rx;
-        in_report_.joystick_ry = Scale::invert_joy(gp_in.joystick_ry);
+        in_report_.joystick_ry = Range::invert(gp_in.joystick_ry);
 
         if (tud_suspended())
         {

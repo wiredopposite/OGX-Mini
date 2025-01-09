@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <memory>
 #include <atomic>   
+#include <hardware/gpio.h>
 
 #include "board_config.h"
 #include "Gamepad.h"

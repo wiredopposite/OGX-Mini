@@ -71,19 +71,19 @@ struct HostTypeMap
 {
     const HardwareID* ids;
     size_t num_ids;
-    HostDriver::Type type;
+    HostDriverType type;
 };
 
 static const HostTypeMap HOST_TYPE_MAP[] = 
 {
-    { DINPUT_IDS, sizeof(DINPUT_IDS) / sizeof(HardwareID), HostDriver::Type::DINPUT },
-    { PS4_IDS, sizeof(PS4_IDS) / sizeof(HardwareID), HostDriver::Type::PS4 },
-    { PS5_IDS, sizeof(PS5_IDS) / sizeof(HardwareID), HostDriver::Type::PS5 },
-    { PS3_IDS, sizeof(PS3_IDS) / sizeof(HardwareID), HostDriver::Type::PS3 },
-    { SWITCH_WIRED_IDS, sizeof(SWITCH_WIRED_IDS) / sizeof(HardwareID), HostDriver::Type::SWITCH },
-    { SWITCH_PRO_IDS, sizeof(SWITCH_PRO_IDS) / sizeof(HardwareID), HostDriver::Type::SWITCH_PRO },
-    { PSCLASSIC_IDS, sizeof(PSCLASSIC_IDS) / sizeof(HardwareID), HostDriver::Type::PSCLASSIC },
-    { N64_IDS, sizeof(N64_IDS) / sizeof(HardwareID), HostDriver::Type::N64 },
+    { DINPUT_IDS, sizeof(DINPUT_IDS) / sizeof(HardwareID), HostDriverType::DINPUT },
+    { PS4_IDS, sizeof(PS4_IDS) / sizeof(HardwareID), HostDriverType::PS4 },
+    { PS5_IDS, sizeof(PS5_IDS) / sizeof(HardwareID), HostDriverType::PS5 },
+    { PS3_IDS, sizeof(PS3_IDS) / sizeof(HardwareID), HostDriverType::PS3 },
+    { SWITCH_WIRED_IDS, sizeof(SWITCH_WIRED_IDS) / sizeof(HardwareID), HostDriverType::SWITCH },
+    { SWITCH_PRO_IDS, sizeof(SWITCH_PRO_IDS) / sizeof(HardwareID), HostDriverType::SWITCH_PRO },
+    { PSCLASSIC_IDS, sizeof(PSCLASSIC_IDS) / sizeof(HardwareID), HostDriverType::PSCLASSIC },
+    { N64_IDS, sizeof(N64_IDS) / sizeof(HardwareID), HostDriverType::N64 },
 };
 
 #endif // _HW_ID_H_

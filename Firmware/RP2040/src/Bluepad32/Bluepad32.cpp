@@ -9,7 +9,9 @@
 
 #include "sdkconfig.h"
 #include "Bluepad32/Bluepad32.h"
+#include "BLEServer/BLEServer.h"
 #include "Board/board_api.h"
+#include "Board/ogxm_log.h"
 
 #ifndef CONFIG_BLUEPAD32_PLATFORM_CUSTOM
     #error "Pico W must use BLUEPAD32_PLATFORM_CUSTOM"
@@ -124,14 +126,7 @@ static void check_led_cb(btstack_timer_source *ts)
 
 static void init(int argc, const char** arg_V)
 {
-    if (!led_timer_set_)
-    {
-        led_timer_set_ = true;
-        led_timer_.process = check_led_cb;
-        led_timer_.context = nullptr;
-        btstack_run_loop_set_timer(&led_timer_, LED_CHECK_TIME_MS);
-        btstack_run_loop_add_timer(&led_timer_);
-    }
+
 }
 
 static void init_complete_cb(void) 
@@ -166,8 +161,9 @@ static void device_disconnected_cb(uni_hid_device_t* device)
     }
 
     bt_devices_[idx].connected = false;
+    bt_devices_[idx].gamepad->reset_pad_in();
 
-    if (!led_timer_set_)
+    if (!led_timer_set_ && !any_connected())
     {
         led_timer_set_ = true;
         led_timer_.process = check_led_cb;
@@ -271,13 +267,13 @@ static void controller_data_cb(uni_hid_device_t* device, uni_controller_t* contr
     if (uni_gp->misc_buttons & MISC_BUTTON_START)   gp_in.buttons |= gamepad->MAP_BUTTON_START;
     if (uni_gp->misc_buttons & MISC_BUTTON_SYSTEM)  gp_in.buttons |= gamepad->MAP_BUTTON_SYS;
 
-    gp_in.trigger_l = Scale::uint10_to_uint8(uni_gp->brake);
-    gp_in.trigger_r = Scale::uint10_to_uint8(uni_gp->throttle);
+    gp_in.trigger_l = gamepad->scale_trigger_l<10>(static_cast<uint16_t>(uni_gp->brake));
+    gp_in.trigger_r = gamepad->scale_trigger_r<10>(static_cast<uint16_t>(uni_gp->throttle));
 
-    gp_in.joystick_lx = Scale::int10_to_int16(uni_gp->axis_x);
-    gp_in.joystick_ly = Scale::int10_to_int16(uni_gp->axis_y);
-    gp_in.joystick_rx = Scale::int10_to_int16(uni_gp->axis_rx);
-    gp_in.joystick_ry = Scale::int10_to_int16(uni_gp->axis_ry);
+    gp_in.joystick_lx = gamepad->scale_joystick_lx<10>(uni_gp->axis_x);
+    gp_in.joystick_ly = gamepad->scale_joystick_ly<10>(uni_gp->axis_y);
+    gp_in.joystick_rx = gamepad->scale_joystick_rx<10>(uni_gp->axis_rx);
+    gp_in.joystick_ry = gamepad->scale_joystick_ry<10>(uni_gp->axis_ry);
 
     gamepad->set_pad_in(gp_in);
 }
@@ -314,8 +310,16 @@ void run_task(Gamepad (&gamepads)[MAX_GAMEPADS])
         bt_devices_[i].gamepad = &gamepads[i];
     }
 
+    BLEServer::init_server();
+
     uni_platform_set_custom(get_driver());
     uni_init(0, nullptr);
+
+    led_timer_set_ = true;
+    led_timer_.process = check_led_cb;
+    led_timer_.context = nullptr;
+    btstack_run_loop_set_timer(&led_timer_, LED_CHECK_TIME_MS);
+    btstack_run_loop_add_timer(&led_timer_);
 
     btstack_run_loop_execute();
 }

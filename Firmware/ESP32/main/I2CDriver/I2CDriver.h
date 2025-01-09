@@ -8,6 +8,7 @@
 
 #include "sdkconfig.h"
 #include "RingBuffer.h"
+#include "UserSettings/DeviceDriverTypes.h"
 
 class I2CDriver 
 {
@@ -19,47 +20,36 @@ public:
         true;
 #endif
 
-    enum class PacketID : uint8_t { UNKNOWN = 0, SET_PAD, GET_PAD };
+    enum class PacketID : uint8_t { UNKNOWN = 0, SET_PAD, GET_PAD, SET_DRIVER };
+    enum class PacketResp : uint8_t { OK = 1, ERROR };
 
     #pragma pack(push, 1)
     struct PacketIn
     {
-        uint8_t packet_len;
-        uint8_t packet_id;
-        uint8_t index;
-        uint8_t dpad;
-        uint16_t buttons;
-        uint8_t trigger_l;
-        uint8_t trigger_r;
-        int16_t joystick_lx;
-        int16_t joystick_ly;
-        int16_t joystick_rx;
-        int16_t joystick_ry;
-
-        PacketIn()
-        {
-            std::memset(this, 0, sizeof(PacketIn));
-            packet_len = sizeof(PacketIn);
-            packet_id = static_cast<uint8_t>(PacketID::SET_PAD);
-        }
+        uint8_t packet_len{sizeof(PacketIn)};
+        PacketID packet_id{static_cast<uint8_t>(PacketID::SET_PAD)};
+        uint8_t index{0};
+        DeviceDriverType device_driver{DeviceDriverType::NONE};
+        uint8_t dpad{0};
+        uint16_t buttons{0};
+        uint8_t trigger_l{0};
+        uint8_t trigger_r{0};
+        int16_t joystick_lx{0};
+        int16_t joystick_ly{0};
+        int16_t joystick_rx{0};
+        int16_t joystick_ry{0};
+        std::array<uint8_t, 15> reserved1{0};
     };
-    static_assert(sizeof(PacketIn) == 16, "PacketIn is misaligned");
+    static_assert(sizeof(PacketIn) == 32, "PacketIn is misaligned");
 
     struct PacketOut
     {
-        uint8_t packet_len;
-        uint8_t packet_id;
-        uint8_t index;
-        uint8_t rumble_l;
-        uint8_t rumble_r;
-        uint8_t reserved[3];
-
-        PacketOut()
-        {
-            std::memset(this, 0, sizeof(PacketOut));
-            packet_len = sizeof(PacketOut);
-            packet_id = static_cast<uint8_t>(PacketID::GET_PAD);
-        }
+        uint8_t packet_len{0};
+        PacketID packet_id{0};
+        uint8_t index{0};
+        uint8_t rumble_l{0};
+        uint8_t rumble_r{0};
+        std::array<uint8_t, 3> reserved{0};
     };
     static_assert(sizeof(PacketOut) == 8, "PacketOut is misaligned");
     #pragma pack(pop)
@@ -67,36 +57,22 @@ public:
     I2CDriver() = default;
     ~I2CDriver();
 
-    void initialize_i2c();
+    void initialize_i2c(i2c_port_t i2c_port, gpio_num_t sda, gpio_num_t scl, uint32_t clk_speed);
 
     //Does not return
     void run_tasks();
 
-    inline void i2c_write_blocking_safe(uint8_t address, const PacketIn& packet_in) 
-    {
-        task_queue_.push([this, address, packet_in]() 
-        {
-            i2c_write_blocking(address, reinterpret_cast<const uint8_t*>(&packet_in), sizeof(PacketIn));
-        });
-    }
-
-    inline void i2c_read_blocking_safe(uint8_t address, std::function<void(const PacketOut&)> callback) 
-    {
-        task_queue_.push([this, address, callback]() 
-        {
-            PacketOut packet_out;
-            if (i2c_read_blocking(address, reinterpret_cast<uint8_t*>(&packet_out), sizeof(PacketOut)) == ESP_OK)
-            {
-                callback(packet_out);
-            }
-        });
-    }
+    void write_packet(uint8_t address, const PacketIn& data_in);
+    void read_packet(uint8_t address, std::function<void(const PacketOut&)> callback);
 
 private:
-    using TaskQueue = RingBuffer<std::function<void()>, 6>;
+    using TaskQueue = RingBuffer<std::function<void()>, CONFIG_I2C_RING_BUFFER_SIZE>;
+    
     TaskQueue task_queue_;
+    i2c_port_t i2c_port_ = I2C_NUM_0;
+    bool initialized_ = false;
 
-    inline esp_err_t i2c_write_blocking(uint8_t address, const uint8_t* buffer, size_t len) 
+    static inline esp_err_t i2c_write_blocking(uint8_t address, const uint8_t* buffer, size_t len) 
     {
         i2c_cmd_handle_t cmd = i2c_cmd_link_create();
         i2c_master_start(cmd);
@@ -109,7 +85,7 @@ private:
         return ret;
     }
 
-    inline esp_err_t i2c_read_blocking(uint8_t address, uint8_t* buffer, size_t len) 
+    static inline esp_err_t i2c_read_blocking(uint8_t address, uint8_t* buffer, size_t len) 
     {
         i2c_cmd_handle_t cmd = i2c_cmd_link_create();
         i2c_master_start(cmd);
@@ -127,6 +103,6 @@ private:
         i2c_cmd_link_delete(cmd);
         return ret;
     }
-};
+}; // class I2CDriver
 
 #endif // _I2C_DRIVER_H_

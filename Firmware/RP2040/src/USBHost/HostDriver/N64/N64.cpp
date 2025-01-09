@@ -1,5 +1,8 @@
 #include <cstring>
 
+#include "host/usbh.h"
+#include "class/hid/hid_host.h"
+
 #include "USBHost/HostDriver/N64/N64.h"
 
 void N64Host::initialize(Gamepad& gamepad, uint8_t address, uint8_t instance, const uint8_t* report_desc, uint16_t desc_len)
@@ -91,13 +94,13 @@ void N64Host::process_report(Gamepad& gamepad, uint8_t address, uint8_t instance
             break;
     }
 
-    gp_in.joystick_ry = Scale::uint8_to_int16(in_report->joystick_y);
-    gp_in.joystick_rx = Scale::uint8_to_int16(in_report->joystick_x);
+    gp_in.joystick_ry = gamepad.scale_joystick_ry(in_report->joystick_y);
+    gp_in.joystick_rx = gamepad.scale_joystick_rx(in_report->joystick_x);
 
-    gp_in.trigger_l = (in_report->buttons & N64::Buttons::L) ? UINT_8::MAX : UINT_8::MIN;
+    gp_in.trigger_l = (in_report->buttons & N64::Buttons::L) ? Range::MAX<uint8_t> : Range::MIN<uint8_t>;
 
-    gp_in.joystick_ly = Scale::uint8_to_int16(joy_ry);
-    gp_in.joystick_lx = Scale::uint8_to_int16(joy_rx);
+    gp_in.joystick_ly = gamepad.scale_joystick_ly(joy_ry);
+    gp_in.joystick_lx = gamepad.scale_joystick_lx(joy_rx);
 
     gamepad.set_pad_in(gp_in);
 

@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <atomic>
 #include <cstring>
-#include <hardware/gpio.h>
 #include <hardware/i2c.h>
 #include <pico/i2c_slave.h>
 
@@ -18,16 +17,15 @@ public:
     ~I2CSlave() = default;
     void initialize(uint8_t address) override;
     void process(Gamepad (&gamepads)[MAX_GAMEPADS]) override;
-    void notify_tuh_mounted(HostDriver::Type host_type) override;
-    void notify_tuh_unmounted(HostDriver::Type host_type) override;
+    void notify_tuh(bool mounted, HostDriverType host_type) override;
 
 private:
-    static I2CSlave* this_instance_;
+    static I2CSlave* instance_;
 
     PacketIn packet_in_;
     PacketOut packet_out_;
-    bool new_packet_in_{false};
-    std::atomic<bool> i2c_disabled_{false};
+    std::atomic<bool> new_pad_in_{false};
+    std::atomic<bool> tuh_mounted_{false};
 
     static PacketID get_packet_id(uint8_t* buffer_in);
     static void slave_handler(i2c_inst_t *i2c, i2c_slave_event_t event);

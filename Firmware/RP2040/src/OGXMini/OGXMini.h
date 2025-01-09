@@ -11,7 +11,7 @@ namespace OGXMini
     static constexpr int32_t TUD_CHECK_DELAY_MS = 500;
 
     void run_program();
-    void update_tud_status(bool host_mounted);
+    void host_mounted(bool mounted);
 
 } // namespace OGXMini
 

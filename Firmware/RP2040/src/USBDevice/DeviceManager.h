@@ -5,6 +5,7 @@
 #include <memory>
 
 #include "Gamepad.h"
+#include "USBDevice/DeviceDriver/DeviceDriverTypes.h"
 #include "USBDevice/DeviceDriver/DeviceDriver.h"
 
 class DeviceManager 
@@ -20,7 +21,7 @@ public:
 	}
 
 	//Must be called before any other method
-	void initialize_driver(DeviceDriver::Type driver_type, Gamepad(&gamepads)[MAX_GAMEPADS]);
+	void initialize_driver(DeviceDriverType driver_type, Gamepad(&gamepads)[MAX_GAMEPADS]);
 	
 	DeviceDriver* get_driver() { return device_driver_.get(); }
 	

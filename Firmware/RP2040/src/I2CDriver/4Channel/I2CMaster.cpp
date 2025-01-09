@@ -1,13 +1,8 @@
 #include <cstring>
+#include <hardware/gpio.h>
 
 #include "TaskQueue/TaskQueue.h"
-#include "OGXMini/OGXMini.h"    
 #include "I2CDriver/4Channel/I2CMaster.h"
-
-I2CMaster::~I2CMaster()
-{
-    TaskQueue::Core0::cancel_delayed_task(tid_update_slave_);
-}
 
 void I2CMaster::initialize(uint8_t address) 
 {
@@ -25,17 +20,6 @@ void I2CMaster::initialize(uint8_t address)
     {
         slaves_[i].address = address + i + 1;
     }
-
-    tid_update_slave_ = TaskQueue::Core0::get_new_task_id();
-
-    TaskQueue::Core0::queue_delayed_task(tid_update_slave_, 2000, true, [this]
-    {
-        for (auto& slave : slaves_)
-        {
-            check_slave_status(slave);
-            sleep_us(10);
-        }
-    });
 }
 
 void I2CMaster::process(Gamepad (&gamepads)[MAX_GAMEPADS])
@@ -44,69 +28,86 @@ void I2CMaster::process(Gamepad (&gamepads)[MAX_GAMEPADS])
     {
         Slave& slave = slaves_[i];
 
-        if (slave.status != SlaveStatus::READY || !slave_detected(slave.address))
+        if (!slave.enabled.load() || !slave_detected(slave.address))
         {
             continue;
         }
-        if (send_packet_in(slave, gamepads[i + 1]))
+
+        PacketCMD packet_cmd;
+        packet_cmd.packet_id = PacketID::COMMAND;
+        packet_cmd.command = Command::STATUS;
+
+        if (!write_blocking(slave.address, &packet_cmd, sizeof(PacketCMD)) ||
+            !read_blocking(slave.address, &packet_cmd, sizeof(PacketCMD)))
         {
-            get_packet_out(slave, gamepads[i + 1]);
+            continue;
+        }
+
+        if (packet_cmd.status == Status::READY)
+        {
+            Gamepad& gamepad = gamepads[i + 1];
+            PacketIn packet_in;
+            packet_in.pad_in = gamepad.get_pad_in();
+            packet_in.chatpad_in = gamepad.get_chatpad_in();
+
+            if (write_blocking(slave.address, &packet_in, sizeof(PacketIn)))
+            {
+                PacketOut packet_out;
+                if (read_blocking(slave.address, &packet_out, sizeof(PacketOut)))
+                {
+                    gamepad.set_pad_out(packet_out.pad_out);
+                }
+            }
         }
 
         sleep_us(100);
     }
 }
 
-void I2CMaster::notify_tuh_mounted(HostDriver::Type host_type)
+void I2CMaster::notify_tuh(bool mounted, HostDriverType host_type)
 {
-    if (host_type == HostDriver::Type::XBOX360W)
+    if (host_type != HostDriverType::XBOX360W)
     {
-        i2c_enabled_.store(true);
+        return;
     }
-}
 
-void I2CMaster::notify_tuh_unmounted(HostDriver::Type host_type)
-{
-    if (host_type == HostDriver::Type::XBOX360W)
+    i2c_enabled_.store(mounted);
+
+    if (!mounted)
     {
-        i2c_enabled_.store(false);
-
-        TaskQueue::Core0::queue_task([this]()
-        {
-            for (auto& slave : slaves_)
+        //Called from core1 so queue on core0
+        TaskQueue::Core0::queue_task(
+            [this]()
             {
-                notify_disable(slave);
-            }
-        });
+                for (auto& slave : slaves_)
+                {
+                    notify_disable(slave.address);
+                }
+            });
     }
 }
 
-void I2CMaster::notify_xbox360w_connected(uint8_t idx)
+void I2CMaster::notify_xbox360w(bool connected, uint8_t idx)
 {
     if (idx < 1 || idx >= MAX_GAMEPADS)
     {
         return;
     }
-    slaves_[idx - 1].enabled.store(true);
 
-    TaskQueue::Core0::queue_task([this, idx]()
-    {
-        notify_enable(slaves_[idx - 1].address);
-    });
-}
+    slaves_[idx - 1].enabled.store(connected);
 
-void I2CMaster::notify_xbox360w_disconnected(uint8_t idx)
-{
-    if (idx < 1 || idx >= MAX_GAMEPADS)
+    if (!connected)
     {
-        return;
+        //Called from core1 so queue on core0
+        TaskQueue::Core0::queue_task(
+            [this]()
+            {
+                for (auto& slave : slaves_)
+                {
+                    notify_disable(slave.address);
+                }
+            });
     }
-    slaves_[idx - 1].enabled.store(false);
-
-    TaskQueue::Core0::queue_task([this, idx]()
-    {
-        notify_disable(slaves_[idx - 1]);
-    });
 }
 
 bool I2CMaster::slave_detected(uint8_t address)
@@ -116,95 +117,30 @@ bool I2CMaster::slave_detected(uint8_t address)
     return (result >= 0);
 }
 
-void I2CMaster::check_slave_status(Slave& slave)
+void I2CMaster::notify_disable(uint8_t address)
 {
-    if (!slave_detected(slave.address))
+    if (!slave_detected(address))
     {
-        slave.status = SlaveStatus::NC;
         return;
     }
-    if (slave.enabled.load())
+
+    int retries = 10;
+
+    while (retries--)
     {
-        slave.status = get_slave_status(slave.address);
-    }
-    slave.status = SlaveStatus::NOT_READY;
-}
-
-I2CMaster::SlaveStatus I2CMaster::get_slave_status(uint8_t address)
-{
-    PacketStatus status_packet;
-    status_packet.packet_id = static_cast<uint8_t>(PacketID::STATUS);
-
-    int count = i2c_write_blocking(I2C_PORT, address, reinterpret_cast<uint8_t*>(&status_packet), sizeof(PacketStatus), false);
-    if (count == sizeof(PacketStatus))
-    {
-        count = i2c_read_blocking(I2C_PORT, address, reinterpret_cast<uint8_t*>(&status_packet), sizeof(PacketStatus), false);
-        return static_cast<SlaveStatus>(status_packet.status);
-    }
-    return SlaveStatus::NC;
-}
-
-I2CMaster::SlaveStatus I2CMaster::notify_enable(uint8_t address)
-{
-    PacketStatus status_packet;
-    status_packet.packet_id = static_cast<uint8_t>(PacketID::ENABLE);
-
-    int count = i2c_write_blocking(I2C_PORT, address, reinterpret_cast<uint8_t*>(&status_packet), sizeof(PacketStatus), false);
-    if (count == sizeof(PacketStatus))
-    {
-        count = i2c_read_blocking(I2C_PORT, address, reinterpret_cast<uint8_t*>(&status_packet), sizeof(PacketStatus), false);
-        return static_cast<SlaveStatus>(status_packet.status);
-    }
-    return SlaveStatus::NC;
-}
-
-bool I2CMaster::notify_disable(Slave& slave)
-{
-    if (slave_detected(slave.address) && slave.enabled.load())
-    {
-        int retries = 6;
-        bool success = false;
-
-        while (!success && retries--)
+        PacketCMD packet_cmd;
+        packet_cmd.packet_id = PacketID::COMMAND;
+        packet_cmd.command = Command::DISABLE;
+        if (write_blocking(address, &packet_cmd, sizeof(PacketCMD)))
         {
-            PacketStatus status_packet;
-            status_packet.packet_id = static_cast<uint8_t>(PacketID::DISABLE);
-
-            int count = i2c_write_blocking(I2C_PORT, slave.address, reinterpret_cast<uint8_t*>(&status_packet), sizeof(PacketStatus), false);
-            if (count == sizeof(PacketStatus))
+            if (read_blocking(address, &packet_cmd, sizeof(PacketCMD)))
             {
-                count = i2c_read_blocking(I2C_PORT, slave.address, reinterpret_cast<uint8_t*>(&status_packet), sizeof(PacketStatus), false);
-                success = (static_cast<SlaveStatus>(status_packet.status) == SlaveStatus::RESP_OK);
+                if (packet_cmd.status == Status::OK)
+                {
+                    break;
+                }
             }
-
-            sleep_ms(1);
         }
-        return success;
+        sleep_ms(1);
     }
-    return false;
-}
-
-bool I2CMaster::send_packet_in(Slave& slave, Gamepad& gamepad)
-{
-    static PacketIn packet_in = PacketIn();
-
-    Gamepad::PadIn pad_in = gamepad.get_pad_in();
-    packet_in.pad_in = pad_in;
-
-    int count = i2c_write_blocking(I2C_PORT, slave.address, reinterpret_cast<uint8_t*>(&packet_in), sizeof(packet_in), false);
-    return (count == sizeof(PacketIn));
-}
-
-bool I2CMaster::get_packet_out(Slave& slave, Gamepad& gamepad)
-{
-    static PacketOut packet_out = PacketOut();
-
-    int count = i2c_read_blocking(I2C_PORT, slave.address, reinterpret_cast<uint8_t*>(&packet_out), sizeof(PacketOut), false);
-    if (count != sizeof(PacketOut))
-    {
-        return false;
-    }
-
-    gamepad.set_pad_out(packet_out.pad_out);
-    return true;
 }

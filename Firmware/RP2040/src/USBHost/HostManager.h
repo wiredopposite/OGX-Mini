@@ -53,7 +53,7 @@ public:
 	}
 
 	//XInput doesn't need report_desc or desc_len
-	inline bool setup_driver(const HostDriver::Type driver_type, const uint8_t address, const uint8_t instance, uint8_t const* report_desc = nullptr, uint16_t desc_len = 0)
+	inline bool setup_driver(const HostDriverType driver_type, const uint8_t address, const uint8_t instance, uint8_t const* report_desc = nullptr, uint16_t desc_len = 0)
 	{
 		uint8_t gp_idx = find_free_gamepad();
 		if (gp_idx == INVALID_IDX || instance >= MAX_INTERFACES)
@@ -74,40 +74,40 @@ public:
 
 		switch (driver_type)
 		{
-			case HostDriver::Type::PS5:
+			case HostDriverType::PS5:
 				interface.driver = std::make_unique<PS5Host>(gp_idx);
 				break;
-			case HostDriver::Type::PS4:
+			case HostDriverType::PS4:
 				interface.driver = std::make_unique<PS4Host>(gp_idx);
 				break;
-			case HostDriver::Type::PS3:
+			case HostDriverType::PS3:
 				interface.driver = std::make_unique<PS3Host>(gp_idx);
 				break;
-			case HostDriver::Type::DINPUT:
+			case HostDriverType::DINPUT:
 				interface.driver = std::make_unique<DInputHost>(gp_idx);
 				break;
-			case HostDriver::Type::SWITCH:
+			case HostDriverType::SWITCH:
 				interface.driver = std::make_unique<SwitchWiredHost>(gp_idx);
 				break;
-			case HostDriver::Type::SWITCH_PRO:
+			case HostDriverType::SWITCH_PRO:
 				interface.driver = std::make_unique<SwitchProHost>(gp_idx);
 				break;
-			case HostDriver::Type::N64:
+			case HostDriverType::N64:
 				interface.driver = std::make_unique<N64Host>(gp_idx);
 				break;
-			case HostDriver::Type::PSCLASSIC:
+			case HostDriverType::PSCLASSIC:
 				interface.driver = std::make_unique<PSClassicHost>(gp_idx);
 				break;
-			case HostDriver::Type::XBOXOG:
+			case HostDriverType::XBOXOG:
 				interface.driver = std::make_unique<XboxOGHost>(gp_idx);
 				break;
-			case HostDriver::Type::XBOXONE:
+			case HostDriverType::XBOXONE:
 				interface.driver = std::make_unique<XboxOneHost>(gp_idx);
 				break;
-			case HostDriver::Type::XBOX360:
+			case HostDriverType::XBOX360:
 				interface.driver = std::make_unique<Xbox360Host>(gp_idx);
 				break;
-			case HostDriver::Type::XBOX360W: //Composite device, takes up all 4 gamepads when mounted
+			case HostDriverType::XBOX360W: //Composite device, takes up all 4 gamepads when mounted
 				interface.driver = std::make_unique<Xbox360WHost>(gp_idx);
 				break;
 			default:
@@ -130,7 +130,7 @@ public:
 		return true;
 	}
 
-	inline void process_report(DriverClass driver_class, uint8_t address, uint8_t instance, const uint8_t* report, uint16_t len)
+	inline void process_report(uint8_t address, uint8_t instance, const uint8_t* report, uint16_t len)
 	{
 		for (auto& device_slot : device_slots_)
 		{
@@ -143,7 +143,7 @@ public:
 		}
 	}
 
-	inline void connect_cb(DriverClass driver_class, uint8_t address, uint8_t instance)
+	inline void connect_cb(uint8_t address, uint8_t instance)
 	{
 		for (auto& device_slot : device_slots_)
 		{
@@ -156,7 +156,7 @@ public:
 		}
 	}
 
-	inline void disconnect_cb(DriverClass driver_class, uint8_t address, uint8_t instance)
+	inline void disconnect_cb(uint8_t address, uint8_t instance)
 	{
 		for (auto& device_slot : device_slots_)
 		{
@@ -180,7 +180,7 @@ public:
 			}
 			for (uint8_t i = 0; i < MAX_INTERFACES; ++i)
 			{
-				if (device_slot.interfaces[i].driver != nullptr && device_slot.interfaces[i].gamepad->new_pad_out())
+				if (device_slot.interfaces[i].driver && device_slot.interfaces[i].gamepad->new_pad_out())
 				{
 					device_slot.interfaces[i].driver->send_feedback(*device_slot.interfaces[i].gamepad, device_slot.address, i);
 					tuh_task();
@@ -200,7 +200,7 @@ public:
 		}
 	}
 
-	static inline HostDriver::Type get_type(const HardwareID& ids)
+	static inline HostDriverType get_type(const HardwareID& ids)
 	{
 		for (const auto& map : HOST_TYPE_MAP)
 		{
@@ -212,25 +212,25 @@ public:
 				}
 			}
 		}
-		return HostDriver::Type::UNKNOWN;
+		return HostDriverType::UNKNOWN;
 	}
 
-	static inline HostDriver::Type get_type(const tuh_xinput::DevType xinput_type)
+	static inline HostDriverType get_type(const tuh_xinput::DevType xinput_type)
 	{
 		switch (xinput_type)
 		{
 			case tuh_xinput::DevType::XBOXONE:
-				return HostDriver::Type::XBOXONE;
+				return HostDriverType::XBOXONE;
 			case tuh_xinput::DevType::XBOX360W:
-				return HostDriver::Type::XBOX360W;
+				return HostDriverType::XBOX360W;
 			case tuh_xinput::DevType::XBOX360:
-				return HostDriver::Type::XBOX360;
+				return HostDriverType::XBOX360;
 			// case tuh_xinput::DevType::XBOX360_CHATPAD:
-			// 	return HostDriver::Type::XBOX360_CHATPAD;
+			// 	return HostDriverType::XBOX360_CHATPAD;
 			case tuh_xinput::DevType::XBOXOG:
-				return HostDriver::Type::XBOXOG;
+				return HostDriverType::XBOXOG;
 			default:
-				return HostDriver::Type::UNKNOWN;
+				return HostDriverType::UNKNOWN;
 		}
 	}
 

@@ -9,18 +9,18 @@
 namespace board_api {
 
 SemaphoreHandle_t leds_mutex_ = nullptr;
-SemaphoreHandle_t reset_mutex_ = nullptr;
+// SemaphoreHandle_t reset_mutex_ = nullptr;
 
-void init_pins()
+void init_board()
 {
     if (leds_mutex_ == nullptr)
     {
         leds_mutex_ = xSemaphoreCreateMutex();
     }
-    if (reset_mutex_ == nullptr)
-    {
-        reset_mutex_ = xSemaphoreCreateMutex();
-    }
+    // if (reset_mutex_ == nullptr)
+    // {
+    //     reset_mutex_ = xSemaphoreCreateMutex();
+    // }
 
     if (xSemaphoreTake(leds_mutex_, portMAX_DELAY))
     {

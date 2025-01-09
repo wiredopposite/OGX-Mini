@@ -5,7 +5,6 @@
 #include "Descriptors/XInput.h"
 #include "USBDevice/DeviceDriver/XboxOG/tud_xid/tud_xid.h"
 #include "USBDevice/DeviceDriver/XboxOG/XboxOG_SB.h"
-#include "OGXMini/Debug.h"
 
 static constexpr std::array<XboxOGSBDevice::ButtonMap, 9> GP_MAP = 
 {{
@@ -232,10 +231,11 @@ void XboxOGSBDevice::process(const uint8_t idx, Gamepad& gamepad)
     in_report_.leftPedal    = Scale::uint8_to_uint16(gp_in.trigger_l);
     in_report_.rightPedal   = Scale::uint8_to_uint16(gp_in.trigger_r);
     in_report_.middlePedal  = chatpad_pressed(  gp_in_chatpad, XInput::Chatpad::CODE_BACK) ? 0xFF00 : 0x0000;
-    in_report_.rotationLever= chatpad_pressed(  gp_in_chatpad, XInput::Chatpad::CODE_MESSENGER) ? 0 :
-                                                (gp_in.buttons & Gamepad::BUTTON_BACK) ? 0 :
-                                                (gp_in.dpad & Gamepad::DPAD_LEFT) ? INT_16::MIN :
-                                                (gp_in.dpad & Gamepad::DPAD_RIGHT) ? INT_16::MAX : 0;
+    in_report_.rotationLever= chatpad_pressed(  gp_in_chatpad, XInput::Chatpad::CODE_MESSENGER) 
+                                                    ? 0 : (gp_in.buttons & Gamepad::BUTTON_BACK) 
+                                                        ? 0 : (gp_in.dpad & Gamepad::DPAD_LEFT)  
+                                                            ? Range::MIN<int16_t> : (gp_in.dpad & Gamepad::DPAD_RIGHT) 
+                                                                ? Range::MAX<int16_t> : 0;
 
     in_report_.sightChangeX = gp_in.joystick_lx;
     in_report_.sightChangeY = gp_in.joystick_ly;
@@ -246,15 +246,15 @@ void XboxOGSBDevice::process(const uint8_t idx, Gamepad& gamepad)
         vmouse_x_ += axis_value_x / sensitivity_;
     }
 
-    int32_t axis_value_y = static_cast<int32_t>(Scale::invert_joy(gp_in.joystick_ry));
+    int32_t axis_value_y = static_cast<int32_t>(Range::invert(gp_in.joystick_ry));
     if (std::abs(axis_value_y) > DEFAULT_DEADZONE)
     {
         vmouse_y_ -= axis_value_y / sensitivity_;
     }
 
     if (vmouse_x_ < 0) vmouse_x_ = 0;
-    if (vmouse_x_ > UINT_16::MAX) vmouse_x_ = UINT_16::MAX;
-    if (vmouse_y_ > UINT_16::MAX) vmouse_y_ = UINT_16::MAX;
+    if (vmouse_x_ > Range::MAX<uint16_t>) vmouse_x_ = Range::MAX<uint16_t>;
+    if (vmouse_y_ > Range::MAX<uint16_t>) vmouse_y_ = Range::MAX<uint16_t>;
     if (vmouse_y_ < 0) vmouse_y_ = 0;
 
     if (gp_in.buttons & Gamepad::BUTTON_L3)

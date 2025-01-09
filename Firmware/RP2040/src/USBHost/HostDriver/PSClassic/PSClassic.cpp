@@ -60,8 +60,8 @@ void PSClassicHost::process_report(Gamepad& gamepad, uint8_t address, uint8_t in
     if (in_report->buttons & PSClassic::Buttons::SELECT)   gp_in.buttons |= gamepad.MAP_BUTTON_BACK;
     if (in_report->buttons & PSClassic::Buttons::START)    gp_in.buttons |= gamepad.MAP_BUTTON_START;
 
-    gp_in.trigger_l = (in_report->buttons & PSClassic::Buttons::L2) ? UINT_8::MAX : UINT_8::MIN;
-    gp_in.trigger_r = (in_report->buttons & PSClassic::Buttons::R2) ? UINT_8::MAX : UINT_8::MIN;
+    gp_in.trigger_l = (in_report->buttons & PSClassic::Buttons::L2) ? Range::MAX<uint8_t> : Range::MIN<uint8_t>;
+    gp_in.trigger_r = (in_report->buttons & PSClassic::Buttons::R2) ? Range::MAX<uint8_t> : Range::MIN<uint8_t>;
 
     gamepad.set_pad_in(gp_in);
 

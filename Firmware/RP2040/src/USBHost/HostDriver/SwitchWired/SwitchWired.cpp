@@ -64,13 +64,13 @@ void SwitchWiredHost::process_report(Gamepad& gamepad, uint8_t address, uint8_t 
     if (in_report->buttons & SwitchWired::Buttons::L3)      gp_in.buttons |= gamepad.MAP_BUTTON_L3;
     if (in_report->buttons & SwitchWired::Buttons::R3)      gp_in.buttons |= gamepad.MAP_BUTTON_R3;
 
-    gp_in.trigger_l = (in_report->buttons & SwitchWired::Buttons::ZL) ? UINT_8::MAX : UINT_8::MIN;
-    gp_in.trigger_r = (in_report->buttons & SwitchWired::Buttons::ZR) ? UINT_8::MAX : UINT_8::MIN;
+    gp_in.trigger_l = (in_report->buttons & SwitchWired::Buttons::ZL) ? Range::MAX<uint8_t> : Range::MIN<uint8_t>;
+    gp_in.trigger_r = (in_report->buttons & SwitchWired::Buttons::ZR) ? Range::MAX<uint8_t> : Range::MIN<uint8_t>;
 
-    gp_in.joystick_lx = Scale::uint8_to_int16(in_report->joystick_lx);
-    gp_in.joystick_ly = Scale::uint8_to_int16(in_report->joystick_ly);
-    gp_in.joystick_rx = Scale::uint8_to_int16(in_report->joystick_rx);
-    gp_in.joystick_ry = Scale::uint8_to_int16(in_report->joystick_ry);
+    gp_in.joystick_lx = gamepad.scale_joystick_lx(in_report->joystick_lx);
+    gp_in.joystick_ly = gamepad.scale_joystick_ly(in_report->joystick_ly);
+    gp_in.joystick_rx = gamepad.scale_joystick_rx(in_report->joystick_rx);
+    gp_in.joystick_ry = gamepad.scale_joystick_ry(in_report->joystick_ry);
 
     gamepad.set_pad_in(gp_in);
 

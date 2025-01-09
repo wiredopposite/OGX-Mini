@@ -123,7 +123,7 @@ void PS3Device::process(const uint8_t idx, Gamepad& gamepad)
     {
         Gamepad::PadOut gp_out;
         gp_out.rumble_l = report_out_.rumble.left_motor_force;
-        gp_out.rumble_r = report_out_.rumble.right_motor_on ? UINT_8::MAX : 0;
+        gp_out.rumble_r = report_out_.rumble.right_motor_on ? Range::MAX<uint8_t> : 0;
         gamepad.set_pad_out(gp_out);
         new_report_out_ = false;
     }

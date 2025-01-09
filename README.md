@@ -3,13 +3,13 @@
 
 Firmware for the RP2040, capable of emulating gamepads for several game consoles. The firmware comes in many flavors, supported on the [Adafruit Feather USB Host board](https://www.adafruit.com/product/5723), Pi Pico, Pi Pico 2, Waveshare RP2040-Zero, Pi Pico W, RP2040/ESP32 hybrid, and a 4-Channel RP2040-Zero setup.
 
-Visit the web app here: [https://wiredopposite.github.io/OGX-Mini-WebApp/](https://wiredopposite.github.io/OGX-Mini-WebApp/) to change your mappings and deadzone settings. To pair the OGX-Mini with the web app, plug your controller in, then connect it to your PC, hold **Start + Left Bumper + Right Bumper** to enter web app mode. Click "Connect" in the web app and select the OGX-Mini.
+Visit the web app here: [**https://wiredopposite.github.io/OGX-Mini-WebApp/**](https://wiredopposite.github.io/OGX-Mini-WebApp/) to change your mappings and deadzone settings. To pair the OGX-Mini with the web app, plug your controller in, then connect it to your PC, hold **Start + Left Bumper + Right Bumper** to enter web app mode. Click "Connect" in the web app and select the OGX-Mini.
 
 ## Supported platforms
 - Original Xbox
 - Playstation 3
 - Nintendo Switch (docked)
-- XInput (use [UsbdSecPatch](https://github.com/InvoxiPlayGames/UsbdSecPatch) for Xbox 360, or select the patch in J-Runner while flashing your NAND)
+- XInput (use [**UsbdSecPatch**](https://github.com/InvoxiPlayGames/UsbdSecPatch) for Xbox 360, or select the patch in J-Runner while flashing your NAND)
 - Playstation Classic
 - DInput
 
@@ -68,11 +68,12 @@ Note: Bluetooth functionality is in early testing, some may have quirks.
 - Steam
 - Stadia
 - And more
-Please visit [this page](https://bluepad32.readthedocs.io/en/latest/supported_gamepads/) for a more comprehensive list of supported controllers and Bluetooth pairing instructions.
+
+Please visit [**this page**](https://bluepad32.readthedocs.io/en/latest/supported_gamepads/) for a more comprehensive list of supported controllers and Bluetooth pairing instructions.
 
 ## Features new to v1.0.0
 - Bluetooth functionality for the Pico W and Pico+ESP32.
-- Web application for configuring deadzones and buttons mappings, supports up to 8 saved profiles.
+- Web application (connectable via USB or Bluetooth) for configuring deadzones and buttons mappings, supports up to 8 saved profiles.
 - Pi Pico 2 (RP2350) support.
 - Reduced latency by about 3-4 ms, graphs showing comparisons are coming
 - 4 channel functionality, connect 4 Picos and use one Xbox 360 wireless adapter to control all 4.
@@ -85,8 +86,6 @@ Please visit [this page](https://bluepad32.readthedocs.io/en/latest/supported_ga
 - RGB LED support for RP2040-Zero and Adafruit Feather boards.
 
 ## Planned additions
-- Bluetooth web application
-- Deadzone scaling
 - Anti-deadzone settings
 - More accurate report parser for unknown HID controllers
 - Hardware design for internal OG Xbox install
@@ -111,11 +110,21 @@ If your third party controller isn't working, but the original version is listed
 
 ## Build
 ### RP2040
-You can compile this for different boards with the CMake argument ```OGXM_BOARD``` while configuring the project. The options are:
-```PI_PICO``` ```RP_ZERO``` ```ADA_FEATHER``` ```PI_PICOW``` ```W_ESP32``` ```EXTERNAL_4CH```
+You can compile this for different boards with the CMake argument ```OGXM_BOARD``` while configuring the project. 
+
+The options are:
+- ```PI_PICO``` 
+- ```PI_PICO2``` 
+- ```PI_PICOW``` 
+- ```PI_PICO2W``` 
+- ```RP_ZERO``` 
+- ```ADA_FEATHER``` 
+- ```PICO_ESP32``` 
+- ```EXTERNAL_4CH```
+
 You can also set ```MAX_GAMEPADS``` which, if greater than one, will only support DInput (PS3) and Switch.
 
-You'll need git, python3, CMake, Ninja and the GCC ARM toolchain installed. CMake scripts will patch some files in Bluepad32 and BTStack, and also init the git submodules to make sure everything's there. Here's an example on Windows:
+You'll need git, python3, CMake, Ninja and the GCC ARM toolchain installed. CMake scripts will patch some files in Bluepad32 and BTStack and also make sure all git submodules (plus their submodules and dependencies) are downloaded. Here's an example on Windows:
 ```
 git clone --recursive https://github.com/wiredopposite/OGX-Mini.git
 cd OGX-Mini/Firmware/RP2040
@@ -125,8 +134,8 @@ cmake --build build
 Or just install the GCC ARM toolchain and use the CMake Tools extension in VSCode.
 
 ### ESP32
-Please see the Hardware directory for a schematic showing how to hookup the ESP32 to your RP2040.
+Please see the Hardware directory for a diagram showing how to hookup the ESP32 to your RP2040.
 
-You will need ESP-IDF v5.1, esptool, python3, and git installed. If you use VSCode you can install the ESP-IDF extension and configure the project for v5.1, it'll download everything for you and then you just click the build button at the bottom of the window.
+You will need ESP-IDF v5.1, esptool, python3, and git installed. If you use VSCode, you can install the ESP-IDF extension and configure the project for ESP-IDF v5.1, it'll download everything for you and then you just click the build button at the bottom of the window.
 
-When you build with ESP-IDF, Cmake will run a python script that copies the necessary BTStack files into the components directory, this is needed since BTStack isn't configured as an ESP-IDF component when you download it. 
+When you build with ESP-IDF, Cmake will run a python script that copies the necessary BTStack files into the components directory, this is needed since BTStack isn't configured as an ESP-IDF component when you download it with git. 

@@ -6,30 +6,12 @@
 #include "UserSettings/UserProfile.h"
 #include "UserSettings/UserSettings.h"
 #include "Gamepad.h"
+#include "USBHost/HostDriver/HostDriverTypes.h"
 
 //Use HostManager, don't use this directly
 class HostDriver
 {
 public:
-    enum class Type
-    {
-        UNKNOWN = 0,
-        SWITCH_PRO,
-        SWITCH,
-        PSCLASSIC,
-        DINPUT,
-        PS3,
-        PS4,
-        PS5,
-        N64,
-        XBOXOG,
-        XBOXONE,
-        XBOX360W,
-        XBOX360,
-        XBOX360_CHATPAD,
-        HID_GENERIC
-    };
-
     HostDriver(uint8_t idx)
         : idx_(idx) {}
 
@@ -49,12 +31,12 @@ protected:
     {
         Gamepad::PadOut gp_out = gamepad.get_pad_out();
         bool reset = false;
-        if (gp_out.rumble_l != UINT_8::MAX)
+        if (gp_out.rumble_l != Range::MAX<uint8_t>)
         {
             gp_out.rumble_l = 0;
             reset = true;
         }
-        if (gp_out.rumble_r != UINT_8::MAX)
+        if (gp_out.rumble_r != Range::MAX<uint8_t>)
         {
             gp_out.rumble_r = 0;
             reset = true;

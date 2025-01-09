@@ -1,241 +1,117 @@
 #include <cstring>
 #include <array>
-#include <pico/stdlib.h>
 #include <pico/multicore.h>
-#include <hardware/flash.h>
-#include <hardware/regs/addressmap.h>
 
 #include "tusb.h"
 
+#include "Board/ogxm_log.h"
 #include "Board/board_api.h"
 #include "UserSettings/UserSettings.h"
 
-static constexpr uint32_t button_combo(const uint16_t& buttons, const uint8_t& dpad = 0)
+static constexpr uint32_t BUTTON_COMBO(const uint16_t& buttons, const uint8_t& dpad = 0)
 {
     return (static_cast<uint32_t>(buttons) << 16) | static_cast<uint32_t>(dpad);
 }
 
 namespace ButtonCombo 
 {
-    static constexpr uint32_t PS3       = button_combo(Gamepad::BUTTON_START, Gamepad::DPAD_LEFT);
-    static constexpr uint32_t DINPUT    = button_combo(Gamepad::BUTTON_START | Gamepad::BUTTON_RB, Gamepad::DPAD_LEFT);
-    static constexpr uint32_t XINPUT    = button_combo(Gamepad::BUTTON_START, Gamepad::DPAD_UP);
-    static constexpr uint32_t SWITCH    = button_combo(Gamepad::BUTTON_START, Gamepad::DPAD_DOWN);
-    static constexpr uint32_t XBOXOG    = button_combo(Gamepad::BUTTON_START, Gamepad::DPAD_RIGHT);
-    static constexpr uint32_t XBOXOG_SB = button_combo(Gamepad::BUTTON_START | Gamepad::BUTTON_RB, Gamepad::DPAD_RIGHT);
-    static constexpr uint32_t XBOXOG_XR = button_combo(Gamepad::BUTTON_START | Gamepad::BUTTON_LB, Gamepad::DPAD_RIGHT);
-    static constexpr uint32_t PSCLASSIC = button_combo(Gamepad::BUTTON_START | Gamepad::BUTTON_A);
-    static constexpr uint32_t WEBAPP    = button_combo(Gamepad::BUTTON_START | Gamepad::BUTTON_LB | Gamepad::BUTTON_RB);
+    static constexpr uint32_t PS3       = BUTTON_COMBO(Gamepad::BUTTON_START, Gamepad::DPAD_LEFT);
+    static constexpr uint32_t DINPUT    = BUTTON_COMBO(Gamepad::BUTTON_START | Gamepad::BUTTON_RB, Gamepad::DPAD_LEFT);
+    static constexpr uint32_t XINPUT    = BUTTON_COMBO(Gamepad::BUTTON_START, Gamepad::DPAD_UP);
+    static constexpr uint32_t SWITCH    = BUTTON_COMBO(Gamepad::BUTTON_START, Gamepad::DPAD_DOWN);
+    static constexpr uint32_t XBOXOG    = BUTTON_COMBO(Gamepad::BUTTON_START, Gamepad::DPAD_RIGHT);
+    static constexpr uint32_t XBOXOG_SB = BUTTON_COMBO(Gamepad::BUTTON_START | Gamepad::BUTTON_RB, Gamepad::DPAD_RIGHT);
+    static constexpr uint32_t XBOXOG_XR = BUTTON_COMBO(Gamepad::BUTTON_START | Gamepad::BUTTON_LB, Gamepad::DPAD_RIGHT);
+    static constexpr uint32_t PSCLASSIC = BUTTON_COMBO(Gamepad::BUTTON_START | Gamepad::BUTTON_A);
+    static constexpr uint32_t WEBAPP    = BUTTON_COMBO(Gamepad::BUTTON_START | Gamepad::BUTTON_LB | Gamepad::BUTTON_RB);
 };
 
-static constexpr DeviceDriver::Type VALID_DRIVER_TYPES[] =
+static constexpr DeviceDriverType VALID_DRIVER_TYPES[] =
 {
 #if defined(CONFIG_EN_4CH)
-    DeviceDriver::Type::XBOXOG, 
-    DeviceDriver::Type::XBOXOG_SB, 
-    DeviceDriver::Type::XINPUT,
-    DeviceDriver::Type::PS3,
-    DeviceDriver::Type::PSCLASSIC, 
-    DeviceDriver::Type::WEBAPP,
+    DeviceDriverType::XBOXOG, 
+    DeviceDriverType::XBOXOG_SB, 
+    DeviceDriverType::XINPUT,
+    DeviceDriverType::PS3,
+    DeviceDriverType::PSCLASSIC, 
+    DeviceDriverType::WEBAPP,
     #if defined(XREMOTE_ROM_AVAILABLE)
-        DeviceDriver::Type::XBOXOG_XR,
+    DeviceDriverType::XBOXOG_XR,
     #endif
 
 #elif MAX_GAMEPADS > 1
-    DeviceDriver::Type::DINPUT, 
-    DeviceDriver::Type::SWITCH, 
-    DeviceDriver::Type::WEBAPP,
+    DeviceDriverType::DINPUT, 
+    DeviceDriverType::SWITCH, 
+    DeviceDriverType::WEBAPP,
 
 #else // MAX_GAMEPADS == 1
-    DeviceDriver::Type::XBOXOG, 
-    DeviceDriver::Type::XBOXOG_SB, 
-    DeviceDriver::Type::DINPUT, 
-    DeviceDriver::Type::SWITCH, 
-    DeviceDriver::Type::WEBAPP,
-    DeviceDriver::Type::PS3,
-    DeviceDriver::Type::PSCLASSIC, 
-    DeviceDriver::Type::XINPUT,
+    DeviceDriverType::XBOXOG, 
+    DeviceDriverType::XBOXOG_SB, 
+    DeviceDriverType::DINPUT, 
+    DeviceDriverType::SWITCH, 
+    DeviceDriverType::WEBAPP,
+    DeviceDriverType::PS3,
+    DeviceDriverType::PSCLASSIC, 
+    DeviceDriverType::XINPUT,
     #if defined(XREMOTE_ROM_AVAILABLE)
-        DeviceDriver::Type::XBOXOG_XR,
+    DeviceDriverType::XBOXOG_XR,
     #endif
 
 #endif
 };
 
-struct ComboMap { uint32_t combo; DeviceDriver::Type driver; };
+struct ComboMap { uint32_t combo; DeviceDriverType driver; };
 static constexpr std::array<ComboMap, 9> BUTTON_COMBO_MAP = 
 {{
-    { ButtonCombo::XBOXOG,    DeviceDriver::Type::XBOXOG    },
-    { ButtonCombo::XBOXOG_SB, DeviceDriver::Type::XBOXOG_SB },
-    { ButtonCombo::XBOXOG_XR, DeviceDriver::Type::XBOXOG_XR },
-    { ButtonCombo::WEBAPP,    DeviceDriver::Type::WEBAPP    },
-    { ButtonCombo::DINPUT,    DeviceDriver::Type::DINPUT    },
-    { ButtonCombo::SWITCH,    DeviceDriver::Type::SWITCH    },
-    { ButtonCombo::XINPUT,    DeviceDriver::Type::XINPUT    },
-    { ButtonCombo::PS3,       DeviceDriver::Type::PS3       },
-    { ButtonCombo::PSCLASSIC, DeviceDriver::Type::PSCLASSIC }
+    { ButtonCombo::XBOXOG,    DeviceDriverType::XBOXOG    },
+    { ButtonCombo::XBOXOG_SB, DeviceDriverType::XBOXOG_SB },
+    { ButtonCombo::XBOXOG_XR, DeviceDriverType::XBOXOG_XR },
+    { ButtonCombo::WEBAPP,    DeviceDriverType::WEBAPP    },
+    { ButtonCombo::DINPUT,    DeviceDriverType::DINPUT    },
+    { ButtonCombo::SWITCH,    DeviceDriverType::SWITCH    },
+    { ButtonCombo::XINPUT,    DeviceDriverType::XINPUT    },
+    { ButtonCombo::PS3,       DeviceDriverType::PS3       },
+    { ButtonCombo::PSCLASSIC, DeviceDriverType::PSCLASSIC }
 }};
 
-mutex_t UserSettings::flash_mutex_;
-DeviceDriver::Type UserSettings::current_driver_ = DeviceDriver::Type::NONE;
-
-//Checks for first boot and initializes user profiles, call before tusb is inited.
-void UserSettings::initialize_flash()
+const std::string UserSettings::INIT_FLAG_KEY()
 {
-    if (!mutex_is_initialized(&flash_mutex_))
-    {
-        mutex_init(&flash_mutex_);
-    }
-
-    mutex_enter_blocking(&flash_mutex_);
-
-    const uint8_t* read_init_flag = reinterpret_cast<const uint8_t*>(XIP_BASE + flash_offset(INIT_FLAG_SECTOR));
-
-    if (*read_init_flag == INIT_FLAG)
-    {
-        mutex_exit(&flash_mutex_);
-        return;
-    }
-
-    uint32_t saved_interrupts = save_and_disable_interrupts();
-
-    // {
-    //     std::array<uint8_t, FLASH_PAGE_SIZE> device_mode_buffer;
-    //     device_mode_buffer.fill(0xFF);
-
-    //     // device_mode_buffer[0] = static_cast<uint8_t>(DeviceDriver::Type::XBOXOG);
-
-    //     flash_range_erase(flash_offset(DEVICE_MODE_SECTOR), FLASH_SECTOR_SIZE);
-    //     flash_range_program(flash_offset(DEVICE_MODE_SECTOR), device_mode_buffer.data(), FLASH_PAGE_SIZE);
-    // }
-    
-    {
-        std::array<uint8_t, FLASH_PAGE_SIZE> profile_ids;
-        profile_ids.fill(0xFF);
-        std::memset(profile_ids.data(), 0x01, 4);
-
-        flash_range_erase(flash_offset(ACTIVE_PROFILES_SECTOR), FLASH_SECTOR_SIZE);
-        flash_range_program(flash_offset(ACTIVE_PROFILES_SECTOR), profile_ids.data(), FLASH_PAGE_SIZE);
-    }
-
-    {    
-        std::array<uint8_t, FLASH_PAGE_SIZE> profile_buffer;
-        profile_buffer.fill(0);
-
-        flash_range_erase(flash_offset(PROFILES_START_SECTOR), FLASH_SECTOR_SIZE);
-
-        for (uint8_t i = 0; i < MAX_PROFILES; i++)
-        {
-            UserProfile profile = UserProfile();
-            profile.id = i + 1;
-            std::memcpy(profile_buffer.data(), reinterpret_cast<const uint8_t*>(&profile), sizeof(UserProfile));
-            flash_range_program(flash_offset(PROFILES_START_SECTOR) + profile_offset(profile.id), profile_buffer.data(), FLASH_PAGE_SIZE);
-        }
-    }
-
-    {
-        std::array<uint8_t, FLASH_PAGE_SIZE> init_flag_buffer;
-        init_flag_buffer.fill(INIT_FLAG);
-
-        flash_range_erase(flash_offset(INIT_FLAG_SECTOR), FLASH_SECTOR_SIZE);
-        flash_range_program(flash_offset(INIT_FLAG_SECTOR), init_flag_buffer.data(), FLASH_PAGE_SIZE);
-    }
-
-    restore_interrupts(saved_interrupts);
-    mutex_exit(&flash_mutex_);
+    return std::string("init_flag");
 }
 
-bool UserSettings::verify_firmware_version()
+const std::string UserSettings::PROFILE_KEY(const uint8_t profile_id)
 {
-    mutex_enter_blocking(&flash_mutex_);
-
-    const char* flash_firmware_version = reinterpret_cast<const char*>(XIP_BASE + flash_offset(FIRMWARE_VER_FLAG_SECTOR));
-    bool match = std::memcmp(flash_firmware_version, FIRMWARE_VERSION, sizeof(FIRMWARE_VERSION)) == 0;
-
-    mutex_exit(&flash_mutex_);
-    return match;
+    return std::string("profile_") + std::to_string(profile_id);
 }
 
-bool UserSettings::write_firmware_version_safe()
+const std::string UserSettings::ACTIVE_PROFILE_KEY(const uint8_t index)
 {
-    mutex_enter_blocking(&flash_mutex_);
-    uint32_t saved_interrupts = save_and_disable_interrupts();
-
-    flash_range_erase(flash_offset(FIRMWARE_VER_FLAG_SECTOR), FLASH_SECTOR_SIZE);
-    flash_range_program(flash_offset(FIRMWARE_VER_FLAG_SECTOR), reinterpret_cast<const uint8_t*>(FIRMWARE_VERSION), sizeof(FIRMWARE_VERSION));
-
-    restore_interrupts(saved_interrupts);
-    mutex_exit(&flash_mutex_);
-
-    return verify_firmware_version();
+    return std::string("active_id_") + std::to_string(index);
 }
 
-DeviceDriver::Type UserSettings::get_current_driver()
+const std::string UserSettings::DRIVER_TYPE_KEY()
 {
-    if (current_driver_ != DeviceDriver::Type::NONE)
-    {
-        return current_driver_;
-    }
-
-    mutex_enter_blocking(&flash_mutex_);
-
-    int stored_value = *reinterpret_cast<const int*>(XIP_BASE + flash_offset(DRIVER_TYPE_SECTOR));
-
-    mutex_exit(&flash_mutex_);
-
-    for (const auto& driver : VALID_DRIVER_TYPES)
-    {
-        if (stored_value == static_cast<int>(driver))
-        {
-            current_driver_ = driver;
-            return current_driver_;
-        }
-    }
-
-    current_driver_ = get_default_driver();
-
-    return current_driver_;
+    return std::string("driver_type");
 }
 
-void UserSettings::store_driver_type_unsafe(const DeviceDriver::Type new_mode)
+const std::string UserSettings::FIRMWARE_VER_KEY()
 {
-    std::array<int, FLASH_PAGE_SIZE / sizeof(int)> mode_buffer;
-    mode_buffer.fill(static_cast<int>(new_mode));
-
-    mutex_enter_blocking(&flash_mutex_);
-    uint32_t saved_interrupts = save_and_disable_interrupts();
-    
-    flash_range_erase(flash_offset(DRIVER_TYPE_SECTOR), FLASH_SECTOR_SIZE);
-    flash_range_program(flash_offset(DRIVER_TYPE_SECTOR), reinterpret_cast<uint8_t*>(mode_buffer.data()), FLASH_PAGE_SIZE);
-
-    restore_interrupts(saved_interrupts); 
-    mutex_exit(&flash_mutex_);   
+    return std::string("firmware_ver");
 }
 
-//Disconnects usb and resets pico, thread safe
-void UserSettings::store_driver_type_safe(DeviceDriver::Type new_mode) 
+DeviceDriverType UserSettings::DEFAULT_DRIVER()
 {
-    if (tud_connected())
-    {
-        tud_disconnect();
-        sleep_ms(300);
-    }
-
-    multicore_reset_core1();
-
-    store_driver_type_unsafe(new_mode);
-
-    board_api::reboot();
+    return VALID_DRIVER_TYPES[0];
 }
 
 //Checks if button combo has been held for 3 seconds, returns true if mode has been changed
 bool UserSettings::check_for_driver_change(Gamepad& gamepad)
 {
     Gamepad::PadIn gp_in = gamepad.get_pad_in();
-    static uint32_t last_button_combo = button_combo(gp_in.buttons, gp_in.dpad);
+    static uint32_t last_button_combo = BUTTON_COMBO(gp_in.buttons, gp_in.dpad);
     static uint8_t call_count = 0;
 
-    uint32_t current_button_combo = button_combo(gp_in.buttons, gp_in.dpad);
+    uint32_t current_button_combo = BUTTON_COMBO(gp_in.buttons, gp_in.dpad);
 
     if (!(current_button_combo & (static_cast<uint32_t>(Gamepad::BUTTON_START) << 16)) || 
         last_button_combo != current_button_combo)
@@ -254,24 +130,18 @@ bool UserSettings::check_for_driver_change(Gamepad& gamepad)
 
     call_count = 0;
 
-    DeviceDriver::Type new_driver = DeviceDriver::Type::NONE;
+    DeviceDriverType new_driver = DeviceDriverType::NONE;
 
-    for (const auto& combo : BUTTON_COMBO_MAP)
+    for (const auto& combo_map : BUTTON_COMBO_MAP)
     {
-        if (combo.combo == current_button_combo)
+        if (combo_map.combo == current_button_combo && is_valid_driver(combo_map.driver))
         {
-            for (const auto& driver : VALID_DRIVER_TYPES)
-            {
-                if (combo.driver == driver)
-                {
-                    new_driver = combo.driver;
-                    break;
-                }
-            }
+            new_driver = combo_map.driver;
+            break;
         }
     }
 
-    if (new_driver == DeviceDriver::Type::NONE || new_driver == current_driver_)
+    if (new_driver == DeviceDriverType::NONE || new_driver == current_driver_)
     {
         return false;
     }
@@ -281,50 +151,8 @@ bool UserSettings::check_for_driver_change(Gamepad& gamepad)
     return true;
 }
 
-void UserSettings::store_profile_unsafe(const UserProfile& profile)
-{
-    mutex_enter_blocking(&flash_mutex_);
-
-    uint32_t saved_interrupts = save_and_disable_interrupts();
-    
-    std::array<uint8_t, FLASH_PAGE_SIZE * MAX_PROFILES> profiles_buffer;
-
-    std::memcpy(profiles_buffer.data(), reinterpret_cast<const uint8_t*>(XIP_BASE + flash_offset(PROFILES_START_SECTOR)), FLASH_PAGE_SIZE * MAX_PROFILES);
-    std::memcpy(profiles_buffer.data() + profile_offset(profile.id), reinterpret_cast<const uint8_t*>(&profile), sizeof(UserProfile));
-
-    flash_range_erase(flash_offset(PROFILES_START_SECTOR), FLASH_SECTOR_SIZE);
-
-    for (uint8_t i = 0; i < MAX_PROFILES; i++)
-    {
-        flash_range_program(flash_offset(PROFILES_START_SECTOR) + (i * FLASH_PAGE_SIZE), profiles_buffer.data() + (i * FLASH_PAGE_SIZE), FLASH_PAGE_SIZE);
-    }
-
-    restore_interrupts(saved_interrupts);
-    mutex_exit(&flash_mutex_);
-}
-
-void UserSettings::store_active_profile_id_unsafe(const uint8_t index, const uint8_t profile_id)
-{
-    mutex_enter_blocking(&flash_mutex_);
-
-    std::array<uint8_t, FLASH_PAGE_SIZE> read_profile_ids;
-    read_profile_ids.fill(0xFF);
-
-    std::memcpy(read_profile_ids.data(), reinterpret_cast<const uint8_t*>(XIP_BASE + flash_offset(ACTIVE_PROFILES_SECTOR)), 4);
-
-    read_profile_ids[index] = profile_id;
-
-    uint32_t saved_interrupts = save_and_disable_interrupts();
-    
-    flash_range_erase(flash_offset(ACTIVE_PROFILES_SECTOR), FLASH_SECTOR_SIZE);
-    flash_range_program(flash_offset(ACTIVE_PROFILES_SECTOR), read_profile_ids.data(), FLASH_PAGE_SIZE);
-
-    restore_interrupts(saved_interrupts);
-    mutex_exit(&flash_mutex_);
-}
-
-//Disconnects usb and resets pico, thread safe
-bool UserSettings::store_profile_safe(uint8_t index, const UserProfile& profile)
+//Disconnects usb and resets pico, call from core0
+bool UserSettings::store_profile(uint8_t index, const UserProfile& profile)
 {
     if (profile.id < 1 || profile.id > MAX_PROFILES)
     {
@@ -335,23 +163,18 @@ bool UserSettings::store_profile_safe(uint8_t index, const UserProfile& profile)
         index = 0;
     }
 
-    if (tud_connected())
-    {
-        tud_disconnect();
-        sleep_ms(300);
-    }
+    board_api::usb::disconnect_all();
 
-    multicore_reset_core1();
-
-    store_active_profile_id_unsafe(index, profile.id);
-    store_profile_unsafe(profile);
+    nvs_tool_.write(ACTIVE_PROFILE_KEY(index), &profile.id, sizeof(uint8_t));
+    nvs_tool_.write(PROFILE_KEY(profile.id), &profile, sizeof(UserProfile));
 
     board_api::reboot();
+
     return true;
 }
 
-//Disconnects usb and resets pico, thread safe
-bool UserSettings::store_profile_and_driver_type_safe(DeviceDriver::Type new_driver_type, uint8_t index, const UserProfile& profile)
+//Disconnects usb and resets pico, call from core0
+bool UserSettings::store_profile_and_driver_type(DeviceDriverType new_driver_type, uint8_t index, const UserProfile& profile)
 {
     if (profile.id < 1 || profile.id > MAX_PROFILES)
     {
@@ -362,45 +185,58 @@ bool UserSettings::store_profile_and_driver_type_safe(DeviceDriver::Type new_dri
         index = 0;
     }
 
-    bool found = false;
+    bool valid_driver = false;
     for (const auto& driver : VALID_DRIVER_TYPES)
     {
         if (new_driver_type == driver)
         {
-            found = true;
+            valid_driver = true;
             break;
         }
     }
-    if (!found)
+    if (!valid_driver)
     {
-        new_driver_type = get_default_driver();
+        new_driver_type = DEFAULT_DRIVER();
     }
 
-    if (tud_connected())
-    {
-        tud_disconnect();
-        sleep_ms(300);
-    }
+    board_api::usb::disconnect_all();
 
-    multicore_reset_core1();
-
-    store_driver_type_unsafe(new_driver_type);
-    store_active_profile_id_unsafe(index, profile.id);
-    store_profile_unsafe(profile);
+    nvs_tool_.write(ACTIVE_PROFILE_KEY(index), &profile.id, sizeof(uint8_t));
+    nvs_tool_.write(PROFILE_KEY(profile.id), &profile, sizeof(UserProfile));
+    nvs_tool_.write(DRIVER_TYPE_KEY(), &new_driver_type, sizeof(uint8_t));
 
     board_api::reboot();
     
     return true;
 }
 
+//Disconnects usb and resets pico if it's a new & valid mode, call from core0
+void UserSettings::store_driver_type(DeviceDriverType new_driver) 
+{
+    if (!is_valid_driver(new_driver))
+    {
+        OGXM_LOG("Invalid driver type detected during store: " + OGXM_TO_STRING(new_driver) + "\n");
+        return;
+    }
+
+    OGXM_LOG("Storing new driver type: " + OGXM_TO_STRING(new_driver) + "\n");
+
+    board_api::usb::disconnect_all();
+
+    nvs_tool_.write(DRIVER_TYPE_KEY(), &new_driver, sizeof(uint8_t));
+
+    board_api::reboot();
+}
+
 uint8_t UserSettings::get_active_profile_id(const uint8_t index)
 {
-    mutex_enter_blocking(&flash_mutex_);
+    if (index > MAX_GAMEPADS - 1)
+    {
+        return 0x01;
+    }
 
-    const uint8_t* base_address = (const uint8_t*)(XIP_BASE + flash_offset(ACTIVE_PROFILES_SECTOR));
-    uint8_t read_profile_id = base_address[index];
-
-    mutex_exit(&flash_mutex_);
+    uint8_t read_profile_id = 0;
+    nvs_tool_.read(ACTIVE_PROFILE_KEY(index), &read_profile_id, sizeof(uint8_t));
 
     if (read_profile_id < 1 || read_profile_id > MAX_PROFILES)
     {
@@ -416,14 +252,8 @@ UserProfile UserSettings::get_profile_by_index(const uint8_t index)
 
 UserProfile UserSettings::get_profile_by_id(const uint8_t profile_id)
 {
-    mutex_enter_blocking(&flash_mutex_);
-
-    const uint8_t* base_address = reinterpret_cast<const uint8_t*>(XIP_BASE + flash_offset(PROFILES_START_SECTOR) + profile_offset(profile_id));
-
     UserProfile profile;
-    std::memcpy(&profile, base_address, sizeof(UserProfile));
-
-    mutex_exit(&flash_mutex_);
+    nvs_tool_.read(PROFILE_KEY(profile_id), &profile, sizeof(UserProfile));
 
     if (profile.id != profile_id)
     {
@@ -432,19 +262,110 @@ UserProfile UserSettings::get_profile_by_id(const uint8_t profile_id)
     return profile;
 }
 
-DeviceDriver::Type UserSettings::get_default_driver()
+bool UserSettings::is_valid_driver(DeviceDriverType driver)
 {
-    return VALID_DRIVER_TYPES[0];
-}
-
-bool UserSettings::valid_mode(DeviceDriver::Type mode)
-{
-    for (const auto& driver : VALID_DRIVER_TYPES)
+    for (const auto& valid_driver : VALID_DRIVER_TYPES)
     {
-        if (mode == driver)
+        if (driver == valid_driver)
         {
             return true;
         }
     }
     return false;
+}
+
+DeviceDriverType UserSettings::get_current_driver()
+{
+    if (current_driver_ != DeviceDriverType::NONE)
+    {
+        return current_driver_;
+    }
+
+    uint8_t stored_value = 0;
+    nvs_tool_.read(DRIVER_TYPE_KEY(), &stored_value, sizeof(uint8_t));
+
+    if (is_valid_driver(static_cast<DeviceDriverType>(stored_value)))
+    {
+        OGXM_LOG("Driver type read from flash: " + OGXM_TO_STRING(static_cast<DeviceDriverType>(stored_value)) + "\n");
+
+        current_driver_ = static_cast<DeviceDriverType>(stored_value);
+        return current_driver_;
+    }
+
+    OGXM_LOG("Invalid driver type read from flash, setting default driver\n");
+
+    current_driver_ = DEFAULT_DRIVER();
+    return current_driver_;
+}
+
+bool UserSettings::verify_firmware_version()
+{
+    std::string fw_version = FIRMWARE_VERSION;
+    char read_fw_version[fw_version.size()];
+    std::fill(read_fw_version, read_fw_version + fw_version.size(), '\0');
+
+    nvs_tool_.read(FIRMWARE_VER_KEY(), read_fw_version, fw_version.size());
+
+    return (std::memcmp(read_fw_version, fw_version.c_str(), fw_version.size()) == 0);
+}
+
+bool UserSettings::write_firmware_version()
+{
+    std::string fw_version = FIRMWARE_VERSION;
+    nvs_tool_.write(FIRMWARE_VER_KEY(), fw_version.c_str(), fw_version.size());
+    return verify_firmware_version();
+}
+
+//Checks for first boot and initializes user profiles, call before tusb is inited.
+void UserSettings::initialize_flash()
+{
+    OGXM_LOG("Initializing flash\n");
+
+    uint8_t read_init_flag = 0;
+    nvs_tool_.read(INIT_FLAG_KEY(), &read_init_flag, sizeof(uint8_t));
+
+    if (read_init_flag == FLASH_INIT_FLAG)
+    {
+        OGXM_LOG("Flash already initialized\n");
+
+        if (!verify_firmware_version())
+        {
+            OGXM_LOG("Firmware version mismatch, writing new version\n");
+            write_firmware_version();
+        }
+        return;
+    }
+
+    OGXM_LOG("Writing default driver\n");
+
+    uint8_t device_mode_buffer = static_cast<uint8_t>(DEFAULT_DRIVER());
+    nvs_tool_.write(DRIVER_TYPE_KEY(), &device_mode_buffer, sizeof(uint8_t));
+
+    OGXM_LOG("Writing default profile ids\n");
+
+    for (uint8_t i = 0; i < MAX_GAMEPADS; i++)
+    {
+        uint8_t profile_id = i + 1;
+        nvs_tool_.write(ACTIVE_PROFILE_KEY(i), &profile_id, sizeof(uint8_t));
+    }
+
+    OGXM_LOG("Writing default profiles\n");
+
+    {
+        UserProfile profile = UserProfile();
+        for (uint8_t i = 0; i < MAX_PROFILES; i++)
+        {
+            profile.id = i + 1;
+            nvs_tool_.write(PROFILE_KEY(profile.id), &profile, sizeof(UserProfile));
+        }
+    }
+
+    OGXM_LOG("Writing init flag\n");    
+
+    uint8_t init_flag_buffer = FLASH_INIT_FLAG;
+    nvs_tool_.write(INIT_FLAG_KEY(), &init_flag_buffer, sizeof(uint8_t));
+
+    write_firmware_version();
+
+    OGXM_LOG("Flash initialized\n");
 }

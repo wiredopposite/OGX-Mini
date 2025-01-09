@@ -57,13 +57,13 @@ void WebAppDevice::process(const uint8_t idx, Gamepad& gamepad)
             break;
 
         case ReportID::WRITE_PROFILE:
-            if (user_settings_.valid_mode(static_cast<DeviceDriver::Type>(in_report_.input_mode)))
+            if (user_settings_.is_valid_driver(static_cast<DeviceDriverType>(in_report_.input_mode)))
             {
-                success = user_settings_.store_profile_and_driver_type_safe(static_cast<DeviceDriver::Type>(in_report_.input_mode), in_report_.player_idx, in_report_.profile);
+                success = user_settings_.store_profile_and_driver_type(static_cast<DeviceDriverType>(in_report_.input_mode), in_report_.player_idx, in_report_.profile);
             }
             else
             {
-                success = user_settings_.store_profile_safe(in_report_.player_idx, in_report_.profile);
+                success = user_settings_.store_profile(in_report_.player_idx, in_report_.profile);
             }
             if (!success)
             {

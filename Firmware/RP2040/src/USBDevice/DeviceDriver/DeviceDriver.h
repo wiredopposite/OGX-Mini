@@ -18,21 +18,6 @@
 class DeviceDriver
 {
 public:
-    enum class Type : uint8_t
-    {
-        NONE = 0,
-        PS3 = 1,
-        DINPUT = 2,
-        SWITCH = 4,
-        PSCLASSIC = 5,
-        XINPUT = 6,
-        XBOXOG = 7,
-        XBOXOG_SB = 8,
-        XBOXOG_XR = 9,
-        WEBAPP = 100,
-        UART_BRIDGE = 101
-    };
-
     virtual void initialize() = 0;
     virtual void process(const uint8_t idx, Gamepad& gamepad) = 0;
     virtual uint16_t get_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t report_type, uint8_t* buffer, uint16_t req_len) = 0;

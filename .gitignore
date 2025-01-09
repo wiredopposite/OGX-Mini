@@ -2,6 +2,8 @@ Firmware/.vscode
 Firmware/RP2040/build
 Firmware/RP2040/.ignore
 Firmware/RP2040/src/USBDevice/DeviceDriver/XboxOG/tud_xid/tud_xid_xremote_rom.h
+Firmware/RP2040/src/BLEServer/att_delayed_response.h
+Firmware/ESP32/main/BLEServer/att_delayed_response.h
 Firmware/ESP32/.ignore
 Firmware/ESP32/build
 Firmware/ESP32/components/btstack

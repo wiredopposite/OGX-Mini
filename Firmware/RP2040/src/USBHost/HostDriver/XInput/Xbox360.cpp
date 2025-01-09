@@ -7,7 +7,6 @@
 
 void Xbox360Host::initialize(Gamepad& gamepad, uint8_t address, uint8_t instance, const uint8_t* report_desc, uint16_t desc_len)
 {
-    std::memset(&prev_in_report_, 0, sizeof(XInput::InReport));
     tuh_xinput::set_led(address, instance, idx_ + 1, true);
     tuh_xinput::receive_report(address, instance);
 }
@@ -40,13 +39,13 @@ void Xbox360Host::process_report(Gamepad& gamepad, uint8_t address, uint8_t inst
     if (in_report_->buttons[1] & XInput::Buttons1::X)      gp_in.buttons |= gamepad.MAP_BUTTON_X;
     if (in_report_->buttons[1] & XInput::Buttons1::Y)      gp_in.buttons |= gamepad.MAP_BUTTON_Y;
 
-    gp_in.trigger_l = in_report_->trigger_l;    
-    gp_in.trigger_r = in_report_->trigger_r;
+    gp_in.trigger_l = gamepad.scale_trigger_l(in_report_->trigger_l);
+    gp_in.trigger_r = gamepad.scale_trigger_r(in_report_->trigger_r);
 
-    gp_in.joystick_lx = in_report_->joystick_lx;
-    gp_in.joystick_ly = Scale::invert_joy(in_report_->joystick_ly);
-    gp_in.joystick_rx = in_report_->joystick_rx;
-    gp_in.joystick_ry = Scale::invert_joy(in_report_->joystick_ry);
+    gp_in.joystick_lx = gamepad.scale_joystick_lx(in_report_->joystick_lx);
+    gp_in.joystick_ly = gamepad.scale_joystick_ly(in_report_->joystick_ly, true);
+    gp_in.joystick_rx = gamepad.scale_joystick_rx(in_report_->joystick_rx);
+    gp_in.joystick_ry = gamepad.scale_joystick_ry(in_report_->joystick_ry, true);
 
     gamepad.set_pad_in(gp_in);
 

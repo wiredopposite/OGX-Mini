@@ -5,6 +5,7 @@
 
 #include "Descriptors/SwitchPro.h"
 #include "USBHost/HostDriver/HostDriver.h"
+#include "Board/ogxm_log.h"
 
 class SwitchProHost : public HostDriver
 {
@@ -35,28 +36,18 @@ private:
     SwitchPro::OutReport out_report_{};
 
     void init_switch_host(Gamepad& gamepad, uint8_t address, uint8_t instance);
-    // bool send_handshake(uint8_t address, uint8_t instance);
-    // bool disable_timeout(uint8_t address, uint8_t instance);
     uint8_t get_output_sequence_counter();
 
     static inline int16_t normalize_axis(uint16_t value)
     {
-        /*  12bit value from the controller doesnt cover the full 12bit range seemingly
-            isn't completely centered at 2047 either so I may be missing something here
-            tried to get as close as possible with the multiplier */
-
+        /*  12bit value from the controller doesnt cover the full 12bit range seemingly,
+            isn't completely centered at 2047 either so I may be missing something here.
+            Tried to get as close as possible with the multiplier */
+            
+        OGXM_LOG("Value: %d\n", value);
         int32_t normalized_value = (value - 2047) * 22;
-
-        if (normalized_value < INT16_MIN) 
-        {
-            return INT16_MIN;
-        } 
-        else if (normalized_value > INT16_MAX) 
-        {
-            return INT16_MAX;
-        }
-
-        return static_cast<int16_t>(normalized_value); 
+        OGXM_LOG("Normalized value: %d\n", normalized_value);
+        return Range::clamp<int16_t>(normalized_value);
     }
 };
 

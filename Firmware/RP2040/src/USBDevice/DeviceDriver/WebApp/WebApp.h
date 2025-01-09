@@ -41,9 +41,9 @@ private:
     static_assert(sizeof(Report) == 50, "WebApp report size mismatch");
     #pragma pack(pop)
 
-    UserSettings user_settings_{UserSettings()};
+    UserSettings& user_settings_{UserSettings::get_instance()};
     Report in_report_{Report()};
-    DeviceDriver::Type driver_type_{DeviceDriver::Type::WEBAPP};
+    DeviceDriverType driver_type_{DeviceDriverType::WEBAPP};
 };
 
 #endif // _WEBAAPP_DEVICE_H_

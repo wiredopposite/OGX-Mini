@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#include "c_wrapper.h"
+#include "main.h"
 
 void app_main(void) 
 {

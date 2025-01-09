@@ -12,7 +12,7 @@ namespace board_api
 {
     static constexpr gpio_num_t RESET_PIN = static_cast<gpio_num_t>(CONFIG_RESET_PIN);
     static_assert(RESET_PIN < MAX_GPIO_NUM, "Invalid RESET_PIN");
-    
+
     static constexpr gpio_num_t LED_PINS[] =
     {
     #if defined(CONFIG_ENABLE_LED_1) && (CONFIG_LED_PIN_1 < MAX_GPIO_NUM) && (CONFIG_BLUEPAD32_MAX_DEVICES > 0)
@@ -35,7 +35,7 @@ namespace board_api
 
     static constexpr uint8_t NUM_LEDS = sizeof(LED_PINS) / sizeof(LED_PINS[0]);
 
-    void init_pins();
+    void init_board();
     void set_led(uint8_t index, bool state);
     void set_led(bool state);
 }

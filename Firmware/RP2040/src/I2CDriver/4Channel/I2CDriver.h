@@ -6,72 +6,56 @@
 
 #include "board_config.h"
 #include "Gamepad.h"
+#include "USBHost/HostDriver/HostDriverTypes.h"
 
-#include "USBHost/HostDriver/HostDriver.h"
-
+//Run on core0
 class I2CDriver
 {
 public:
     virtual ~I2CDriver() {};
     virtual void initialize(uint8_t address) = 0;
     virtual void process(Gamepad (&gamepads)[MAX_GAMEPADS]) = 0;
-    virtual void notify_tuh_mounted(HostDriver::Type host_type = HostDriver::Type::UNKNOWN) = 0;
-    virtual void notify_tuh_unmounted(HostDriver::Type host_type = HostDriver::Type::UNKNOWN) = 0;
-    virtual void notify_xbox360w_connected(uint8_t idx) {};
-    virtual void notify_xbox360w_disconnected(uint8_t idx) {};
+    virtual void notify_tuh(bool mounted, HostDriverType host_type = HostDriverType::UNKNOWN) = 0;
+    virtual void notify_xbox360w(bool connected, uint8_t idx) {};
 
 protected:
-    enum class PacketID : uint8_t { UNKNOWN = 0, PAD, STATUS, ENABLE, DISABLE, REBOOT };
-    enum class SlaveStatus : uint8_t { NC = 0, NOT_READY, READY, RESP_OK };
+    enum class PacketID : uint8_t { UNKNOWN = 0, PAD, COMMAND };
+    enum class Command  : uint8_t { UNKNOWN = 0, STATUS, DISABLE };
+    enum class Status   : uint8_t { UNKNOWN = 0, NC, ERROR, OK, READY, NOT_READY };
 
 #pragma pack(push, 1)
     struct PacketIn
     {
-        uint8_t packet_len;
-        uint8_t packet_id;
-        Gamepad::PadIn pad_in;
-
-        PacketIn()
-        {
-            std::memset(this, 0, sizeof(PacketIn));
-            packet_len = sizeof(PacketIn);
-            packet_id = static_cast<uint8_t>(PacketID::PAD);
-        }
+        uint8_t packet_len{sizeof(PacketIn)};
+        PacketID packet_id{PacketID::PAD};
+        Gamepad::PadIn pad_in{Gamepad::PadIn()};
+        Gamepad::ChatpadIn chatpad_in{0};
+        std::array<uint8_t, 4> reserved{0};
     };
-    static_assert(sizeof(PacketIn) == 28, "I2CDriver::PacketIn is misaligned");
+    static_assert(sizeof(PacketIn) == 32, "I2CDriver::PacketIn is misaligned");
+    static_assert((sizeof(PacketIn) % 8) == 0, "I2CDriver::PacketIn is not a multiple of 8");
 
     struct PacketOut
     {
-        uint8_t packet_len;
-        uint8_t packet_id;
-        Gamepad::PadOut pad_out;    
-
-        PacketOut()
-        {
-            std::memset(this, 0, sizeof(PacketOut));
-            packet_len = sizeof(PacketOut);
-            packet_id = static_cast<uint8_t>(PacketID::PAD);
-        }
+        uint8_t packet_len{sizeof(PacketOut)};
+        PacketID packet_id{PacketID::PAD};
+        Gamepad::PadOut pad_out{Gamepad::PadOut()};
+        std::array<uint8_t, 4> reserved{0};
     };
-    static_assert(sizeof(PacketOut) == 4, "I2CDriver::PacketOut is misaligned");
+    static_assert(sizeof(PacketOut) == 8, "I2CDriver::PacketOut is misaligned");
 
-    struct PacketStatus
+    struct PacketCMD
     {
-        uint8_t packet_len;
-        uint8_t packet_id;
-        uint8_t status;
-
-        PacketStatus()
-        {
-            packet_len = sizeof(PacketStatus);
-            packet_id = static_cast<uint8_t>(PacketID::STATUS);
-            status = static_cast<uint8_t>(SlaveStatus::NC);
-        }
+        uint8_t packet_len{sizeof(PacketCMD)};
+        PacketID packet_id{PacketID::COMMAND};
+        Command command{Command::UNKNOWN};
+        Status status{Status::UNKNOWN};
+        std::array<uint8_t, 4> reserved{0};
     };
-    static_assert(sizeof(PacketStatus) == 3, "I2CDriver::PacketStatus is misaligned");
+    static_assert(sizeof(PacketCMD) == 8, "I2CDriver::PacketCMD is misaligned");
 #pragma pack(pop)
 
-    static constexpr size_t MAX_PACKET_SIZE = std::max(sizeof(PacketStatus), std::max(sizeof(PacketIn), sizeof(PacketOut)));
+    static constexpr size_t MAX_PACKET_SIZE = sizeof(PacketIn);
 };
 
 #endif // I2C_DRIVER_4CH_H

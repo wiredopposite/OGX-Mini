@@ -5,8 +5,12 @@
 #define ENABLE_LE_PERIPHERAL
 #define ENABLE_LE_CENTRAL
 #define ENABLE_L2CAP_LE_CREDIT_BASED_FLOW_CONTROL_MODE
+
+#ifndef OGXM_DEBUG
 #define ENABLE_LOG_INFO
 #define ENABLE_LOG_ERROR
+#endif
+
 #define ENABLE_PRINTF_HEXDUMP
 #define ENABLE_SCO_OVER_HCI
 
@@ -36,23 +40,27 @@
 #define MAX_NR_LE_DEVICE_DB_ENTRIES 16
 
 // Limit number of ACL/SCO Buffer to use by stack to avoid cyw43 shared bus overrun
-#define MAX_NR_CONTROLLER_ACL_BUFFERS 3
-#define MAX_NR_CONTROLLER_SCO_PACKETS 3
+#define MAX_NR_CONTROLLER_ACL_BUFFERS 6
+#define MAX_NR_CONTROLLER_SCO_PACKETS 6
 
 // Enable and configure HCI Controller to Host Flow Control to avoid cyw43 shared bus overrun
 #define ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL
 #define HCI_HOST_ACL_PACKET_LEN 1024
-#define HCI_HOST_ACL_PACKET_NUM 3
+#define HCI_HOST_ACL_PACKET_NUM 6
 #define HCI_HOST_SCO_PACKET_LEN 120
-#define HCI_HOST_SCO_PACKET_NUM 3
+#define HCI_HOST_SCO_PACKET_NUM 6
+
+#ifndef HCI_INCOMING_PRE_BUFFER_SIZE
+#define HCI_INCOMING_PRE_BUFFER_SIZE 6
+#endif
 
 // Link Key DB and LE Device DB using TLV on top of Flash Sector interface
 #define NVM_NUM_DEVICE_DB_ENTRIES 16
 #define NVM_NUM_LINK_KEYS 16
 
 // We don't give btstack a malloc, so use a fixed-size ATT DB.
-// #define MAX_ATT_DB_SIZE 512
-#define HAVE_MALLOC
+#define MAX_ATT_DB_SIZE 512
+// #define HAVE_MALLOC
 
 // BTstack HAL configuration
 #define HAVE_EMBEDDED_TIME_MS
@@ -75,4 +83,4 @@
 #define ENABLE_L2CAP_ENHANCED_RETRANSMISSION_MODE
 #endif
 
-#endif  // MICROPY_INCLUDED_EXTMOD_BTSTACK_BTSTACK_CONFIG_H
+#endif  // _PICO_BTSTACK_BTSTACK_CONFIG_H

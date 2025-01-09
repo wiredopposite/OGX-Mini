@@ -54,9 +54,9 @@ void PSClassicDevice::process(const uint8_t idx, Gamepad& gamepad)
         }
 
         int16_t joy_lx = gp_in.joystick_lx;
-        int16_t joy_ly = Scale::invert_joy(gp_in.joystick_ly);
+        int16_t joy_ly = Range::invert(gp_in.joystick_ly);
         int16_t joy_rx = gp_in.joystick_rx;
-        int16_t joy_ry = Scale::invert_joy(gp_in.joystick_ry);
+        int16_t joy_ry = Range::invert(gp_in.joystick_ry);
 
         if (meets_pos_threshold(joy_lx, joy_rx))
         {

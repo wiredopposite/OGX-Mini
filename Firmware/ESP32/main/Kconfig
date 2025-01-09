@@ -1,5 +1,25 @@
 menu "OGXMini Options"
 
+    config I2C_RING_BUFFER_SIZE
+        int "Set I2C ring buffer size"
+        default 6
+
+    config I2C_PORT
+        int "Set I2C port"
+        default 0
+
+    config I2C_SDA_PIN
+        int "Set I2C SDA pin"
+        default 21
+
+    config I2C_SCL_PIN
+        int "Set I2C SCL pin"
+        default 22
+
+    config I2C_BAUDRATE
+        int "Set I2C baudrate"
+        default 1000000
+
     config RESET_PIN
         int "Set reset pin"
         default 9

@@ -5,8 +5,6 @@
 #include <cstring>
 #include <random>
 
-#include "tusb.h"
-
 namespace PS3 
 {
 	static constexpr uint8_t MAGIC_BYTES[8] = { 0x21, 0x26, 0x01, 0x07, 0x00, 0x00, 0x00, 0x00 };
@@ -190,6 +188,7 @@ namespace PS3
 		0xFF, 0xFF,
 		0x00, 0x20, 0x40, 0xCE, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00
 	};
 
 	struct BTInfo
@@ -201,19 +200,18 @@ namespace PS3
 
 		BTInfo()
 		{
-			std::memset(this, 0, sizeof(BTInfo));
 			std::memcpy(device_address, DEFAULT_BT_INFO_HEADER, sizeof(DEFAULT_BT_INFO_HEADER));
 
             std::mt19937 gen(12345);
             std::uniform_int_distribution<uint8_t> dist(0, 0xFF);
 
-			for (uint8_t addr = 0; addr < 3; addr++) 
+			for (uint8_t i = 4; i < sizeof(device_address); i++) 
 			{
-				device_address[4 + addr] = dist(gen);
+				device_address[i] = dist(gen);
 			}
-			for (uint8_t addr = 0; addr < 6; addr++) 
+			for (uint8_t i = 1; i < sizeof(host_address); i++) 
 			{
-				host_address[1 + addr] = dist(gen);
+				host_address[i] = dist(gen);
 			}
 		}
 	};

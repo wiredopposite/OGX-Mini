@@ -69,13 +69,13 @@ void PS4Host::process_report(Gamepad& gamepad, uint8_t address, uint8_t instance
     if (in_report_.buttons[2] & PS4::Buttons2::PS)       gp_in.buttons |= gamepad.MAP_BUTTON_SYS;
     if (in_report_.buttons[2] & PS4::Buttons2::TP)       gp_in.buttons |= gamepad.MAP_BUTTON_MISC;
 
-    gp_in.trigger_l = in_report_.trigger_l;
-    gp_in.trigger_r = in_report_.trigger_r;
+    gp_in.trigger_l = gamepad.scale_trigger_l(in_report_.trigger_l);
+    gp_in.trigger_r = gamepad.scale_trigger_r(in_report_.trigger_r);
 
-    gp_in.joystick_lx = Scale::uint8_to_int16(in_report_.joystick_lx);
-    gp_in.joystick_ly = Scale::uint8_to_int16(in_report_.joystick_ly);
-    gp_in.joystick_rx = Scale::uint8_to_int16(in_report_.joystick_rx);
-    gp_in.joystick_ry = Scale::uint8_to_int16(in_report_.joystick_ry);
+    gp_in.joystick_lx = gamepad.scale_joystick_lx(in_report_.joystick_lx);
+    gp_in.joystick_ly = gamepad.scale_joystick_ly(in_report_.joystick_ly);
+    gp_in.joystick_rx = gamepad.scale_joystick_rx(in_report_.joystick_rx);
+    gp_in.joystick_ry = gamepad.scale_joystick_ry(in_report_.joystick_ry);
 
     gamepad.set_pad_in(gp_in);
 

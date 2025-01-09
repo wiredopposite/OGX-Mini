@@ -111,17 +111,17 @@ void PS3Host::process_report(Gamepad& gamepad, uint8_t address, uint8_t instance
     if (in_report->buttons[0] & PS3::Buttons0::DPAD_LEFT)  gp_in.dpad |= gamepad.MAP_DPAD_LEFT;
     if (in_report->buttons[0] & PS3::Buttons0::DPAD_RIGHT) gp_in.dpad |= gamepad.MAP_DPAD_RIGHT;
 
-    if (in_report->buttons[0] & PS3::Buttons0::SELECT)      gp_in.buttons |= gamepad.MAP_BUTTON_BACK;
-    if (in_report->buttons[0] & PS3::Buttons0::START)       gp_in.buttons |= gamepad.MAP_BUTTON_START;
-    if (in_report->buttons[0] & PS3::Buttons0::L3)          gp_in.buttons |= gamepad.MAP_BUTTON_L3;
-    if (in_report->buttons[0] & PS3::Buttons0::R3)          gp_in.buttons |= gamepad.MAP_BUTTON_R3;
-    if (in_report->buttons[1] & PS3::Buttons1::L1)          gp_in.buttons |= gamepad.MAP_BUTTON_LB;
-    if (in_report->buttons[1] & PS3::Buttons1::R1)          gp_in.buttons |= gamepad.MAP_BUTTON_RB;
-    if (in_report->buttons[1] & PS3::Buttons1::TRIANGLE)    gp_in.buttons |= gamepad.MAP_BUTTON_Y;
-    if (in_report->buttons[1] & PS3::Buttons1::CIRCLE)      gp_in.buttons |= gamepad.MAP_BUTTON_B;
-    if (in_report->buttons[1] & PS3::Buttons1::CROSS)       gp_in.buttons |= gamepad.MAP_BUTTON_A;
-    if (in_report->buttons[1] & PS3::Buttons1::SQUARE)      gp_in.buttons |= gamepad.MAP_BUTTON_X;
-    if (in_report->buttons[2] & PS3::Buttons2::SYS)         gp_in.buttons |= gamepad.MAP_BUTTON_SYS;
+    if (in_report->buttons[0] & PS3::Buttons0::SELECT)   gp_in.buttons |= gamepad.MAP_BUTTON_BACK;
+    if (in_report->buttons[0] & PS3::Buttons0::START)    gp_in.buttons |= gamepad.MAP_BUTTON_START;
+    if (in_report->buttons[0] & PS3::Buttons0::L3)       gp_in.buttons |= gamepad.MAP_BUTTON_L3;
+    if (in_report->buttons[0] & PS3::Buttons0::R3)       gp_in.buttons |= gamepad.MAP_BUTTON_R3;
+    if (in_report->buttons[1] & PS3::Buttons1::L1)       gp_in.buttons |= gamepad.MAP_BUTTON_LB;
+    if (in_report->buttons[1] & PS3::Buttons1::R1)       gp_in.buttons |= gamepad.MAP_BUTTON_RB;
+    if (in_report->buttons[1] & PS3::Buttons1::TRIANGLE) gp_in.buttons |= gamepad.MAP_BUTTON_Y;
+    if (in_report->buttons[1] & PS3::Buttons1::CIRCLE)   gp_in.buttons |= gamepad.MAP_BUTTON_B;
+    if (in_report->buttons[1] & PS3::Buttons1::CROSS)    gp_in.buttons |= gamepad.MAP_BUTTON_A;
+    if (in_report->buttons[1] & PS3::Buttons1::SQUARE)   gp_in.buttons |= gamepad.MAP_BUTTON_X;
+    if (in_report->buttons[2] & PS3::Buttons2::SYS)      gp_in.buttons |= gamepad.MAP_BUTTON_SYS;
 
     if (gamepad.analog_enabled())
     {
@@ -137,13 +137,13 @@ void PS3Host::process_report(Gamepad& gamepad, uint8_t address, uint8_t instance
         gp_in.analog[gamepad.MAP_ANALOG_OFF_RB] = in_report->r1_axis;
     }
 
-    gp_in.trigger_l = in_report->l2_axis;
-    gp_in.trigger_r = in_report->r2_axis;
+    gp_in.trigger_l = gamepad.scale_trigger_l(in_report->l2_axis);
+    gp_in.trigger_r = gamepad.scale_trigger_r(in_report->r2_axis);
 
-    gp_in.joystick_lx = Scale::uint8_to_int16(in_report->joystick_lx);
-    gp_in.joystick_ly = Scale::uint8_to_int16(in_report->joystick_ly);
-    gp_in.joystick_rx = Scale::uint8_to_int16(in_report->joystick_rx);
-    gp_in.joystick_ry = Scale::uint8_to_int16(in_report->joystick_ry);
+    gp_in.joystick_lx = gamepad.scale_joystick_lx(in_report->joystick_lx);
+    gp_in.joystick_ly = gamepad.scale_joystick_ly(in_report->joystick_ly);
+    gp_in.joystick_rx = gamepad.scale_joystick_rx(in_report->joystick_rx);
+    gp_in.joystick_ry = gamepad.scale_joystick_ly(in_report->joystick_ry);
 
     gamepad.set_pad_in(gp_in);
 

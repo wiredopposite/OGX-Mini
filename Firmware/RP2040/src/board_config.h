@@ -9,14 +9,18 @@
 #define PI_PICO 1
 #define PI_PICO2 2
 #define PI_PICOW 3
-#define PI_PICOW2 4
+#define PI_PICO2W 4
 #define RP_ZERO 5
 #define ADA_FEATHER 6
 #define INTERNAL_4CH 7
 #define EXTERNAL_4CH 8
-#define W_ESP32 9
+#define PICO_ESP32 9
 
 #define SYSCLOCK_KHZ 240000
+
+#ifdef PICO_BOARD
+    #define O_BOARD PICO_BOARD
+#endif
 
 #ifndef MAX_GAMEPADS
     #define MAX_GAMEPADS 1
@@ -30,7 +34,10 @@
     #define PIO_USB_DP_PIN      0 // DM = 1
     #define LED_INDICATOR_PIN   25
 
-#elif OGXM_BOARD == PI_PICOW || OGXM_BOARD == PI_PICOW2
+#elif OGXM_BOARD == PI_PICOW
+
+#elif OGXM_BOARD == PI_PICO2W
+    // #define LED_INDICATOR_PIN 0
 
 #elif OGXM_BOARD == RP_ZERO
     #define RGB_PXL_PIN 16 
@@ -62,7 +69,7 @@
     #define SLAVE_ADDR_PIN_1  13
     #define SLAVE_ADDR_PIN_2  14
 
-#elif OGXM_BOARD == W_ESP32
+#elif OGXM_BOARD == PICO_ESP32
     #define I2C_SDA_PIN     18 // SCL = 19
     #define UART0_TX_PIN    16 // RX = 17
     #define UART0_RX_PIN    (UART0_TX_PIN + 1)
@@ -78,7 +85,7 @@
 #endif // OGXM_BOARD
 
 #if defined(I2C_SDA_PIN)
-    #define I2C_BAUDRATE 400 * 1000
+    #define I2C_BAUDRATE 1000 * 1000
     #define I2C_SCL_PIN (I2C_SDA_PIN + 1)
     #define I2C_PORT    ((I2C_SDA_PIN == 2 ) || \
                          (I2C_SDA_PIN == 6 ) || \
@@ -113,6 +120,7 @@
 #endif // PIO_USB_DP_PIN
 
 #if defined(OGXM_DEBUG)
+    //Pins and port are defined in CMakeLists.txt
     #define DEBUG_UART_PORT __CONCAT(uart,PICO_DEFAULT_UART)
 #endif // defined(OGXM_DEBUG)
 
