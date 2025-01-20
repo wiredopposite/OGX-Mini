@@ -9,6 +9,7 @@
 #include "Board/board_api.h"
 #include "Board/ogxm_log.h"
 #include "Board/board_api_private/board_api_private.h"
+#include "TaskQueue/TaskQueue.h"
 
 namespace board_api {
 
@@ -60,10 +61,11 @@ void usb::disconnect_all()
 {
     OGXM_LOG("Disconnecting USB and resetting Core1\n");
 
+    TaskQueue::suspend_delayed_tasks();
     multicore_reset_core1();
-    sleep_ms(300);
+    sleep_ms(500);
     tud_disconnect();
-    sleep_ms(300);
+    sleep_ms(500);
 }
 
 // If using PicoW, only use this method from the core running btstack and after you've called init_bluetooth

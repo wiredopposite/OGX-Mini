@@ -95,6 +95,7 @@ Please visit [**this page**](https://bluepad32.readthedocs.io/en/latest/supporte
 - OG Xbox communicator support (in some form)
 - Generic bluetooth dongle support
 - Button macros
+- Rumble settings (intensity, enabled/disable, etc.)
 
 ## Hardware
 For Pi Pico, RP2040-Zero, 4 channel, and ESP32 configurations, please see the hardware folder for diagrams.

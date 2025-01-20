@@ -36,6 +36,14 @@ public:
         {
             get_core0().process_tasks();
         }
+        static inline void suspend_delayed_tasks()
+        {
+            get_core0().suspend_delayed();
+        }
+        static inline void resume_delayed_tasks()
+        {
+            get_core0().resume_delayed();
+        }
     };
 
 #if (OGXM_BOARD != PI_PICOW) && (OGXM_BOARD != PI_PICO2W) //BTstack uses core1
@@ -61,8 +69,19 @@ public:
         {
             get_core1().process_tasks();
         }
+        static inline void suspend_delayed_tasks()
+        {
+            get_core1().suspend_delayed();
+        }
+        static inline void resume_delayed_tasks()
+        {
+            get_core1().resume_delayed();
+        }
     }; // Core1
 #endif // OGXM_BOARD != PI_PICOW
+
+    static void suspend_delayed_tasks();
+    static void resume_delayed_tasks();
 
 private:
     enum class CoreNum : uint8_t
@@ -99,6 +118,9 @@ private:
     uint32_t alarm_num_;
     uint32_t new_task_id_ = 1;
 
+    bool suspended_ = false;
+    uint64_t suspended_time_ = 0;
+
     int spinlock_queue_num_ = spin_lock_claim_unused(true);
     int spinlock_delayed_num_ = spin_lock_claim_unused(true);
     spin_lock_t* spinlock_queue_ = spin_lock_instance(static_cast<uint>(spinlock_queue_num_));
@@ -124,6 +146,8 @@ private:
     bool queue_task(const std::function<void()>& function);
     void process_tasks();
 
+    void suspend_delayed();
+    void resume_delayed();
     void timer_irq_handler();
     static uint64_t get_time_64_us();
 

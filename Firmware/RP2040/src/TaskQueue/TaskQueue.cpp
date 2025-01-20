@@ -157,6 +157,11 @@ void TaskQueue::timer_irq_handler()
 
     uint64_t now = get_time_64_us();
     uint32_t irq_state = spin_lock_blocking(spinlock_delayed_);
+    if (suspended_)
+    {
+        spin_unlock(spinlock_delayed_, irq_state);
+        return;
+    }
 
     for (auto& task : task_queue_delayed_) 
     {
@@ -185,5 +190,63 @@ void TaskQueue::timer_irq_handler()
         timer_hw->alarm[alarm_num_] = static_cast<uint32_t>(next_target_time);
     }
 
+    spin_unlock(spinlock_delayed_, irq_state);
+}
+
+void TaskQueue::suspend_delayed_tasks()
+{
+    get_core0().suspend_delayed();
+#if (OGXM_BOARD != PI_PICOW) && (OGXM_BOARD != PI_PICO2W)
+    get_core1().suspend_delayed();
+#endif
+}
+
+void TaskQueue::resume_delayed_tasks()
+{
+    get_core0().resume_delayed();
+#if (OGXM_BOARD != PI_PICOW) && (OGXM_BOARD != PI_PICO2W)
+    get_core1().resume_delayed();
+#endif
+}
+
+void TaskQueue::suspend_delayed()
+{
+    uint32_t irq_state = spin_lock_blocking(spinlock_delayed_);
+    if (suspended_)
+    {
+        spin_unlock(spinlock_delayed_, irq_state);
+        return;
+    }
+    hw_clear_bits(&timer_hw->intr, 1u << alarm_num_);
+    suspended_time_ = get_time_64_us();
+    suspended_ = true;
+    spin_unlock(spinlock_delayed_, irq_state);
+}
+
+void TaskQueue::resume_delayed()
+{
+    uint32_t irq_state = spin_lock_blocking(spinlock_delayed_);
+    if (!suspended_)
+    {
+        spin_unlock(spinlock_delayed_, irq_state);
+        return;
+    }
+
+    uint64_t now = get_time_64_us();
+    uint64_t elapsed_time = now - suspended_time_;
+
+    for (auto& task : task_queue_delayed_) 
+    {
+        if (task.function) 
+        {
+            task.target_time = std::max(task.target_time + elapsed_time, now + 10);
+        }
+    }
+    int64_t next_target_time = get_next_target_time_unsafe(task_queue_delayed_);
+    if (next_target_time >= 0) 
+    {
+        timer_hw->alarm[alarm_num_] = static_cast<uint32_t>(next_target_time);
+    }
+    suspended_ = false;
     spin_unlock(spinlock_delayed_, irq_state);
 }
