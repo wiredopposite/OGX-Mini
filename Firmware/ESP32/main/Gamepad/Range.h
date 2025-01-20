@@ -79,77 +79,31 @@ namespace Range {
     requires std::is_integral_v<To> && std::is_integral_v<From>
     static inline To clamp(From value) 
     {
-        if constexpr (std::is_signed_v<From> != std::is_signed_v<To>)
-        {
-            using CommonType = std::common_type_t<To, From>;
-            return static_cast<To>((static_cast<CommonType>(value) < static_cast<CommonType>(Range::MIN<To>)) 
-                                    ? Range::MIN<To> 
-                                    : (static_cast<CommonType>(value) > static_cast<CommonType>(Range::MAX<To>)) 
-                                        ? Range::MAX<To> 
-                                        : static_cast<CommonType>(value));
-        }
-        else
-        {
-            return static_cast<To>((value < Range::MIN<To>) 
-                                    ? Range::MIN<To> 
-                                    : (value > Range::MAX<To>) 
-                                        ? Range::MAX<To> 
-                                        : value);
-        }
+        return static_cast<To>((value < Range::MIN<To>) 
+                                ? Range::MIN<To> 
+                                : (value > Range::MAX<To>) 
+                                    ? Range::MAX<To> 
+                                    : value);
     }
 
     template <typename T>
-    requires std::is_integral_v<T>
     static inline T clamp(T value, T min, T max) 
     {
         return (value < min) ? min : (value > max) ? max : value;
     }
 
+    template <typename To, typename From> 
+    static inline To clamp(From value, To min_to, To max_to) 
+    {
+        return (value < min_to) ? min_to : (value > max_to) ? max_to : static_cast<To>(value);
+    }
+
     template <typename To, typename From>
     requires std::is_integral_v<To> && std::is_integral_v<From>
-    static inline To scale(From value, From min_from, From max_from, To min_to, To max_to) 
+    static constexpr To scale(From value, From min_from, From max_from, To min_to, To max_to) 
     {
-        if constexpr (std::is_unsigned_v<From> && std::is_unsigned_v<To>) 
-        {
-            // Both unsigned
-            uint64_t scaled = static_cast<uint64_t>(value - min_from) * 
-                            (max_to - min_to) / 
-                            (max_from - min_from) + min_to;
-            return static_cast<To>(scaled);
-        } 
-        else if constexpr (std::is_signed_v<From> && std::is_unsigned_v<To>) 
-        {
-            // From signed, To unsigned
-            uint64_t shift_from = static_cast<uint64_t>(-min_from);
-            uint64_t u_value = static_cast<uint64_t>(value) + shift_from;
-            uint64_t u_min_from = static_cast<uint64_t>(min_from) + shift_from;
-            uint64_t u_max_from = static_cast<uint64_t>(max_from) + shift_from;
-
-            uint64_t scaled = (u_value - u_min_from) * 
-                            (max_to - min_to) / 
-                            (u_max_from - u_min_from) + min_to;
-            return static_cast<To>(scaled);
-        } 
-        else if constexpr (std::is_unsigned_v<From> && std::is_signed_v<To>) 
-        {
-            // From unsigned, To signed
-            uint64_t shift_to = static_cast<uint64_t>(-min_to);
-            uint64_t scaled = static_cast<uint64_t>(value - min_from) * 
-                            (static_cast<uint64_t>(max_to) + shift_to - static_cast<uint64_t>(min_to) - shift_to) / 
-                            (max_from - min_from) + static_cast<uint64_t>(min_to) + shift_to;
-            return static_cast<To>(scaled - shift_to);
-        } 
-        else 
-        {
-            // Both signed
-            int64_t shift_from = -min_from;
-            int64_t shift_to = -min_to;
-
-            int64_t scaled = (static_cast<int64_t>(value) + shift_from - (min_from + shift_from)) * 
-                            (max_to + shift_to - (min_to + shift_to)) / 
-                            (max_from - min_from) + (min_to + shift_to);
-            return static_cast<To>(scaled - shift_to);
-        }
+        return static_cast<To>(
+            (static_cast<int64_t>(value - min_from) * (max_to - min_to) / (max_from - min_from)) + min_to);
     }
 
     template <typename To, typename From>

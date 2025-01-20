@@ -5,7 +5,6 @@
 
 #include "tusb.h"
 
-#include "Gamepad.h"
 #include "Descriptors/PSClassic.h"
 #include "USBDevice/DeviceDriver/DeviceDriver.h"
 

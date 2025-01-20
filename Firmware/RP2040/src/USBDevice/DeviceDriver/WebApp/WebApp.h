@@ -1,6 +1,8 @@
 #ifndef _WEBAAPP_DEVICE_H_
 #define _WEBAAPP_DEVICE_H_
 
+#include <array>
+
 #include "USBDevice/DeviceDriver/DeviceDriver.h"
 #include "UserSettings/UserSettings.h"
 #include "UserSettings/UserProfile.h"
@@ -20,30 +22,56 @@ public:
     const uint8_t* get_descriptor_device_qualifier_cb() override;
 
 private:
-    struct ReportID
+    enum class PacketID : uint8_t
     {
-        static constexpr uint8_t INIT_READ = 0x88;
-        static constexpr uint8_t READ_PROFILE = 0x01;
-        static constexpr uint8_t WRITE_PROFILE = 0x02;
-        static constexpr uint8_t RESP_OK = 0x10;
-        static constexpr uint8_t RESP_ERROR = 0x11;
+        NONE = 0,
+        GET_PROFILE_BY_ID = 0x50,
+        GET_PROFILE_BY_IDX = 0x51,
+        GET_PROFILE_RESP_OK = 0x52,
+        SET_PROFILE_START = 0x60,
+        SET_PROFILE = 0x61,
+        SET_PROFILE_RESP_OK = 0x62,
+        SET_GP_IN = 0x80,
+        SET_GP_OUT = 0x81,
+        RESP_ERROR = 0xFF
     };
-
+    
     #pragma pack(push, 1)
-    struct Report
+    struct PacketHeader
     {
-        uint8_t report_id{0};
-        uint8_t input_mode{0};
+        uint8_t packet_len{64};
+        PacketID packet_id{PacketID::NONE};
+        DeviceDriverType device_driver{DeviceDriverType::WEBAPP};
         uint8_t max_gamepads{MAX_GAMEPADS};
         uint8_t player_idx{0};
-        UserProfile profile{UserProfile()};
+        uint8_t profile_id{0};
+        uint8_t chunks_total{0};
+        uint8_t chunk_idx{0};
+        uint8_t chunk_len{0};
     };
-    static_assert(sizeof(Report) == 50, "WebApp report size mismatch");
+    static_assert(sizeof(PacketHeader) == 9, "WebApp report size mismatch");
+
+    struct Packet
+    {
+        PacketHeader header;
+        std::array<uint8_t, 64 - sizeof(PacketHeader)> data{0};
+    };
     #pragma pack(pop)
 
+    Packet packet_in_;
+    Packet packet_out_;
+
     UserSettings& user_settings_{UserSettings::get_instance()};
-    Report in_report_{Report()};
-    DeviceDriverType driver_type_{DeviceDriverType::WEBAPP};
+    UserProfile profile_;
+
+    bool read_profile(UserProfile& profile);
+    bool read_serial(void* buffer, size_t len, bool block);
+    bool read_packet(Packet& packet, bool block);
+    bool write_serial(const void* buffer, size_t len);
+    bool write_packet(const Packet& packet);
+    bool write_profile(uint8_t index, const UserProfile& profile);
+    bool write_gamepad(uint8_t index, const Gamepad::PadIn& pad_in);
+    void write_error();
 };
 
 #endif // _WEBAAPP_DEVICE_H_

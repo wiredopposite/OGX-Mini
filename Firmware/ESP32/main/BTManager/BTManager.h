@@ -9,7 +9,7 @@
 #include <freertos/task.h>
 
 #include "I2CDriver/I2CDriver.h"
-#include "Gamepad.h"
+#include "Gamepad/Gamepad.h"
 
 class BTManager
 {
@@ -23,6 +23,7 @@ public:
     void run_task();
     bool any_connected();
     bool is_connected(uint8_t index);
+    I2CDriver::PacketIn get_packet_in(uint8_t index);
 
 private:
     BTManager() = default;

@@ -3,7 +3,7 @@
 
 Firmware for the RP2040, capable of emulating gamepads for several game consoles. The firmware comes in many flavors, supported on the [Adafruit Feather USB Host board](https://www.adafruit.com/product/5723), Pi Pico, Pi Pico 2, Pi Pico W, Pi Pico 2 W, Waveshare RP2040-Zero, Pico/ESP32 hybrid, and a 4-Channel RP2040-Zero setup.
 
-[**Visit the web app here**](https://wiredopposite.github.io/OGX-Mini-WebApp/) to change your mappings and deadzone settings. To pair the OGX-Mini with the web app, plug your controller in, then connect it to your PC, hold **Start + Left Bumper + Right Bumper** to enter web app mode. Click "Connect" in the web app and select the OGX-Mini.
+[**Visit the web app here**](https://wiredopposite.github.io/OGX-Mini-WebApp/) to change your mappings and deadzone settings. To pair the OGX-Mini with the web app via USB, plug your controller in, then connect it to your PC, hold **Start + Left Bumper + Right Bumper** to enter web app mode. Click "Connect via USB" in the web app and select the OGX-Mini. You can also pair via Bluetooth, no extra steps are needed in that case. 
 
 ## Supported platforms
 - Original Xbox
@@ -72,21 +72,20 @@ Note: There are some third party controllers that can change their VID/PID, thes
 Please visit [**this page**](https://bluepad32.readthedocs.io/en/latest/supported_gamepads/) for a more comprehensive list of supported controllers and Bluetooth pairing instructions.
 
 ## Features new to v1.0.0
-- Bluetooth functionality for the Pico W and Pico+ESP32.
+- Bluetooth functionality for the Pico W, Pico 2 W, and Pico+ESP32.
 - Web application (connectable via USB or Bluetooth) for configuring deadzones and buttons mappings, supports up to 8 saved profiles.
 - Pi Pico 2 and Pico 2 W (RP2350) support.
-- Reduced latency by about 3-4 ms, graphs showing comparisons are coming
+- Reduced latency by about 3-4 ms, graphs showing comparisons are coming.
 - 4 channel functionality, connect 4 Picos and use one Xbox 360 wireless adapter to control all 4.
 - Delayed USB mount until a controller is plugged in, useful for internal installation (non-Bluetooth boards only). 
 - Generic HID controller support.
 - Dualshock 3 emulation (minus gyros), rumble now works.
 - Steel Battalion controller emulation with a wireless Xbox 360 chatpad.
-- Xbox DVD dongle emulation. You must provide or dump your own firmware, see the Tools directory.
+- Xbox DVD dongle emulation. You must provide or dump your own dongle firmware, see the Tools directory.
 - Analog button support on OG Xbox and PS3.
 - RGB LED support for RP2040-Zero and Adafruit Feather boards.
 
 ## Planned additions
-- Anti-deadzone settings
 - More accurate report parser for unknown HID controllers
 - Hardware design for internal OG Xbox install
 - Hardware design for 4 channel RP2040-Zero adapter
@@ -95,6 +94,7 @@ Please visit [**this page**](https://bluepad32.readthedocs.io/en/latest/supporte
 - Switch (as input) rumble support
 - OG Xbox communicator support (in some form)
 - Generic bluetooth dongle support
+- Button macros
 
 ## Hardware
 For Pi Pico, RP2040-Zero, 4 channel, and ESP32 configurations, please see the hardware folder for diagrams.

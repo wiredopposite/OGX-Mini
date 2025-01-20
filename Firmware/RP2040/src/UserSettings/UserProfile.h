@@ -3,19 +3,18 @@
 
 #include <cstdint>
 
+#include "UserSettings/JoystickSettings.h"
+#include "UserSettings/TriggerSettings.h"   
+
 #pragma pack(push, 1)
 struct UserProfile
 {
     uint8_t id;
 
-    uint8_t dz_trigger_l;
-    uint8_t dz_trigger_r;
-
-    uint8_t dz_joystick_l;
-    uint8_t dz_joystick_r;
-
-    uint8_t invert_ly;
-    uint8_t invert_ry;
+    JoystickSettingsRaw joystick_settings_l;
+    JoystickSettingsRaw joystick_settings_r;
+    TriggerSettingsRaw trigger_settings_l;
+    TriggerSettingsRaw trigger_settings_r;
 
     uint8_t dpad_up;
     uint8_t dpad_down;
@@ -50,7 +49,7 @@ struct UserProfile
 
     UserProfile();
 };
-static_assert(sizeof(UserProfile) == 46, "UserProfile struct size mismatch");
+static_assert(sizeof(UserProfile) == 190, "UserProfile struct size mismatch");
 #pragma pack(pop)
 
 #endif // _USER_PROFILE_H_

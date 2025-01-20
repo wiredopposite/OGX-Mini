@@ -96,10 +96,8 @@ void DInputHost::process_report(Gamepad& gamepad, uint8_t address, uint8_t insta
         gp_in.trigger_r = (in_report->buttons[0] & DInput::Buttons0::R2) ? Range::MAX<uint8_t> : Range::MIN<uint8_t>;
     }
 
-    gp_in.joystick_lx = gamepad.scale_joystick_lx(in_report->joystick_lx);
-    gp_in.joystick_ly = gamepad.scale_joystick_ly(in_report->joystick_ly);
-    gp_in.joystick_rx = gamepad.scale_joystick_rx(in_report->joystick_rx);
-    gp_in.joystick_ry = gamepad.scale_joystick_ry(in_report->joystick_ry);
+    std::tie(gp_in.joystick_lx, gp_in.joystick_ly) = gamepad.scale_joystick_l(in_report->joystick_lx, in_report->joystick_ly);
+    std::tie(gp_in.joystick_rx, gp_in.joystick_ry) = gamepad.scale_joystick_r(in_report->joystick_rx, in_report->joystick_ry);
 
     gamepad.set_pad_in(gp_in);
 

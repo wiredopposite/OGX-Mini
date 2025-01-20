@@ -68,10 +68,8 @@ void HIDHost::process_report(Gamepad& gamepad, uint8_t address, uint8_t instance
             break;
     }
 
-    gp_in.joystick_lx = gamepad.scale_joystick_lx(hid_joystick_data_.X);
-    gp_in.joystick_ly = gamepad.scale_joystick_ly(hid_joystick_data_.Y);
-    gp_in.joystick_rx = gamepad.scale_joystick_rx(hid_joystick_data_.Z);
-    gp_in.joystick_ry = gamepad.scale_joystick_ry(hid_joystick_data_.Rz);
+    std::tie(gp_in.joystick_lx, gp_in.joystick_ly) = gamepad.scale_joystick_l(hid_joystick_data_.X, hid_joystick_data_.Y);
+    std::tie(gp_in.joystick_rx, gp_in.joystick_ry) = gamepad.scale_joystick_r(hid_joystick_data_.Z, hid_joystick_data_.Rz);
 
     if (hid_joystick_data_.buttons[1])  gp_in.buttons |= gamepad.MAP_BUTTON_X;
     if (hid_joystick_data_.buttons[2])  gp_in.buttons |= gamepad.MAP_BUTTON_A;

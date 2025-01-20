@@ -72,10 +72,8 @@ void PS4Host::process_report(Gamepad& gamepad, uint8_t address, uint8_t instance
     gp_in.trigger_l = gamepad.scale_trigger_l(in_report_.trigger_l);
     gp_in.trigger_r = gamepad.scale_trigger_r(in_report_.trigger_r);
 
-    gp_in.joystick_lx = gamepad.scale_joystick_lx(in_report_.joystick_lx);
-    gp_in.joystick_ly = gamepad.scale_joystick_ly(in_report_.joystick_ly);
-    gp_in.joystick_rx = gamepad.scale_joystick_rx(in_report_.joystick_rx);
-    gp_in.joystick_ry = gamepad.scale_joystick_ry(in_report_.joystick_ry);
+    std::tie(gp_in.joystick_lx, gp_in.joystick_ly) = gamepad.scale_joystick_l(in_report_.joystick_lx, in_report_.joystick_ly);
+    std::tie(gp_in.joystick_rx, gp_in.joystick_ry) = gamepad.scale_joystick_r(in_report_.joystick_rx, in_report_.joystick_ry);
 
     gamepad.set_pad_in(gp_in);
 

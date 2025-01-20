@@ -80,6 +80,27 @@ public:
         return false;
     }
 
+    void erase_all()
+    {
+        mutex_enter_blocking(&nvs_mutex_);
+
+        for (uint32_t i = 0; i < NVS_SECTORS; ++i) 
+        {
+            flash_range_erase(NVS_START_OFFSET + i * FLASH_SECTOR_SIZE, FLASH_SECTOR_SIZE);
+        }
+
+        Entry entry;
+
+        for (uint32_t i = 0; i < MAX_ENTRIES + 1; ++i) 
+        {
+            flash_range_program(NVS_START_OFFSET + i * sizeof(Entry), 
+                                reinterpret_cast<const uint8_t*>(&entry), 
+                                sizeof(Entry));
+        }
+
+        mutex_exit(&nvs_mutex_);
+    }
+
 private:
     NVSTool()
     {
@@ -89,23 +110,7 @@ private:
 
         if (std::strcmp(initial_entry->key, INVALID_KEY) != 0) 
         {
-            mutex_enter_blocking(&nvs_mutex_);
-
-            for (uint32_t i = 0; i < NVS_SECTORS; ++i) 
-            {
-                flash_range_erase(NVS_START_OFFSET + i * FLASH_SECTOR_SIZE, FLASH_SECTOR_SIZE);
-            }
-
-            Entry entry;
-
-            for (uint32_t i = 0; i < MAX_ENTRIES; ++i) 
-            {
-                flash_range_program(NVS_START_OFFSET + i * sizeof(Entry), 
-                                    reinterpret_cast<const uint8_t*>(&entry), 
-                                    sizeof(Entry));
-            }
-
-            mutex_exit(&nvs_mutex_);
+            erase_all();
         }
     }
 

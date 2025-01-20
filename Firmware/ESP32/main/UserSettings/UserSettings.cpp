@@ -6,7 +6,7 @@
 #include <esp_err.h>
 #include <esp_log.h>
 
-#include "Gamepad.h"
+#include "Gamepad/Gamepad.h"
 #include "UserSettings/NVSHelper.h"
 
 static constexpr uint32_t BUTTON_COMBO(const uint16_t& buttons, const uint8_t& dpad = 0)
@@ -85,7 +85,6 @@ const std::string UserSettings::FIRMWARE_VER_KEY()
     return std::string("firmware_ver");
 }
 
-//Checks for first boot and initializes user profiles, call before tusb is inited.
 void UserSettings::initialize_flash()
 {
     ESP_LOGD("UserSettings", "Checking for UserSettings init flag");
@@ -99,6 +98,9 @@ void UserSettings::initialize_flash()
         ESP_LOGD("UserSettings", "UserSettings already initialized");
         return;
     }
+
+    ESP_ERROR_CHECK(nvs_helper_.erase_all());
+    OGXM_LOG("Initializing UserSettings\n");
 
     current_driver_ = DEFAULT_DRIVER();
     uint8_t driver_type = static_cast<uint8_t>(current_driver_);
@@ -198,20 +200,24 @@ void UserSettings::store_driver_type(DeviceDriverType new_driver_type)
     nvs_helper_.write(DRIVER_TYPE_KEY(), &new_driver, sizeof(new_driver));
 }
 
-void UserSettings::store_profile(const uint8_t index, const UserProfile& profile)
+void UserSettings::store_profile(const uint8_t index, UserProfile& profile)
 {
     if (index > MAX_GAMEPADS || profile.id < 1 || profile.id > MAX_PROFILES)
     {
         return;
     }
 
+    OGXM_LOG("Storing profile %d for gamepad %d\n", profile.id, index);
+
     if (nvs_helper_.write(PROFILE_KEY(profile.id), &profile, sizeof(UserProfile)) == ESP_OK)
     {
+        OGXM_LOG("Profile %d stored successfully\n", profile.id);
+
         nvs_helper_.write(ACTIVE_PROFILE_KEY(index), &profile.id, sizeof(profile.id));
     }
 }
 
-void UserSettings::store_profile_and_driver_type(DeviceDriverType new_driver_type, const uint8_t index, const UserProfile& profile)
+void UserSettings::store_profile_and_driver_type(DeviceDriverType new_driver_type, const uint8_t index, UserProfile& profile)
 {
     store_driver_type(new_driver_type);
     store_profile(index, profile);
@@ -243,10 +249,10 @@ UserProfile UserSettings::get_profile_by_id(const uint8_t profile_id)
         profile_id > MAX_PROFILES ||
         nvs_helper_.read(PROFILE_KEY(profile_id), &profile, sizeof(UserProfile)) != ESP_OK)
     {
-        return profile;
+        return UserProfile();
     }
 
-    return UserProfile();
+    return profile;
 }
 
 DeviceDriverType UserSettings::DEFAULT_DRIVER()

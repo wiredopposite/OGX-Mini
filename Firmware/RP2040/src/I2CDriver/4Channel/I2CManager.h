@@ -7,7 +7,7 @@
 #include <hardware/gpio.h>
 
 #include "board_config.h"
-#include "Gamepad.h"
+#include "Gamepad/Gamepad.h"
 #include "I2CDriver/4Channel/I2CMaster.h"
 #include "I2CDriver/4Channel/I2CSlave.h"
 #include "I2CDriver/4Channel/I2CDriver.h"

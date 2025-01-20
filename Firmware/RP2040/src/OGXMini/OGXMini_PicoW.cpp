@@ -11,7 +11,8 @@
 #include "Board/board_api.h"
 #include "Bluepad32/Bluepad32.h"
 #include "OGXMini/OGXMini.h"
-#include "Gamepad.h"
+#include "BLEServer/BLEServer.h"
+#include "Gamepad/Gamepad.h"
 #include "TaskQueue/TaskQueue.h"
 
 namespace OGXMini {
@@ -25,6 +26,7 @@ void core1_task()
 {
     board_api::init_bluetooth();
     board_api::set_led(true);
+    BLEServer::init_server(gamepads_);
     bluepad32::run_task(gamepads_);
 }
 

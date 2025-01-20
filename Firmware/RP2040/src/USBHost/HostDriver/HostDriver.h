@@ -5,7 +5,7 @@
 
 #include "UserSettings/UserProfile.h"
 #include "UserSettings/UserSettings.h"
-#include "Gamepad.h"
+#include "Gamepad/Gamepad.h"
 #include "USBHost/HostDriver/HostDriverTypes.h"
 
 //Use HostManager, don't use this directly

@@ -4,7 +4,6 @@
 #include <hardware/gpio.h>
 #include <hardware/i2c.h>
 
-#include "Gamepad.h"
 #include "board_config.h"
 #include "Board/board_api.h"
 #include "I2CDriver/ESP32/I2CDriver.h"
@@ -76,8 +75,6 @@ static inline void slave_handler(i2c_inst_t *i2c, i2c_slave_event_t event)
                     break;
 
                 case PacketID::SET_DRIVER:
-                    OGXM_LOG("I2C: Received SET_DRIVER packet: " + OGXM_TO_STRING(packet_in.device_type) + "\n");
-
                     if (packet_in.device_type != DeviceDriverType::NONE &&
                         packet_in.device_type != current_device_type)
                     {

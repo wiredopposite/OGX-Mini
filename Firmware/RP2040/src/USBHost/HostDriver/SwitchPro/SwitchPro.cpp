@@ -168,10 +168,11 @@ void SwitchProHost::process_report(Gamepad& gamepad, uint8_t address, uint8_t in
     uint16_t joy_rx = in_report->joysticks[3] | ((in_report->joysticks[4] & 0xF) << 8);
     uint16_t joy_ry = (in_report->joysticks[4] >> 4) | (in_report->joysticks[5] << 4);
 
-    gp_in.joystick_lx = gamepad.scale_joystick_lx(normalize_axis(joy_lx));
-    gp_in.joystick_ly = gamepad.scale_joystick_ly(normalize_axis(joy_ly), true);
-    gp_in.joystick_rx = gamepad.scale_joystick_rx(normalize_axis(joy_rx));
-    gp_in.joystick_ry = gamepad.scale_joystick_ry(normalize_axis(joy_ry), true);
+    std::tie(gp_in.joystick_lx, gp_in.joystick_ly) = 
+        gamepad.scale_joystick_l(normalize_axis(joy_lx), normalize_axis(joy_ly), true);
+        
+    std::tie(gp_in.joystick_rx, gp_in.joystick_ry) = 
+        gamepad.scale_joystick_r(normalize_axis(joy_rx), normalize_axis(joy_ry), true);
 
     gamepad.set_pad_in(gp_in);
 

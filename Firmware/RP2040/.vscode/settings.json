@@ -2,7 +2,7 @@
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
 
     "cmake.configureArgs": [
-        "-DOGXM_BOARD=PI_PICOW",
+        "-DOGXM_BOARD=ADA_FEATHER",
         "-DMAX_GAMEPADS=1"
     ],
     

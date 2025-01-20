@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <numeric>
 
-#include "Gamepad.h"
 #include "USBDevice/DeviceDriver/DeviceDriver.h"
 #include "Descriptors/XboxOG.h"
 

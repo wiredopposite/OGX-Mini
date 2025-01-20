@@ -7,6 +7,7 @@
 #include "Board/ogxm_log.h"
 #include "Board/board_api.h"
 #include "BTManager/BTManager.h"
+#include "BLEServer/BLEServer.h"
 
 void BTManager::run_task()
 {
@@ -23,7 +24,8 @@ void BTManager::run_task()
         static_cast<i2c_port_t>(CONFIG_I2C_PORT), 
         static_cast<gpio_num_t>(CONFIG_I2C_SDA_PIN), 
         static_cast<gpio_num_t>(CONFIG_I2C_SCL_PIN),  
-        CONFIG_I2C_BAUDRATE);
+        CONFIG_I2C_BAUDRATE
+    );
 
     xTaskCreatePinnedToCore(
         [](void* parameter)
@@ -35,7 +37,8 @@ void BTManager::run_task()
         nullptr,
         configMAX_PRIORITIES-8,
         nullptr,
-        1 );
+        1 
+    );
 
     btstack_init();
 
@@ -53,6 +56,8 @@ void BTManager::run_task()
     driver_update_timer.context = nullptr;
     btstack_run_loop_set_timer(&driver_update_timer, UserSettings::GP_CHECK_DELAY_MS);
     btstack_run_loop_add_timer(&driver_update_timer);
+
+    BLEServer::init_server();
 
     //Doesn't return
     btstack_run_loop_execute();
@@ -102,8 +107,6 @@ void BTManager::check_led_cb(btstack_timer_source *ts)
 
 void BTManager::send_driver_type(DeviceDriverType driver_type)
 {
-    OGXM_LOG("BP32: Sending driver type: %s\n", DRIVER_NAME(driver_type).c_str());
-
     if constexpr (I2CDriver::MULTI_SLAVE)
     {
         for (uint8_t i = 0; i < MAX_GAMEPADS; ++i)
@@ -242,4 +245,13 @@ void BTManager::manage_connection(uint8_t index, bool connected)
         packet_in.index = index;
         i2c_driver_.write_packet(I2CDriver::MULTI_SLAVE ? packet_in.index + 1 : 0x01, packet_in);
     }
+}
+
+I2CDriver::PacketIn BTManager::get_packet_in(uint8_t index)
+{
+    if (index >= devices_.size())
+    {
+        return I2CDriver::PacketIn();
+    }
+    return devices_[index].packet_in;
 }

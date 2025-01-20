@@ -9,7 +9,6 @@
 
 #include "sdkconfig.h"
 #include "Bluepad32/Bluepad32.h"
-#include "BLEServer/BLEServer.h"
 #include "Board/board_api.h"
 #include "Board/ogxm_log.h"
 
@@ -269,11 +268,9 @@ static void controller_data_cb(uni_hid_device_t* device, uni_controller_t* contr
 
     gp_in.trigger_l = gamepad->scale_trigger_l<10>(static_cast<uint16_t>(uni_gp->brake));
     gp_in.trigger_r = gamepad->scale_trigger_r<10>(static_cast<uint16_t>(uni_gp->throttle));
-
-    gp_in.joystick_lx = gamepad->scale_joystick_lx<10>(uni_gp->axis_x);
-    gp_in.joystick_ly = gamepad->scale_joystick_ly<10>(uni_gp->axis_y);
-    gp_in.joystick_rx = gamepad->scale_joystick_rx<10>(uni_gp->axis_rx);
-    gp_in.joystick_ry = gamepad->scale_joystick_ry<10>(uni_gp->axis_ry);
+    
+    std::tie(gp_in.joystick_lx, gp_in.joystick_ly) = gamepad->scale_joystick_l<10>(uni_gp->axis_x, uni_gp->axis_y);
+    std::tie(gp_in.joystick_rx, gp_in.joystick_ry) = gamepad->scale_joystick_r<10>(uni_gp->axis_rx, uni_gp->axis_ry);
 
     gamepad->set_pad_in(gp_in);
 }
@@ -303,14 +300,12 @@ uni_platform* get_driver()
 
 //Public API
 
-void run_task(Gamepad (&gamepads)[MAX_GAMEPADS])
+void run_task(Gamepad(&gamepads)[MAX_GAMEPADS])
 {
     for (uint8_t i = 0; i < MAX_GAMEPADS; ++i)
     {
         bt_devices_[i].gamepad = &gamepads[i];
     }
-
-    BLEServer::init_server();
 
     uni_platform_set_custom(get_driver());
     uni_init(0, nullptr);

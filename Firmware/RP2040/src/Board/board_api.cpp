@@ -59,9 +59,10 @@ bool usb::host_connected()
 void usb::disconnect_all()
 {
     OGXM_LOG("Disconnecting USB and resetting Core1\n");
-    tud_disconnect();
-    sleep_ms(300);
+
     multicore_reset_core1();
+    sleep_ms(300);
+    tud_disconnect();
     sleep_ms(300);
 }
 

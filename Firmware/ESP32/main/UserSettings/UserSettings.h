@@ -32,8 +32,8 @@ public:
     uint8_t get_active_profile_id(const uint8_t index);
 
     void store_driver_type(DeviceDriverType new_driver_type);
-    void store_profile(uint8_t index, const UserProfile& profile);
-    void store_profile_and_driver_type(DeviceDriverType new_driver_type, uint8_t index, const UserProfile& profile);
+    void store_profile(uint8_t index, UserProfile& profile);
+    void store_profile_and_driver_type(DeviceDriverType new_driver_type, uint8_t index, UserProfile& profile);
 
 private:
     UserSettings() = default;
@@ -42,7 +42,7 @@ private:
     UserSettings& operator=(const UserSettings&) = delete;
 
     static constexpr uint8_t GP_CHECK_COUNT = 3000 / GP_CHECK_DELAY_MS;
-    static constexpr uint8_t INIT_FLAG = 0x82;
+    static constexpr uint8_t INIT_FLAG = 0x12;
 
     NVSHelper& nvs_helper_{NVSHelper::get_instance()};
     DeviceDriverType current_driver_{DeviceDriverType::NONE};

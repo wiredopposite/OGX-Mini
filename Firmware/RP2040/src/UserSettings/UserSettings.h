@@ -8,7 +8,7 @@
 #include "USBDevice/DeviceDriver/DeviceDriverTypes.h"
 #include "UserSettings/UserProfile.h"
 #include "UserSettings/NVSTool.h"
-#include "Gamepad.h"
+#include "Gamepad/Gamepad.h"
 
 /* Only write/store flash from Core0 */
 class UserSettings
@@ -25,10 +25,9 @@ public:
 
     void initialize_flash();
 
-    bool verify_firmware_version();
-    bool write_firmware_version();
-
     bool is_valid_driver(DeviceDriverType driver);
+    bool verify_datetime();
+    void write_datetime();
 
     DeviceDriverType get_current_driver();
     bool check_for_driver_change(Gamepad& gamepad);
@@ -48,7 +47,8 @@ private:
     UserSettings& operator=(const UserSettings&) = delete;
 
     static constexpr uint8_t GP_CHECK_COUNT = 3000 / GP_CHECK_DELAY_MS;
-    static constexpr uint8_t FLASH_INIT_FLAG = 0x21;
+    static constexpr uint8_t FLASH_INIT_FLAG = 0xF8;
+    const std::string DATETIME_TAG = BUILD_DATETIME; 
     
     NVSTool& nvs_tool_{NVSTool::get_instance()};
     DeviceDriverType current_driver_{DeviceDriverType::NONE};
@@ -58,7 +58,7 @@ private:
     const std::string PROFILE_KEY(const uint8_t profile_id);
     const std::string ACTIVE_PROFILE_KEY(const uint8_t index);
     const std::string DRIVER_TYPE_KEY();
-    const std::string FIRMWARE_VER_KEY();
+    const std::string DATETIME_KEY();
 };
 
 #endif // _USER_SETTINGS_H_

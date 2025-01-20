@@ -7,7 +7,7 @@
 #include "class/hid/hid.h"
 #include "device/usbd_pvt.h"
 
-#include "Gamepad.h"
+#include "Gamepad/Gamepad.h"
 
 #if CFG_TUSB_DEBUG >= CFG_TUD_LOG_LEVEL
     #define TUD_DRV_NAME(name) name

@@ -11,7 +11,7 @@
 #include "USBDevice/DeviceManager.h"
 #include "OGXMini/OGXMini.h"
 #include "TaskQueue/TaskQueue.h"
-#include "Gamepad.h"
+#include "Gamepad/Gamepad.h"
 #include "Board/board_api.h"
 #include "Board/ogxm_log.h"
 
@@ -78,7 +78,6 @@ void set_gp_check_timer(uint32_t task_id, UserSettings& user_settings)
 {
     TaskQueue::Core0::queue_delayed_task(task_id, UserSettings::GP_CHECK_DELAY_MS, true, [&user_settings]
     {
-        OGXM_LOG("Checking for driver change.\n");
         //Check gamepad inputs for button combo to change usb device driver
         if (user_settings.check_for_driver_change(gamepads_[0]))
         {
@@ -101,17 +100,25 @@ void run_program()
         gamepads_[i].set_profile(user_settings.get_profile_by_index(i));
     }
 
+    DeviceDriverType current_driver = user_settings.get_current_driver();
     DeviceManager& device_manager = DeviceManager::get_instance();
-    device_manager.initialize_driver(user_settings.get_current_driver(), gamepads_);
+    device_manager.initialize_driver(current_driver, gamepads_);
 
     multicore_reset_core1();
     multicore_launch_core1(core1_task);
 
-    // Wait for something to call host_mounted()
-    while (!tud_inited())
+    if (current_driver != DeviceDriverType::WEBAPP)
     {
-        TaskQueue::Core0::process_tasks();
-        sleep_ms(100);
+        // Wait for something to call host_mounted()
+        while (!tud_inited())
+        {
+            TaskQueue::Core0::process_tasks();
+            sleep_ms(100);
+        }
+    }
+    else //Connect immediately in WebApp mode
+    {
+        host_mounted(true);
     }
 
     uint32_t tid_gp_check = TaskQueue::Core0::get_new_task_id();

@@ -8,7 +8,7 @@
 #include <pico/i2c_slave.h>
 
 #include "board_config.h"
-#include "Gamepad.h"
+#include "Gamepad/Gamepad.h"
 #include "I2CDriver/4Channel/I2CDriver.h"
 
 class I2CSlave : public I2CDriver

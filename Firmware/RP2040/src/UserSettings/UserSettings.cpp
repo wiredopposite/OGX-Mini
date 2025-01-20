@@ -1,5 +1,6 @@
 #include <cstring>
 #include <array>
+#include <memory>
 #include <pico/multicore.h>
 
 #include "tusb.h"
@@ -94,9 +95,9 @@ const std::string UserSettings::DRIVER_TYPE_KEY()
     return std::string("driver_type");
 }
 
-const std::string UserSettings::FIRMWARE_VER_KEY()
+const std::string UserSettings::DATETIME_KEY()
 {
-    return std::string("firmware_ver");
+    return std::string("datetime");
 }
 
 DeviceDriverType UserSettings::DEFAULT_DRIVER()
@@ -201,10 +202,10 @@ bool UserSettings::store_profile_and_driver_type(DeviceDriverType new_driver_typ
 
     board_api::usb::disconnect_all();
 
+    nvs_tool_.write(DRIVER_TYPE_KEY(), reinterpret_cast<const uint8_t*>(&new_driver_type), sizeof(new_driver_type));
     nvs_tool_.write(ACTIVE_PROFILE_KEY(index), &profile.id, sizeof(uint8_t));
     nvs_tool_.write(PROFILE_KEY(profile.id), &profile, sizeof(UserProfile));
-    nvs_tool_.write(DRIVER_TYPE_KEY(), &new_driver_type, sizeof(uint8_t));
-
+    
     board_api::reboot();
     
     return true;
@@ -298,22 +299,21 @@ DeviceDriverType UserSettings::get_current_driver()
     return current_driver_;
 }
 
-bool UserSettings::verify_firmware_version()
+void UserSettings::write_datetime()
 {
-    std::string fw_version = FIRMWARE_VERSION;
-    char read_fw_version[fw_version.size()];
-    std::fill(read_fw_version, read_fw_version + fw_version.size(), '\0');
-
-    nvs_tool_.read(FIRMWARE_VER_KEY(), read_fw_version, fw_version.size());
-
-    return (std::memcmp(read_fw_version, fw_version.c_str(), fw_version.size()) == 0);
+    nvs_tool_.write(DATETIME_KEY(), DATETIME_TAG.c_str(), DATETIME_TAG.size() + 1);
 }
 
-bool UserSettings::write_firmware_version()
+bool UserSettings::verify_datetime()
 {
-    std::string fw_version = FIRMWARE_VERSION;
-    nvs_tool_.write(FIRMWARE_VER_KEY(), fw_version.c_str(), fw_version.size());
-    return verify_firmware_version();
+    char read_dt_tag[DATETIME_TAG.size() + 1] = {0};
+
+    if (!nvs_tool_.read(DATETIME_KEY(), read_dt_tag, sizeof(read_dt_tag)) ||
+        (std::strcmp(read_dt_tag, DATETIME_TAG.c_str()) != 0))
+    {
+        return false;
+    }
+    return true;
 }
 
 //Checks for first boot and initializes user profiles, call before tusb is inited.
@@ -326,15 +326,12 @@ void UserSettings::initialize_flash()
 
     if (read_init_flag == FLASH_INIT_FLAG)
     {
-        OGXM_LOG("Flash already initialized\n");
-
-        if (!verify_firmware_version())
-        {
-            OGXM_LOG("Firmware version mismatch, writing new version\n");
-            write_firmware_version();
-        }
+        OGXM_LOG("Flash already initialized: %i\n", read_init_flag);
         return;
     }
+
+    OGXM_LOG("Flash not initialized, erasing\n");
+    nvs_tool_.erase_all();
 
     OGXM_LOG("Writing default driver\n");
 
@@ -352,11 +349,14 @@ void UserSettings::initialize_flash()
     OGXM_LOG("Writing default profiles\n");
 
     {
-        UserProfile profile = UserProfile();
+        UserProfile profile;
+        OGXM_LOG("Profile size: %i\n", sizeof(UserProfile));
+
         for (uint8_t i = 0; i < MAX_PROFILES; i++)
         {
             profile.id = i + 1;
             nvs_tool_.write(PROFILE_KEY(profile.id), &profile, sizeof(UserProfile));
+            OGXM_LOG("Profile " + std::to_string(profile.id) + " written\n");
         }
     }
 
@@ -364,8 +364,6 @@ void UserSettings::initialize_flash()
 
     uint8_t init_flag_buffer = FLASH_INIT_FLAG;
     nvs_tool_.write(INIT_FLAG_KEY(), &init_flag_buffer, sizeof(uint8_t));
-
-    write_firmware_version();
 
     OGXM_LOG("Flash initialized\n");
 }

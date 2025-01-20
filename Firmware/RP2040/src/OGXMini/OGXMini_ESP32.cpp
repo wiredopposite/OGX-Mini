@@ -10,7 +10,7 @@
 #include "Board/board_api.h"
 #include "OGXMini/OGXMini.h"
 #include "I2CDriver/ESP32/I2CDriver.h"
-#include "Gamepad.h"
+#include "Gamepad/Gamepad.h"
 #include "TaskQueue/TaskQueue.h"
 
 namespace OGXMini {
@@ -30,14 +30,30 @@ void core1_task()
     }
 }
 
-void run_uart_bridge()
+void run_uart_bridge(UserSettings& user_settings)
 {
     DeviceManager& device_manager = DeviceManager::get_instance();
     device_manager.initialize_driver(DeviceDriverType::UART_BRIDGE, gamepads_);
 
     board_api::esp32::enter_programming_mode();
+
+    OGXM_LOG("Entering UART Bridge mode\n");
     
-    device_manager.get_driver()->process(0, gamepads_[0]); //Runs UART Bridge task, doesn't return
+    device_manager.get_driver()->process(0, gamepads_[0]); //Runs UART Bridge task, doesn't return unless programming is complete
+
+    OGXM_LOG("Exiting UART Bridge mode\n");
+
+    board_api::usb::disconnect_all(); 
+    user_settings.write_datetime();
+    board_api::reboot();
+}
+
+bool update_needed(UserSettings& user_settings)
+{
+#if defined(OGXM_ESP32_RETAIL)
+    return !user_settings.verify_datetime();
+#endif
+    return false;
 }
 
 void run_program()
@@ -48,9 +64,9 @@ void run_program()
     user_settings.initialize_flash();
 
     //MODE_SEL_PIN is used to determine if UART bridge should be run
-    if (board_api::esp32::uart_bridge_mode())
+    if (board_api::esp32::uart_bridge_mode() || update_needed(user_settings))
     {
-        run_uart_bridge();
+        run_uart_bridge(user_settings);
         return;
     }
 

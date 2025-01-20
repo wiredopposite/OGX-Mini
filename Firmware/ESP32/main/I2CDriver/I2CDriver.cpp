@@ -15,7 +15,7 @@ void I2CDriver::initialize_i2c(i2c_port_t i2c_port, gpio_num_t sda, gpio_num_t s
 {
     if (initialized_)
     {
-        i2c_driver_delete(i2c_port_);
+        return;
     }
 
     i2c_port_ = i2c_port;

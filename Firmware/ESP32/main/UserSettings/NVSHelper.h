@@ -106,7 +106,7 @@ private:
 
     SemaphoreHandle_t nvs_mutex_;
 
-    static constexpr const char NVS_NAMESPACE[] = "user_data";
+    static constexpr char NVS_NAMESPACE[] = "user_data";
     
 }; // class NVSHelper
 

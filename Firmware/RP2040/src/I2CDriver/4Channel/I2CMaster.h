@@ -7,7 +7,7 @@
 #include <hardware/i2c.h>
 
 #include "board_config.h"
-#include "Gamepad.h"
+#include "Gamepad/Gamepad.h"
 #include "I2CDriver/4Channel/I2CDriver.h"
 
 class I2CMaster : public I2CDriver

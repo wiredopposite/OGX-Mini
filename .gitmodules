@@ -13,3 +13,6 @@
 [submodule "WebApp"]
 	path = WebApp
 	url = https://github.com/wiredopposite/OGX-Mini-WebApp.git
+[submodule "Firmware/external/libfixmath"]
+	path = Firmware/external/libfixmath
+	url = https://github.com/PetteriAimonen/libfixmath.git

@@ -1,19 +1,11 @@
 #include <cstring>
 
-#include "Gamepad.h"
+#include "Gamepad/Gamepad.h"
 #include "UserSettings/UserProfile.h"
 
 UserProfile::UserProfile()
 {
     id = 1;
-
-    dz_trigger_l = 0;
-    dz_trigger_r = 0;
-    dz_joystick_l = 0;
-    dz_joystick_r = 0;
-
-    invert_ly = 0;
-    invert_ry = 0;
 
     dpad_up = Gamepad::DPAD_UP;
     dpad_down = Gamepad::DPAD_DOWN;

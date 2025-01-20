@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <array>
 
-#include "Gamepad.h"
+#include "Gamepad/Gamepad.h"
 #include "board_config.h"
 
 /*  NOTE: Everything bluepad32/uni needs to be wrapped
@@ -12,7 +12,7 @@
 
 namespace bluepad32 
 {
-    void run_task(Gamepad (&gamepads)[MAX_GAMEPADS]);
+    void run_task(Gamepad(&gamepads)[MAX_GAMEPADS]);
 } 
 
 #endif // _BLUEPAD_32_H_

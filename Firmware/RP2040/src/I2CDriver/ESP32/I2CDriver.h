@@ -3,7 +3,7 @@
 
 #include <cstdint>
 
-#include "Gamepad.h"
+#include "Gamepad/Gamepad.h"
 
 namespace I2CDriver
 {

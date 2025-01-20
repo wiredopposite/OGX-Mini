@@ -13,7 +13,10 @@ include(${EXTERNAL_CMAKE_DIR}/patch_libs.cmake)
 include(${EXTERNAL_CMAKE_DIR}/generate_gatt_header.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/integrate_btstack.cmake)
 
-init_git_submodules(${EXTERNAL_DIR})
+init_git_submodules(${EXTERNAL_DIR}
+    ${EXTERNAL_DIR}/bluepad32
+    ${EXTERNAL_DIR}/libfixmath
+)
 apply_lib_patches(${EXTERNAL_DIR})
 integrate_btstack(${EXTERNAL_DIR})
 generate_gatt_header(

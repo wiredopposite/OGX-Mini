@@ -18,15 +18,19 @@ include(${CMAKE_CURRENT_LIST_DIR}/../cmake/patch_libs.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/generate_gatt_header.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/get_pico_sdk.cmake)
 
-get_pico_sdk(${EXTERNAL_DIR} ${PICOSDK_VERSION_TAG})
-init_git_submodules(${EXTERNAL_DIR})
-apply_lib_patches(${EXTERNAL_DIR})
-
 set(PICO_PIO_USB_PATH ${EXTERNAL_DIR}/Pico-PIO-USB)
 set(PICO_TINYUSB_PATH ${EXTERNAL_DIR}/tinyusb)
 set(BLUEPAD32_ROOT ${EXTERNAL_DIR}/bluepad32)
 set(BTSTACK_ROOT ${BLUEPAD32_ROOT}/external/btstack)
 set(PICO_BTSTACK_PATH ${BTSTACK_ROOT})
+set(LIBFIXMATH_PATH ${EXTERNAL_DIR}/libfixmath)
+
+get_pico_sdk(${EXTERNAL_DIR} ${PICOSDK_VERSION_TAG})
+init_git_submodules(${EXTERNAL_DIR}
+    ${BLUEPAD32_ROOT}
+    ${PICO_TINYUSB_PATH}
+)
+apply_lib_patches(${EXTERNAL_DIR})
 
 set(SOURCES_BOARD 
     ${SRC}/main.cpp
@@ -48,6 +52,8 @@ set(SOURCES_BOARD
     
     ${SRC}/UserSettings/UserSettings.cpp
     ${SRC}/UserSettings/UserProfile.cpp
+    ${SRC}/UserSettings/JoystickSettings.cpp
+    ${SRC}/UserSettings/TriggerSettings.cpp
 
     ${SRC}/USBDevice/tud_callbacks.cpp
     ${SRC}/USBDevice/DeviceManager.cpp
@@ -77,22 +83,21 @@ set(LIBS_BOARD
     # UART
     hardware_uart
     hardware_irq
+    #fix16
+    libfixmath
 )
 set(INC_DIRS_BOARD
 )
 
 # Config options
 
-# Max gamepads
 set(MAX_GAMEPADS 1 CACHE STRING "Set number of gamepads, 1 to 4")
 if (MAX_GAMEPADS GREATER 4 OR MAX_GAMEPADS LESS 1)
     message(FATAL_ERROR "MAX_GAMEPADS must be between 1 and 4")
 endif()
 add_definitions(-DMAX_GAMEPADS=${MAX_GAMEPADS})
 
-# Board type
 set(OGXM_BOARD "PI_PICO" CACHE STRING "Set board type, options can be found in src/board_config.h")
-
 set(FLASH_SIZE_MB 2)
 set(PICO_BOARD none)
 
@@ -135,6 +140,11 @@ elseif(OGXM_BOARD STREQUAL "EXTERNAL_4CH")
 elseif(OGXM_BOARD STREQUAL "PICO_ESP32")
     set(EN_ESP32 TRUE)
     set(EN_UART_BRIDGE TRUE)
+
+    if(OGXM_RETAIL STREQUAL "TRUE")
+        message(STATUS "Retail mode enabled.")
+        add_definitions(-DOGXM_ESP32_RETAIL)
+    endif()
 
 else()
     message(FATAL_ERROR "Invalid OGXM_BOARD value. See options in src/board_config.h")
@@ -246,6 +256,8 @@ if(EN_UART_BRIDGE)
     )
 endif()
 
+string(TIMESTAMP CURRENT_DATETIME "%Y-%m-%d %H:%M:%S")
+add_compile_definitions(BUILD_DATETIME="${CURRENT_DATETIME}")
 add_compile_definitions(FIRMWARE_NAME="${FW_NAME}")
 add_compile_definitions(FIRMWARE_VERSION="${FW_VERSION}")
 add_compile_definitions(PICO_FLASH_SIZE_BYTES=${FLASH_SIZE_MB}*1024*1024)
@@ -288,8 +300,8 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     message(STATUS "Debug build enabled.")
     set(BUILD_STR "-Debug")
 
-    set(TX_PIN 0)
-    set(RX_PIN 1)
+    set(TX_PIN 4)
+    set(RX_PIN 5)
     set(UART_PORT)
 
     include(${CMAKE_CURRENT_LIST_DIR}/cmake/get_pico_uart_port.cmake)
@@ -304,7 +316,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         PICO_DEFAULT_UART_RX_PIN=${RX_PIN}
     )
  
-    add_compile_definitions(CFG_TUSB_DEBUG=2)
+    add_compile_definitions(CFG_TUSB_DEBUG=1)
     add_compile_definitions(OGXM_DEBUG=1)
 
     target_compile_options(${FW_NAME} PRIVATE
@@ -338,7 +350,9 @@ endif()
 pico_set_program_name(${FW_NAME} ${FW_NAME})
 pico_set_program_version(${FW_NAME} ${FW_VERSION})
 
-target_include_directories(${FW_NAME} PRIVATE ${SRC})
+target_include_directories(${FW_NAME} PRIVATE 
+    ${SRC}
+)
 
 if(EN_RGB)
     pico_generate_pio_header(${FW_NAME} ${SRC}/Board/Pico_WS2812/WS2812.pio)
@@ -354,9 +368,26 @@ if(EN_BLUETOOTH)
     add_subdirectory(${BLUEPAD32_ROOT}/src/components/bluepad32 libbluepad32)
 endif()
 
+add_subdirectory(${LIBFIXMATH_PATH} libfixmath)
+
 target_link_libraries(${FW_NAME} PRIVATE ${LIBS_BOARD})
 
-set(EXE_FILENAME "${FW_NAME}-${FW_VERSION}-${OGXM_BOARD}${BUILD_STR}")
+target_compile_definitions(libfixmath PRIVATE
+    FIXMATH_FAST_SIN
+    FIXMATH_NO_64BIT
+    FIXMATH_NO_CACHE
+    FIXMATH_NO_HARD_DIVISION
+    FIXMATH_NO_OVERFLOW
+    # FIXMATH_NO_ROUNDING
+    # FIXMATH_OPTIMIZE_8BIT
+)
+
+if(OGXM_RETAIL STREQUAL "TRUE")
+    set(EXE_FILENAME "${FW_NAME}-${FW_VERSION}-${OGXM_BOARD}${BUILD_STR}-Retail")
+else()
+    set(EXE_FILENAME "${FW_NAME}-${FW_VERSION}-${OGXM_BOARD}${BUILD_STR}")
+endif()
+
 set_target_properties(${FW_NAME} PROPERTIES OUTPUT_NAME ${EXE_FILENAME})
 
 pico_add_extra_outputs(${FW_NAME})

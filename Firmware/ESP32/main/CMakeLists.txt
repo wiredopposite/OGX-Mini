@@ -11,13 +11,16 @@ idf_component_register(
         "I2CDriver/I2CDriver.cpp"
         "UserSettings/UserSettings.cpp"
         "UserSettings/UserProfile.cpp"
+        "UserSettings/TriggerSettings.cpp"
+        "UserSettings/JoystickSettings.cpp"
     INCLUDE_DIRS 
         "."
     REQUIRES 
         bluepad32 
         btstack 
         driver 
-        nvs_flash
+        nvs_flash 
+        libfixmath 
 )
 
 target_compile_definitions(${COMPONENT_LIB} PRIVATE

@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <memory>
 
-#include "Gamepad.h"
 #include "USBDevice/DeviceDriver/DeviceDriverTypes.h"
 #include "USBDevice/DeviceDriver/DeviceDriver.h"
 

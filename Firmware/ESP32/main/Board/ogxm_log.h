@@ -33,9 +33,20 @@ namespace OGXM
 
         std::ostringstream hex_stream;
         hex_stream << std::hex << std::setfill('0');
+        int char_num = 0;
         for (uint16_t i = 0; i < len; ++i)
         {
             hex_stream << std::setw(2) << static_cast<int>(data[i]) << " ";
+            char_num++;
+            if (char_num == 16)
+            {
+                hex_stream << "\n";
+                char_num = 0;
+            }
+        }
+        if (char_num != 0)
+        {
+            hex_stream << "\n";
         }
 
         log(hex_stream.str());

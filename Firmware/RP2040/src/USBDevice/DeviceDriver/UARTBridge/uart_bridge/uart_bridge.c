@@ -31,6 +31,9 @@
 #define DEF_PARITY 0
 #define DEF_DATA_BITS 8
 
+const char COMPLETE_FLAG[] = "PROGRAMMING_COMPLETE";
+const size_t COMPLETE_FLAG_READ_LEN = 22;
+
 typedef struct {
 	uart_inst_t *const inst;
 	uint irq;
@@ -74,6 +77,7 @@ const uart_id_t UART_ID[CFG_TUD_CDC] = {
 };
 
 uart_data_t UART_DATA[CFG_TUD_CDC];
+bool programming_complete = false;
 
 static inline uint databits_usb2uart(uint8_t data_bits)
 {
@@ -143,13 +147,28 @@ void usb_read_bytes(uint8_t itf)
 	uart_data_t *ud = &UART_DATA[itf];
 	uint32_t len = tud_cdc_n_available(itf);
 
-	if (len &&
-	    mutex_try_enter(&ud->usb_mtx, NULL)) {
+	if (len && mutex_try_enter(&ud->usb_mtx, NULL)) 
+	{
 		len = MIN(len, BUFFER_SIZE - ud->usb_pos);
-		if (len) {
+		if (len) 
+		{
 			uint32_t count;
-
 			count = tud_cdc_n_read(itf, &ud->usb_buffer[ud->usb_pos], len);
+			
+			if (count >= COMPLETE_FLAG_READ_LEN) 
+			{
+				for (uint32_t i = 0; i < count; i++)
+				{
+					uint32_t remaining = BUFFER_SIZE - ud->usb_pos - i;
+					if (remaining >= sizeof(COMPLETE_FLAG) - 1 &&
+						memcmp(&ud->usb_buffer[ud->usb_pos + i], COMPLETE_FLAG, sizeof(COMPLETE_FLAG) - 1) == 0)
+					{
+						programming_complete = true;
+						break;
+					}
+				}
+			}
+
 			ud->usb_pos += count;
 		}
 
@@ -288,14 +307,14 @@ void init_uart_data(uint8_t itf)
 
 void core1_entry(void)
 {
-	for (int itf = 0; itf < CFG_TUD_CDC; itf++)
+	for (uint8_t itf = 0; itf < CFG_TUD_CDC; itf++)
 	{
 		init_uart_data(0);
 	}
 
 	while (1) 
 	{
-		for (int itf = 0; itf < CFG_TUD_CDC; itf++) 
+		for (uint8_t itf = 0; itf < CFG_TUD_CDC; itf++) 
 		{
 			update_uart_cfg(itf);
 			uart_write_bytes(itf);
@@ -316,12 +335,18 @@ int uart_bridge_run(void)
 	{
 		tud_task();
 
-		for (int itf = 0; itf < CFG_TUD_CDC; itf++) 
+		for (uint8_t itf = 0; itf < CFG_TUD_CDC; itf++) 
 		{
 			if (tud_cdc_n_connected(itf)) 
 			{
 				usb_cdc_process(itf);
 			}
+		}
+
+		if (programming_complete)
+		{
+			multicore_reset_core1();
+			break;
 		}
 	}
 
