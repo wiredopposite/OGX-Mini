@@ -300,8 +300,8 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     message(STATUS "Debug build enabled.")
     set(BUILD_STR "-Debug")
 
-    set(TX_PIN 4)
-    set(RX_PIN 5)
+    set(TX_PIN 0)
+    set(RX_PIN 1)
     set(UART_PORT)
 
     include(${CMAKE_CURRENT_LIST_DIR}/cmake/get_pico_uart_port.cmake)

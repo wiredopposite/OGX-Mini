@@ -35,7 +35,7 @@ static constexpr DeviceDriverType VALID_DRIVER_TYPES[] =
 
 #else // MAX_GAMEPADS == 1
     DeviceDriverType::XBOXOG, 
-    DeviceDriverType::XBOXOG_SB, 
+    // DeviceDriverType::XBOXOG_SB, 
     DeviceDriverType::XBOXOG_XR,
     DeviceDriverType::DINPUT, 
     DeviceDriverType::SWITCH, 

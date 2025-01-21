@@ -44,7 +44,9 @@ bool WebAppDevice::read_serial(void* buffer, size_t len, bool block)
             total_read += read;
         }
     }
-    tud_cdc_read_flush();
+    OGXM_LOG("Read %d bytes\n", total_read);
+    OGXM_LOG_HEX(buf_ptr, total_read);
+
     return total_read == len;
 }
 
@@ -68,6 +70,9 @@ bool WebAppDevice::write_serial(const void* buffer, size_t len)
             tud_cdc_write_flush();
         }
     }
+    OGXM_LOG("Wrote %d bytes\n", total_written);
+    OGXM_LOG_HEX(buf_ptr, total_written);
+
     return total_written == len;
 }
 
@@ -92,91 +97,113 @@ bool WebAppDevice::read_packet(Packet& packet, bool block)
 //Blocking read
 bool WebAppDevice::read_profile(UserProfile& profile)
 {
+    Packet packet_out;
     uint8_t* profile_data = reinterpret_cast<uint8_t*>(&profile);
     uint8_t current_chunk = 0;
     uint8_t expected_chunks = 0;
+    size_t profile_offset = 0;
 
     while (current_chunk < expected_chunks || expected_chunks == 0)
     {
-        if (!read_packet(packet_out_, true))
+        if (!read_packet(packet_out, true))
         {
+            OGXM_LOG("Failed to read profile packet\n");
             return false;
         }
-        if (packet_out_.header.packet_id != PacketID::SET_PROFILE)
+        if (packet_out.header.packet_id != PacketID::SET_PROFILE)
         {
+            OGXM_LOG("Invalid packet ID: %i\n", packet_out.header.packet_id);
             return false;
         }
-        if (expected_chunks == 0 && packet_out_.header.chunks_total > 0)
+        if (expected_chunks == 0 && packet_out.header.chunks_total > 0)
         {
-            expected_chunks = packet_out_.header.chunks_total;
+            expected_chunks = packet_out.header.chunks_total;
+            OGXM_LOG("Expected chunks: %d\n", expected_chunks);
         }
         else if (expected_chunks == 0)
         {
+            OGXM_LOG("Invalid chunk count\n");
+            return false;
+        }
+        if (packet_out.header.chunk_len > sizeof(UserProfile) - profile_offset)
+        {
+            OGXM_LOG("Invalid chunk length\n");
             return false;
         }
 
-        size_t offset = packet_out_.header.chunk_idx * packet_out_.header.chunk_len;
-        size_t bytes_to_copy = std::min(static_cast<size_t>(packet_out_.header.chunk_len), sizeof(UserProfile) - offset);
+        OGXM_LOG("Reading chunk %d\n", current_chunk);
+        OGXM_LOG("Chunks IDX: %d\n", packet_out.header.chunk_idx);
 
-        std::memcpy(profile_data + offset, packet_out_.data.data(), bytes_to_copy);
+        std::memcpy(profile_data + profile_offset, packet_out.data.data(), packet_out.header.chunk_len);
         current_chunk++;
+        profile_offset += packet_out.header.chunk_len;
     }
+    OGXM_LOG("Profile read successfully\n");
     return true;
 }
 
-bool WebAppDevice::write_profile(uint8_t index, const UserProfile& profile)
+bool WebAppDevice::write_profile(uint8_t index, const UserProfile& profile, PacketID packet_id)
 {
+    Packet packet_in;
     const uint8_t* profile_data = reinterpret_cast<const uint8_t*>(&profile);
-    uint8_t total_chunks = static_cast<uint8_t>((sizeof(UserProfile) + packet_in_.data.size() - 1) / packet_in_.data.size());
+    uint8_t total_chunks = static_cast<uint8_t>((sizeof(UserProfile) + packet_in.data.size() - 1) / packet_in.data.size());
     uint8_t current_chunk = 0;
+
+    OGXM_LOG("Writing profile\n");
+
+    packet_in.header.packet_id = packet_id;
+    packet_in.header.max_gamepads = MAX_GAMEPADS;
+    packet_in.header.player_idx = index;
+    packet_in.header.profile_id = profile.id;
+    packet_in.header.chunks_total = total_chunks;
 
     while (current_chunk < total_chunks)
     {
-        size_t offset = current_chunk * packet_in_.data.size();
+        size_t offset = current_chunk * packet_in.data.size();
         size_t remaining_bytes = sizeof(UserProfile) - offset;
-        uint8_t current_chunk_len = static_cast<uint8_t>(std::min(packet_in_.data.size(), remaining_bytes));
+        uint8_t current_chunk_len = static_cast<uint8_t>(std::min(packet_in.data.size(), remaining_bytes));
 
-        packet_in_.header.packet_id = PacketID::GET_PROFILE_RESP_OK;
-        packet_in_.header.max_gamepads = MAX_GAMEPADS;
-        packet_in_.header.player_idx = index;
-        packet_in_.header.profile_id = profile.id;
-        packet_in_.header.chunks_total = total_chunks;
-        packet_in_.header.chunk_idx = current_chunk;
-        packet_in_.header.chunk_len = current_chunk_len;
+        packet_in.header.chunk_idx = current_chunk;
+        packet_in.header.chunk_len = current_chunk_len;
 
-        std::memcpy(packet_in_.data.data(), profile_data + offset, packet_in_.header.chunk_len);
+        std::memcpy(packet_in.data.data(), profile_data + offset, packet_in.header.chunk_len);
 
-        if (!write_packet(packet_in_))
+        if (!write_packet(packet_in))
         {
+            OGXM_LOG("Failed to write profile packet\n");
             return false;
         }
         current_chunk++;
     }
+
+    OGXM_LOG("Profile ID %i written successfully\n", profile.id);
     return true;
 }
 
 bool WebAppDevice::write_gamepad(uint8_t index, const Gamepad::PadIn& pad_in)
 {
+    Packet packet_in;
     const uint8_t* pad_in_data = reinterpret_cast<const uint8_t*>(&pad_in);
-    const uint8_t total_chunks = static_cast<uint8_t>((sizeof(Gamepad::PadIn) + packet_in_.data.size() - 1) / packet_in_.data.size());
+    const uint8_t total_chunks = static_cast<uint8_t>((sizeof(Gamepad::PadIn) + packet_in.data.size() - 1) / packet_in.data.size());
     uint8_t current_chunk = 0;
+
+    packet_in.header.packet_id = PacketID::SET_GP_IN;
+    packet_in.header.max_gamepads = MAX_GAMEPADS;
+    packet_in.header.player_idx = index;
+    packet_in.header.chunks_total = total_chunks;
 
     while (current_chunk < total_chunks)
     {
-        size_t offset = current_chunk * packet_in_.data.size();
+        size_t offset = current_chunk * packet_in.data.size();
         size_t remaining_bytes = sizeof(Gamepad::PadIn) - offset;
-        uint8_t current_chunk_len = static_cast<uint8_t>(std::min(packet_in_.data.size(), remaining_bytes));
+        uint8_t current_chunk_len = static_cast<uint8_t>(std::min(packet_in.data.size(), remaining_bytes));
 
-        packet_in_.header.packet_id = PacketID::SET_GP_IN;
-        packet_in_.header.max_gamepads = MAX_GAMEPADS;
-        packet_in_.header.player_idx = index;
-        packet_in_.header.chunks_total = total_chunks;
-        packet_in_.header.chunk_idx = current_chunk;
-        packet_in_.header.chunk_len = current_chunk_len;
+        packet_in.header.chunk_idx = current_chunk;
+        packet_in.header.chunk_len = current_chunk_len;
 
-        std::memcpy(packet_in_.data.data(), pad_in_data + offset, packet_in_.header.chunk_len);
+        std::memcpy(packet_in.data.data(), pad_in_data + offset, packet_in.header.chunk_len);
 
-        if (!write_packet(packet_in_))
+        if (!write_packet(packet_in))
         {
             return false;
         }
@@ -187,8 +214,10 @@ bool WebAppDevice::write_gamepad(uint8_t index, const Gamepad::PadIn& pad_in)
 
 void WebAppDevice::write_error()
 {
-    packet_in_.header.packet_id = PacketID::RESP_ERROR;
-    write_packet(packet_in_);
+    Packet packet_in;
+    packet_in.header.chunks_total = 1; 
+    packet_in.header.packet_id = PacketID::RESP_ERROR;
+    write_packet(packet_in);
 }
 
 void WebAppDevice::process(const uint8_t idx, Gamepad& gamepad) 
@@ -200,18 +229,27 @@ void WebAppDevice::process(const uint8_t idx, Gamepad& gamepad)
 
     tud_cdc_write_flush();
     bool success = false;   
+    static Packet packet_out;
 
-    OGXM_LOG("Processing WebApp device\n");
-
-    if (read_packet(packet_out_, false))
+    if (tud_cdc_available())
     {
-        OGXM_LOG("Received packet with ID: %d\n", packet_out_.header.packet_id);
+        OGXM_LOG("Reading packet\n");
+
+        Packet packet_out;
+        if (!read_packet(packet_out, true))
+        {
+            return;
+        }
+
+        OGXM_LOG("Received packet with ID: %d\n", packet_out.header.packet_id);
         
-        switch (packet_out_.header.packet_id)
+        switch (packet_out.header.packet_id)
         {
             case PacketID::GET_PROFILE_BY_ID:
-                profile_ = user_settings_.get_profile_by_id(packet_out_.header.profile_id);
-                if (!write_profile(packet_out_.header.profile_id, profile_))
+                OGXM_LOG("Getting profile by ID: %i\n", packet_out.header.profile_id);
+
+                profile_ = user_settings_.get_profile_by_id(packet_out.header.profile_id);
+                if (!write_profile(0, profile_, PacketID::GET_PROFILE_BY_ID))
                 {
                     write_error();
                     return;
@@ -219,8 +257,10 @@ void WebAppDevice::process(const uint8_t idx, Gamepad& gamepad)
                 break;
 
             case PacketID::GET_PROFILE_BY_IDX:
-                profile_ = user_settings_.get_profile_by_index(packet_out_.header.player_idx);
-                if (!write_profile(packet_out_.header.player_idx, profile_))
+                OGXM_LOG("Getting profile by index: %i\n", packet_out.header.player_idx);
+
+                profile_ = user_settings_.get_profile_by_index(packet_out.header.player_idx);
+                if (!write_profile(packet_out.header.player_idx, profile_, PacketID::GET_PROFILE_BY_IDX))
                 {
                     write_error();
                     return;
@@ -233,14 +273,14 @@ void WebAppDevice::process(const uint8_t idx, Gamepad& gamepad)
                     write_error();
                     return;
                 }
-                if (packet_out_.header.device_driver != DeviceDriverType::WEBAPP &&
-                    user_settings_.is_valid_driver(packet_out_.header.device_driver))
+                if (packet_out.header.device_driver != DeviceDriverType::WEBAPP &&
+                    user_settings_.is_valid_driver(packet_out.header.device_driver))
                 {
-                    success = user_settings_.store_profile_and_driver_type(packet_out_.header.device_driver, packet_out_.header.player_idx, profile_);
+                    success = user_settings_.store_profile_and_driver_type(packet_out.header.device_driver, packet_out.header.player_idx, profile_);
                 }
                 else
                 {
-                    success = user_settings_.store_profile(packet_out_.header.player_idx, profile_);
+                    success = user_settings_.store_profile(packet_out.header.player_idx, profile_);
                 }
                 if (!success)
                 {
@@ -250,7 +290,7 @@ void WebAppDevice::process(const uint8_t idx, Gamepad& gamepad)
                 break;
 
             default:
-                write_error();
+                // write_response(PacketID::RESP_ERROR);
                 return;
         }
     } 

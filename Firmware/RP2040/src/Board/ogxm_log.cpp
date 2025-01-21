@@ -79,10 +79,17 @@ void log_hex(const uint8_t* data, size_t size)
 {
     std::ostringstream hex_stream;
     hex_stream << std::hex << std::setfill('0');
+    int count = 0;
     for (uint16_t i = 0; i < size; ++i)
     {
         hex_stream << std::setw(2) << static_cast<int>(data[i]) << " ";
+        if (++count == 16)
+        {
+            hex_stream << "\n";
+            count = 0;
+        }
     }
+    hex_stream << "\n";
     log(hex_stream.str());
 }
 

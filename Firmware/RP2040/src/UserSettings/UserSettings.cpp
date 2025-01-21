@@ -233,6 +233,7 @@ uint8_t UserSettings::get_active_profile_id(const uint8_t index)
 {
     if (index > MAX_GAMEPADS - 1)
     {
+        OGXM_LOG("UserSettings::get_active_profile_id: Invalid index\n");
         return 0x01;
     }
 
@@ -241,6 +242,7 @@ uint8_t UserSettings::get_active_profile_id(const uint8_t index)
 
     if (read_profile_id < 1 || read_profile_id > MAX_PROFILES)
     {
+        OGXM_LOG("UserSettings::get_active_profile_id: Invalid profile id\n");
         return 0x01;
     }
     return read_profile_id;
@@ -258,6 +260,7 @@ UserProfile UserSettings::get_profile_by_id(const uint8_t profile_id)
 
     if (profile.id != profile_id)
     {
+        OGXM_LOG("Profile read failed, returning default profile\n");
         return UserProfile();
     }
     return profile;

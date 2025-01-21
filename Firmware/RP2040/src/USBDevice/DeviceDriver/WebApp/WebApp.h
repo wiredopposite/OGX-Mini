@@ -26,11 +26,9 @@ private:
     {
         NONE = 0,
         GET_PROFILE_BY_ID = 0x50,
-        GET_PROFILE_BY_IDX = 0x51,
-        GET_PROFILE_RESP_OK = 0x52,
+        GET_PROFILE_BY_IDX = 0x55,
         SET_PROFILE_START = 0x60,
         SET_PROFILE = 0x61,
-        SET_PROFILE_RESP_OK = 0x62,
         SET_GP_IN = 0x80,
         SET_GP_OUT = 0x81,
         RESP_ERROR = 0xFF
@@ -56,10 +54,8 @@ private:
         PacketHeader header;
         std::array<uint8_t, 64 - sizeof(PacketHeader)> data{0};
     };
+    static_assert(sizeof(Packet) == 64, "WebApp report size mismatch");
     #pragma pack(pop)
-
-    Packet packet_in_;
-    Packet packet_out_;
 
     UserSettings& user_settings_{UserSettings::get_instance()};
     UserProfile profile_;
@@ -69,9 +65,9 @@ private:
     bool read_packet(Packet& packet, bool block);
     bool write_serial(const void* buffer, size_t len);
     bool write_packet(const Packet& packet);
-    bool write_profile(uint8_t index, const UserProfile& profile);
+    bool write_profile(uint8_t index, const UserProfile& profile, PacketID packet_id);
     bool write_gamepad(uint8_t index, const Gamepad::PadIn& pad_in);
-    void write_error();
+    void write_error();  
 };
 
 #endif // _WEBAAPP_DEVICE_H_
