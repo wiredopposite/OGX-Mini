@@ -76,7 +76,7 @@ void run_program()
     multicore_reset_core1();
     multicore_launch_core1(core1_task);
 
-    board_api::esp32::reset();
+    // board_api::esp32::reset();
 
     DeviceDriver* device_driver = device_manager.get_driver();
 

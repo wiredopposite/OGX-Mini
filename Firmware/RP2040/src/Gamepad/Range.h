@@ -123,7 +123,7 @@ namespace Range {
     static inline To scale_from_bits(From value) 
     {
         return scale<To>(
-            value, 
+            Range::clamp(value, BITS_MIN<From, bits>(), BITS_MAX<From, bits>()),
             BITS_MIN<From, bits>(), 
             BITS_MAX<From, bits>(), 
             Range::MIN<To>, 
@@ -135,7 +135,7 @@ namespace Range {
     static inline To scale_to_bits(From value) 
     {
         return scale<To>(
-            value, 
+            Range::clamp(value, BITS_MIN<From, bits>(), BITS_MAX<From, bits>()), 
             Range::MIN<From>, 
             Range::MAX<From>, 
             BITS_MIN<To, bits>(), 
