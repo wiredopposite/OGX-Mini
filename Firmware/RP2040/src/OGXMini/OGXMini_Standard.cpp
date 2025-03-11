@@ -1,5 +1,5 @@
 #include "board_config.h"
-#if (OGXM_BOARD == ADA_FEATHER) || (OGXM_BOARD == RP_ZERO) || (OGXM_BOARD == PI_PICO) || (OGXM_BOARD == PI_PICO2)
+#if (OGXM_BOARD == ADA_FEATHER) || (OGXM_BOARD == RP_ZERO) || (OGXM_BOARD == PI_PICO) || (OGXM_BOARD == PI_PICO2) || (OGXM_BOARD == RP2350_USB_A)
 
 #include <pico/multicore.h>
 

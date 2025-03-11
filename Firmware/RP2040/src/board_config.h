@@ -15,6 +15,7 @@
 #define INTERNAL_4CH 7
 #define EXTERNAL_4CH 8
 #define PICO_ESP32 9
+#define RP2350_USB_A 10
 
 #define SYSCLOCK_KHZ 240000
 
@@ -81,6 +82,10 @@
         #undef MAX_GAMEPADS
         #define MAX_GAMEPADS 1
     #endif
+
+#elif OGXM_BOARD == RP2350_USB_A
+    #define PIO_USB_DP_PIN    12
+    #define RGB_PXL_PIN       16
 
 #endif // OGXM_BOARD
 
