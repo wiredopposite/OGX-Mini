@@ -274,7 +274,7 @@ if(NOT EN_BLUETOOTH)
     add_compile_definitions(PICO_XOSC_STARTUP_DELAY_MULTIPLIER=64)
 endif()
 
-include(${PICO_SDK_PATH}/pico_sdk_init.cmake)
+include($ENV{PICO_SDK_PATH}/pico_sdk_init.cmake)
 
 message("PICO_SDK_VERSION_STRING: ${PICO_SDK_VERSION_STRING}")
 if(PICO_SDK_VERSION_STRING VERSION_LESS "${PICOSDK_VERSION_TAG}")
