@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <array>
 
-#include "board_config.h"
+#include "Board/Config.h"
 #include "USBDevice/DeviceDriver/DeviceDriver.h"
 #include "Descriptors/DInput.h"
 

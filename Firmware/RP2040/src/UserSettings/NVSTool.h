@@ -13,8 +13,8 @@
 class NVSTool
 {
 public:
-    static constexpr size_t KEY_LEN_MAX = 16; //Including null terminator
-    static constexpr size_t VALUE_LEN_MAX = FLASH_PAGE_SIZE - KEY_LEN_MAX;
+    static constexpr size_t   KEY_LEN_MAX = 16; //Including null terminator
+    static constexpr size_t   VALUE_LEN_MAX = FLASH_PAGE_SIZE - KEY_LEN_MAX;
     static constexpr uint32_t MAX_ENTRIES = ((NVS_SECTORS * FLASH_SECTOR_SIZE) / FLASH_PAGE_SIZE) - 1;
 
     static NVSTool& get_instance()

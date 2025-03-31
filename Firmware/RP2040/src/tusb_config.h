@@ -26,7 +26,7 @@
 #ifndef _TUSB_CONFIG_H_
 #define _TUSB_CONFIG_H_
 
-#include "board_config.h"
+#include "Board/Config.h"
 
 #ifdef __cplusplus
  extern "C" {
@@ -127,7 +127,10 @@
 
 // Enable host stack with pio-usb if Pico-PIO-USB library is available
 #define CFG_TUH_ENABLED     1
+
+#if defined(PIO_USB_CONFIG)
 #define CFG_TUH_RPI_PIO_USB 1
+#endif
 
 #define TUH_OPT_RHPORT 1
 

@@ -96,16 +96,15 @@ public:
 #pragma pack(push, 1)
     struct PadIn
     {
-        uint8_t dpad;
+        uint8_t  dpad;
         uint16_t buttons;
-        uint8_t trigger_l;
-        uint8_t trigger_r;
-        int16_t joystick_lx;
-        int16_t joystick_ly;
-        int16_t joystick_rx;
-        int16_t joystick_ry;
-        // uint8_t chatpad[3];
-        uint8_t analog[10];
+        uint8_t  trigger_l;
+        uint8_t  trigger_r;
+        int16_t  joystick_lx;
+        int16_t  joystick_ly;
+        int16_t  joystick_rx;
+        int16_t  joystick_ry;
+        uint8_t  analog[10];
     
         PadIn()
         {

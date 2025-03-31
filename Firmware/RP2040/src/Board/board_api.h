@@ -4,25 +4,16 @@
 #include <cstdint>
 #include <string>
 
-namespace board_api
-{
+namespace board_api {
     void init_board();
     void init_bluetooth();
     void reboot();
     void set_led(bool state);
     uint32_t ms_since_boot();
 
-    namespace usb
-    {
+    namespace usb {
         bool host_connected();
         void disconnect_all();
-    }
-
-    namespace esp32
-    {
-        bool uart_bridge_mode();
-        void reset();
-        void enter_programming_mode();
     }
 }
 

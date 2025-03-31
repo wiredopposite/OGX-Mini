@@ -1,4 +1,4 @@
-#include "board_config.h"
+#include "Board/Config.h"
 #if defined(CONFIG_EN_BLUETOOTH)
 
 #include <atomic>
@@ -14,22 +14,16 @@ namespace board_api_bt {
 
 std::atomic<bool> inited{false};
 
-void init()
-{
-    if (cyw43_arch_init() != 0)
-    {  
+void init() {
+    if (cyw43_arch_init() != 0) {  
         panic("CYW43 init failed");
-    }  
-    else
-    {
+    } else {
         inited.store(true);
     }
 }
 
-void set_led(bool state)
-{
-    if (!inited.load())
-    {
+void set_led(bool state) {
+    if (!inited.load()) {
         return;
     }
     cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, state ? 1 : 0);

@@ -1,6 +1,6 @@
 #include "tusb.h"
 
-#include "board_config.h"
+#include "Board/Config.h"
 #include "USBDevice/DeviceDriver/PSClassic/PSClassic.h"
 #include "USBDevice/DeviceDriver/XInput/XInput.h"   
 #include "USBDevice/DeviceDriver/Switch/Switch.h"
@@ -16,11 +16,12 @@
 #include "USBDevice/DeviceDriver/UARTBridge/UARTBridge.h"
 #endif // defined(CONFIG_EN_UART_BRIDGE)
 
-void DeviceManager::initialize_driver(DeviceDriverType driver_type, Gamepad(&gamepads)[MAX_GAMEPADS])
-{
-    bool has_analog = false; //TODO: Put gamepad setup in the drivers themselves
-    switch (driver_type)
-    {
+void DeviceManager::initialize_driver(  DeviceDriverType driver_type, 
+                                        Gamepad(&gamepads)[MAX_GAMEPADS]) {
+    //TODO: Put gamepad setup in the drivers themselves
+    bool has_analog = false; 
+    
+    switch (driver_type) {
         case DeviceDriverType::DINPUT:
             has_analog = true;
             device_driver_ = std::make_unique<DInputDevice>();
@@ -60,10 +61,8 @@ void DeviceManager::initialize_driver(DeviceDriverType driver_type, Gamepad(&gam
             return;
     }
 
-    if (has_analog)
-    {
-        for (size_t i = 0; i < MAX_GAMEPADS; ++i)
-        {
+    if (has_analog) {
+        for (size_t i = 0; i < MAX_GAMEPADS; ++i) {
             gamepads[i].set_analog_device(true);
         }
     }

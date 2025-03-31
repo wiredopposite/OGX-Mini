@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <string>
 
-#include "board_config.h"
+#include "Board/Config.h"
 #include "USBDevice/DeviceDriver/DeviceDriverTypes.h"
 #include "UserSettings/UserProfile.h"
 #include "UserSettings/NVSTool.h"

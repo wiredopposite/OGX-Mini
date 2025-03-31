@@ -1,7 +1,7 @@
 #ifndef _SDK_CONFIG_H_
 #define _SDK_CONFIG_H_
 
-#include "board_config.h"
+#include "Board/Config.h"
 
 //
 // Emulate "menuconfig"

@@ -1,5 +1,5 @@
-#include "board_config.h"
-#if defined(OGXM_DEBUG)
+#include "Board/Config.h"
+#if defined(CONFIG_OGXM_DEBUG)
 
 #include <cstdint>
 #include <string>
@@ -13,10 +13,8 @@
 #include "USBDevice/DeviceDriver/DeviceDriverTypes.h"
 #include "Board/ogxm_log.h"
 
-std::ostream& operator<<(std::ostream& os, DeviceDriverType type) 
-{
-    switch (type) 
-    {
+std::ostream& operator<<(std::ostream& os, DeviceDriverType type) {
+    switch (type) {
         case DeviceDriverType::NONE:          os << "NONE"; break;
         case DeviceDriverType::XBOXOG:        os << "XBOXOG"; break;
         case DeviceDriverType::XBOXOG_SB:     os << "XBOXOG_SB"; break;
@@ -35,19 +33,16 @@ std::ostream& operator<<(std::ostream& os, DeviceDriverType type)
 
 namespace ogxm_log {
 
-void init()
-{
+void init() {
     uart_init(DEBUG_UART_PORT, PICO_DEFAULT_UART_BAUD_RATE);
     gpio_set_function(PICO_DEFAULT_UART_TX_PIN, GPIO_FUNC_UART);
     gpio_set_function(PICO_DEFAULT_UART_RX_PIN, GPIO_FUNC_UART);
 }
 
-void log(const std::string& message)
-{
+void log(const std::string& message) {
     static mutex_t log_mutex;
 
-    if (!mutex_is_initialized(&log_mutex))
-    {
+    if (!mutex_is_initialized(&log_mutex)) {
         mutex_init(&log_mutex);
     }
 
@@ -60,8 +55,7 @@ void log(const std::string& message)
     mutex_exit(&log_mutex);
 }
 
-void log(const char* fmt, ...)
-{
+void log(const char* fmt, ...) {
     va_list args;
     va_start(args, fmt);
 
@@ -75,16 +69,13 @@ void log(const char* fmt, ...)
     va_end(args);
 }
 
-void log_hex(const uint8_t* data, size_t size)
-{
+void log_hex(const uint8_t* data, size_t size) {
     std::ostringstream hex_stream;
     hex_stream << std::hex << std::setfill('0');
     int count = 0;
-    for (uint16_t i = 0; i < size; ++i)
-    {
+    for (uint16_t i = 0; i < size; ++i) {
         hex_stream << std::setw(2) << static_cast<int>(data[i]) << " ";
-        if (++count == 16)
-        {
+        if (++count == 16) {
             hex_stream << "\n";
             count = 0;
         }
@@ -95,4 +86,4 @@ void log_hex(const uint8_t* data, size_t size)
 
 } // namespace ogxm_log
 
-#endif // defined(OGXM_DEBUG)
+#endif // defined(CONFIG_OGXM_DEBUG)

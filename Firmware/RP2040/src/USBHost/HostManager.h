@@ -8,7 +8,7 @@
 #include <hardware/structs/usb.h>
 #include <hardware/resets.h>
 
-#include "board_config.h"
+#include "Board/Config.h"
 #include "USBHost/HardwareIDs.h"
 #include "USBHost/HostDriver/XInput/tuh_xinput/tuh_xinput.h"
 #include "USBHost/HostDriver/HostDriver.h"

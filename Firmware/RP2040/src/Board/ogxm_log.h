@@ -3,8 +3,8 @@
 
 #include <cstdint>
 
-#include "board_config.h"
-#if defined(OGXM_DEBUG)
+#include "Board/Config.h"
+#if defined(CONFIG_OGXM_DEBUG)
 
 #include <string>
 #include <sstream>
@@ -15,22 +15,17 @@
 
 std::ostream& operator<<(std::ostream& os, DeviceDriverType type);
 
-namespace ogxm_log
-{
+namespace ogxm_log {
     void init() __attribute__((weak));
-
     //Don't use this directly, use the OGXM_LOG macro
     void log(const std::string& message);
-
     //Don't use this directly, use the OGXM_LOG macro
     void log(const char* fmt, ...);
-
     //Don't use this directly, use the OGXM_LOG_HEX macro
     void log_hex(const uint8_t* data, size_t size);
 
     template <typename T>
-    std::string to_string(const T& value)
-    {
+    std::string to_string(const T& value) {
         std::ostringstream stream;
         stream << value;
         return stream.str();
@@ -43,10 +38,9 @@ namespace ogxm_log
 #define OGXM_ASSERT_MSG(x, msg) if (!(x)) { OGXM_LOG("Assertion failed: " #x " " msg); while(1); }
 #define OGXM_TO_STRING ogxm_log::to_string
 
-#else // OGXM_DEBUG
+#else // CONFIG_OGXM_DEBUG
 
-namespace ogxm_log
-{
+namespace ogxm_log {
     void init() __attribute__((weak));
 }
 
@@ -56,6 +50,6 @@ namespace ogxm_log
 #define OGXM_ASSERT_MSG(x, msg)
 #define OGXM_TO_STRING(x)
     
-#endif // OGXM_DEBUG
+#endif // CONFIG_OGXM_DEBUG
 
 #endif // BOARD_API_LOG_H

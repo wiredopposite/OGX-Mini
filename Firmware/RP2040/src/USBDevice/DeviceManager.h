@@ -7,14 +7,12 @@
 #include "USBDevice/DeviceDriver/DeviceDriverTypes.h"
 #include "USBDevice/DeviceDriver/DeviceDriver.h"
 
-class DeviceManager 
-{
+class DeviceManager {
 public:
 	DeviceManager(DeviceManager const&) = delete;
 	void operator=(DeviceManager const&)  = delete;
 
-    static DeviceManager& get_instance() 
-    {
+    static DeviceManager& get_instance() {
 		static DeviceManager instance;
 		return instance;
 	}

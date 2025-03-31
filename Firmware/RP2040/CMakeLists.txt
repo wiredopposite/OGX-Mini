@@ -35,19 +35,21 @@ apply_lib_patches(${EXTERNAL_DIR})
 set(SOURCES_BOARD 
     ${SRC}/main.cpp
 
-    ${SRC}/OGXMini/OGXMini_Standard.cpp
-    ${SRC}/OGXMini/OGXMini_4Channel.cpp
-    ${SRC}/OGXMini/OGXMini_PicoW.cpp
-    ${SRC}/OGXMini/OGXMini_ESP32.cpp
+    ${SRC}/OGXMini/OGXMini.cpp
+    ${SRC}/OGXMini/Board/Standard.cpp
+    ${SRC}/OGXMini/Board/PicoW.cpp
+    ${SRC}/OGXMini/Board/Four_Channel_I2C.cpp
+    ${SRC}/OGXMini/Board/ESP32_Bluepad32_I2C.cpp
+    ${SRC}/OGXMini/Board/ESP32_Blueretro_I2C.cpp
 
     ${SRC}/TaskQueue/TaskQueue.cpp
 
     ${SRC}/Board/ogxm_log.cpp
+    ${SRC}/Board/esp32_api.cpp
     ${SRC}/Board/board_api.cpp
     ${SRC}/Board/board_api_private/board_api_led.cpp
     ${SRC}/Board/board_api_private/board_api_rgb.cpp
     ${SRC}/Board/board_api_private/board_api_bt.cpp
-    ${SRC}/Board/board_api_private/board_api_esp32.cpp
     ${SRC}/Board/board_api_private/board_api_usbh.cpp
     
     ${SRC}/UserSettings/UserSettings.cpp
@@ -102,48 +104,67 @@ set(FLASH_SIZE_MB 2)
 set(PICO_BOARD none)
 
 if (OGXM_BOARD STREQUAL "PI_PICO")
+    add_compile_definitions(CONFIG_OGXM_BOARD_PI_PICO=1)
     set(EN_USB_HOST TRUE)
 
 elseif (OGXM_BOARD STREQUAL "PI_PICO2")
+    add_compile_definitions(CONFIG_OGXM_BOARD_PI_PICO2=1)
     set(EN_USB_HOST TRUE)
     set(PICO_PLATFORM rp2350)
     set(FLASH_SIZE_MB 4)
 
 elseif(OGXM_BOARD STREQUAL "PI_PICOW")
+    add_compile_definitions(CONFIG_OGXM_BOARD_PI_PICOW=1)
     set(EN_BLUETOOTH TRUE)
     set(PICO_BOARD pico_w)
 
 elseif(OGXM_BOARD STREQUAL "PI_PICO2W")
+    add_compile_definitions(CONFIG_OGXM_BOARD_PI_PICO2W=1)
     set(EN_BLUETOOTH TRUE)
     set(PICO_BOARD pico2_w)
     set(PICO_PLATFORM rp2350)
     set(FLASH_SIZE_MB 4)
 
-elseif(OGXM_BOARD STREQUAL "ADA_FEATHER")
+elseif(OGXM_BOARD STREQUAL "ADAFRUIT_FEATHER")
+    add_compile_definitions(CONFIG_OGXM_BOARD_ADAFRUIT_FEATHER=1)
     set(EN_USB_HOST TRUE)
     set(EN_RGB TRUE)
     set(FLASH_SIZE_MB 8)
 
-elseif(OGXM_BOARD STREQUAL "RP_ZERO")
+elseif(OGXM_BOARD STREQUAL "RP2040_ZERO")
+    add_compile_definitions(CONFIG_OGXM_BOARD_RP2040_ZERO=1)
     set(EN_USB_HOST TRUE)
     set(EN_RGB TRUE)
 
-elseif(OGXM_BOARD STREQUAL "INTERNAL_4CH")
-    set(EN_USB_HOST TRUE)
-    set(EN_4CH TRUE)
+# elseif(OGXM_BOARD STREQUAL "INTERNAL_4CH")
+#     set(EN_USB_HOST TRUE)
+#     set(EN_4CH TRUE)
 
-elseif(OGXM_BOARD STREQUAL "EXTERNAL_4CH")
+elseif(OGXM_BOARD STREQUAL "EXTERNAL_4CH_I2C")
+    add_compile_definitions(CONFIG_OGXM_BOARD_EXTERNAL_4CH=1)
     set(EN_USB_HOST TRUE)
     set(EN_4CH TRUE)
     set(EN_RGB TRUE)
 
-elseif(OGXM_BOARD STREQUAL "PICO_ESP32")
+elseif(OGXM_BOARD STREQUAL "ESP32_BLUEPAD32_I2C")
+    add_compile_definitions(CONFIG_OGXM_BOARD_ESP32_BLUEPAD32_I2C=1)
     set(EN_ESP32 TRUE)
     set(EN_UART_BRIDGE TRUE)
 
     if(OGXM_RETAIL STREQUAL "TRUE")
         message(STATUS "Retail mode enabled.")
-        add_definitions(-DOGXM_ESP32_RETAIL)
+        add_compile_definitions(OGXM_RETAIL=1)
+    endif()
+
+elseif(OGXM_BOARD STREQUAL "ESP32_BLUERETRO_I2C")
+    add_compile_definitions(CONFIG_OGXM_BOARD_ESP32_BLUERETRO_I2C=1)
+    set(EN_ESP32 TRUE)
+    set(EN_BLUERETRO_I2C TRUE)
+    set(EN_UART_BRIDGE TRUE)
+
+    if(OGXM_RETAIL STREQUAL "TRUE")
+        message(STATUS "Retail mode enabled.")
+        add_compile_definitions(OGXM_RETAIL=1)
     endif()
 
 else()
@@ -225,10 +246,10 @@ endif()
 if(EN_4CH)
     add_compile_definitions(CONFIG_EN_4CH=1)
     message(STATUS "4CH enabled.")
-    list(APPEND SOURCES_BOARD
-        ${SRC}/I2CDriver/4Channel/I2CMaster.cpp
-        ${SRC}/I2CDriver/4Channel/I2CSlave.cpp
-    )
+    # list(APPEND SOURCES_BOARD
+    #     ${SRC}/I2CDriver/4Channel/I2CMaster.cpp
+    #     ${SRC}/I2CDriver/4Channel/I2CSlave.cpp
+    # )
     list(APPEND LIBS_BOARD
         hardware_i2c
         pico_i2c_slave
@@ -238,12 +259,15 @@ endif()
 if(EN_ESP32)
     add_compile_definitions(CONFIG_EN_ESP32=1)
     message(STATUS "ESP32 enabled.")
-    list(APPEND SOURCES_BOARD
-        ${SRC}/I2CDriver/ESP32/I2CDriver.cpp
-    )
+    if (EN_BLUERETRO_I2C)
+        # Nothing
+    else()
+        list(APPEND LIBS_BOARD
+            pico_i2c_slave
+        )
+    endif()
     list(APPEND LIBS_BOARD
         hardware_i2c
-        pico_i2c_slave
     )
 endif()
 

@@ -9,7 +9,7 @@
 #include <hardware/irq.h>
 #include <hardware/sync.h>
 
-#include "board_config.h"
+#include "Board/Config.h"
 
 class TaskQueue
 {
@@ -46,7 +46,7 @@ public:
         }
     };
 
-#if (OGXM_BOARD != PI_PICOW) && (OGXM_BOARD != PI_PICO2W) //BTstack uses core1
+#if (OGXM_BOARD != PI_PICOW) //BTstack uses core1
     struct Core1
     {
         static inline uint32_t get_new_task_id()

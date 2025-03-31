@@ -3,7 +3,7 @@
 TaskQueue::TaskQueue(CoreNum core_num) 
 {   
     alarm_num_ = (core_num == CoreNum::Core0) ? 0 : 1;
-    alarm_num_ += ((OGXM_BOARD == PI_PICOW) || (OGXM_BOARD == PI_PICO2W)) ? 1 : 0; //BTStack uses alarm 0
+    alarm_num_ += (OGXM_BOARD == PI_PICOW) ? 1 : 0; //BTStack uses alarm 0
 
     hw_set_bits(&timer_hw->inte, 1u << alarm_num_);
 

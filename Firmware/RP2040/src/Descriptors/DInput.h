@@ -1,12 +1,11 @@
-#ifndef _DINPUT_DESCRIPTORS_H_
-#define _DINPUT_DESCRIPTORS_H_
+#pragma once
 
 #include <cstdint>
 #include <cstring>
 
 #include "tusb.h"
 
-#include "board_config.h"
+#include "Board/Config.h"
 
 namespace DInput 
 {
@@ -228,8 +227,7 @@ namespace DInput
     //     0x0A,        // bInterval 10 (unit depends on device speed)
     // };
 
-    enum Itf
-    { 
+    enum Itf { 
         NUM_HID1 = 0, 
 #if MAX_GAMEPADS > 1
         NUM_HID2,
@@ -298,5 +296,3 @@ namespace DInput
     };
 
 }; // namespace DInput
-
-#endif // _DINPUT_DESCRIPTORS_H_
