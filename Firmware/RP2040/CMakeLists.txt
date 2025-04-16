@@ -167,6 +167,13 @@ elseif(OGXM_BOARD STREQUAL "ESP32_BLUERETRO_I2C")
         add_compile_definitions(OGXM_RETAIL=1)
     endif()
 
+elseif(OGXM_BOARD STREQUAL "RP2350_USB_A")
+    add_compile_definitions(CONFIG_OGXM_BOARD_RP2350_USB_A=1)
+    set(EN_USB_HOST TRUE)
+    set(PICO_PLATFORM rp2350)
+    set(EN_RGB TRUE)
+    set(FLASH_SIZE_MB 2)
+
 else()
     message(FATAL_ERROR "Invalid OGXM_BOARD value. See options in src/board_config.h")
 
