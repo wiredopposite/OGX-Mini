@@ -11,7 +11,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(SRC ${CMAKE_CURRENT_LIST_DIR}/src)
 set(EXTERNAL_DIR ${CMAKE_CURRENT_LIST_DIR}/../external)
-set(PICOSDK_VERSION_TAG "2.1.0")
+set(PICOSDK_VERSION_TAG "2.1.1")
 
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/init_submodules.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/patch_libs.cmake)
