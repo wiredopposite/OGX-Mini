@@ -7,30 +7,27 @@
 [submodule "scripts/xremote/dump-dvd-kit"]
 	path = scripts/xremote/dump-dvd-kit
 	url = https://github.com/XboxDev/dump-dvd-kit.git
-[submodule "firmware/pico/external/pico_usb"]
-	path = firmware/pico/external/pico_usb
+[submodule "Firmware/pico/external/pico_usb"]
+	path = Firmware/pico/external/pico_usb
 	url = https://github.com/wiredopposite/pico_usb.git
-[submodule "firmware/pico/external/pico-sdk"]
-	path = firmware/pico/external/pico-sdk
-	url = https://github.com/raspberrypi/pico-sdk.git
-[submodule "firmware/pico/external/g726/g726"]
-	path = firmware/pico/external/g726/g726
+[submodule "Firmware/pico/external/g726/g726"]
+	path = Firmware/pico/external/g726/g726
 	url = https://github.com/fredrikhederstierna/g726.git
-[submodule "firmware/pico/external/libxsm3/libxsm3"]
-	path = firmware/pico/external/libxsm3/libxsm3
+[submodule "Firmware/pico/external/libxsm3/libxsm3"]
+	path = Firmware/pico/external/libxsm3/libxsm3
 	url = https://github.com/InvoxiPlayGames/libxsm3.git
-[submodule "firmware/pico/external/libfixmath"]
-	path = firmware/pico/external/libfixmath
+[submodule "Firmware/pico/external/libfixmath"]
+	path = Firmware/pico/external/libfixmath
 	url = https://github.com/PetteriAimonen/libfixmath.git
-[submodule "firmware/pico/external/tinyusb"]
-	path = firmware/pico/external/tinyusb
+[submodule "Firmware/pico/external/tinyusb"]
+	path = Firmware/pico/external/tinyusb
 	url = https://github.com/hathach/tinyusb.git
-[submodule "firmware/pico/external/Pico-PIO-USB"]
-	path = firmware/pico/external/Pico-PIO-USB
+[submodule "Firmware/pico/external/Pico-PIO-USB"]
+	path = Firmware/pico/external/Pico-PIO-USB
 	url = https://github.com/sekigon-gonnoc/Pico-PIO-USB.git
-[submodule "firmware/pico/external/bluepad32/bluepad32"]
-	path = firmware/pico/external/bluepad32/bluepad32
+[submodule "Firmware/pico/external/bluepad32/bluepad32"]
+	path = Firmware/pico/external/bluepad32/bluepad32
 	url = https://github.com/ricardoquesada/bluepad32.git
-[submodule "firmware/pico/external/bluepad32"]
-	path = firmware/pico/external/bluepad32
+[submodule "Firmware/pico/external/bluepad32"]
+	path = Firmware/pico/external/bluepad32
 	url = https://github.com/ricardoquesada/bluepad32.git
