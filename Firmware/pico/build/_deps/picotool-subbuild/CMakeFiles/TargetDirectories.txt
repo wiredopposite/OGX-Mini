@@ -1,3 +1,0 @@
-/home/weebrobot/Desktop/projects/OGX-Mini/Firmware/pico/build/_deps/picotool-subbuild/CMakeFiles/picotool-populate.dir
-/home/weebrobot/Desktop/projects/OGX-Mini/Firmware/pico/build/_deps/picotool-subbuild/CMakeFiles/edit_cache.dir
-/home/weebrobot/Desktop/projects/OGX-Mini/Firmware/pico/build/_deps/picotool-subbuild/CMakeFiles/rebuild_cache.dir
