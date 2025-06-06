@@ -1,0 +1,74 @@
+#pragma once
+
+#define BUILD_DATETIME                  @BUILD_DATETIME@
+#define BUILD_VERSION                   @BUILD_VERSION@
+#define VERIFY_BUILD_VERSION            @VERIFY_BUILD_VERSION@
+
+#define GAMEPADS_MAX                    @GAMEPADS_MAX@
+
+#define LED_ENABLED                     @LED_ENABLED@
+#define LED_PIN                         @LED_PIN@
+
+#define NEOPIXEL_ENABLED                @NEOPIXEL_ENABLED@
+#define NEOPIXEL_FORMAT_RGB             @NEOPIXEL_FORMAT_RGB@
+#define NEOPIXEL_FORMAT_GRB             @NEOPIXEL_FORMAT_GRB@
+#define NEOPIXEL_FORMAT_WRGB            @NEOPIXEL_FORMAT_WRGB@
+#define NEOPIXEL_FORMAT                 @NEOPIXEL_FORMAT@
+#define NEOPIXEL_DATA_PIN               @NEOPIXEL_DATA_PIN@
+#define NEOPIXEL_VCC_ENABLED            @NEOPIXEL_VCC_ENABLED@
+#define NEOPIXEL_VCC_ENABLE_PIN         @NEOPIXEL_POWER_PIN@
+
+#define UART_BRIDGE_ENABLED             @UART_BRIDGE_ENABLED@
+#define UART_BRIDGE_UART_NUM            @UART_BRIDGE_UART_NUM@
+#define UART_BRIDGE_PIN_TX              @UART_BRIDGE_PIN_TX@
+#define UART_BRIDGE_PIN_RX              @UART_BRIDGE_PIN_RX@
+#define UART_BRIDGE_PIN_BOOT            @UART_BRIDGE_PIN_BOOT@
+#define UART_BRIDGE_PIN_RESET           @UART_BRIDGE_PIN_RESET@
+
+#define USBH_ENABLED                    @USBH_ENABLED@
+#define USBH_PIO_ENABLED                @USBH_PIO_ENABLED@
+#define USBH_PIO_DP_PIN                 @USBH_PIO_DP_PIN@
+#define USBH_VCC_ENABLED                @USBH_VCC_ENABLED@
+#define USBH_VCC_ENABLE_PIN             @USBH_VCC_ENABLE_PIN@
+
+#define USBD_PIO_ENABLED                @USBD_PIO_ENABLED@
+#define USBD_PIO_USB_DP_PIN             @USBD_PIO_USB_DP_PIN@
+
+#define TS3USB221_ENABLED               @TS3USB221_ENABLED@
+#define TS3USB221_PIN_MUX_OE            @TS3USB221_PIN_MUX_OE@
+#define TS3USB221_PIN_MUX_SEL           @TS3USB221_PIN_MUX_SEL@
+
+#define BLUETOOTH_ENABLED               @BLUETOOTH_ENABLED@
+#define BLUETOOTH_HARDWARE_PICOW        @BLUETOOTH_HARDWARE_PICOW@
+#define BLUETOOTH_HARDWARE_ESP32_I2C    @BLUETOOTH_HARDWARE_ESP32_I2C@
+#define BLUETOOTH_HARDWARE_ESP32_SPI    @BLUETOOTH_HARDWARE_ESP32_SPI@
+#define BLUETOOTH_HARDWARE              @BLUETOOTH_HARDWARE@
+
+#define ESP32_I2C_NUM                   @ESP32_I2C_NUM@
+#define ESP32_I2C_PIN_SDA               @ESP32_I2C_PIN_SDA@
+#define ESP32_I2C_PIN_SCL               @ESP32_I2C_PIN_SCL@
+
+#define ESP32_SPI_NUM                   @ESP32_SPI_NUM@
+#define ESP32_SPI_PIN_MOSI              @ESP32_SPI_PIN_MOSI@
+#define ESP32_SPI_PIN_MISO              @ESP32_SPI_PIN_MISO@
+#define ESP32_SPI_PIN_SCK               @ESP32_SPI_PIN_SCK@
+#define ESP32_SPI_PIN_CS                @ESP32_SPI_PIN_CS@
+#define ESP32_SPI_PIN_IRQ               @ESP32_SPI_PIN_IRQ@
+
+#define SD_CARD_ENABLED                 @SD_CARD_ENABLED@
+#define SD_CARD_SPI_NUM                 @SD_CARD_SPI_NUM@
+#define SD_CARD_SPI_PIN_SCK             @SD_CARD_SPI_PIN_SCK@
+#define SD_CARD_SPI_PIN_MOSI            @SD_CARD_SPI_PIN_MOSI@
+#define SD_CARD_SPI_PIN_MISO            @SD_CARD_SPI_PIN_MISO@
+#define SD_CARD_SPI_PIN_CS              @SD_CARD_SPI_PIN_CS@
+
+#define OGXM_BOARD_STANDARD             @OGXM_BOARD_STANDARD@
+#define OGXM_BOARD_BLUETOOTH            @OGXM_BOARD_BLUETOOTH@
+#define OGXM_BOARD_DEVKIT               @OGXM_BOARD_DEVKIT@
+#define OGXM_BOARD_4CHANNEL             @OGXM_BOARD_4CHANNEL@
+#define OGXM_BOARD_BLUETOOTH_USBH       @OGXM_BOARD_BLUETOOTH_USBH@
+#define OGXM_BOARD                      @OGXM_BOARD@
+
+#if ((OGXM_BOARD != OGXM_BOARD_DEVKIT) && USBH_PIO_ENABLED && USBD_PIO_ENABLED)
+#error "USB Host and Device PIO cannot be enabled at the same time"
+#endif

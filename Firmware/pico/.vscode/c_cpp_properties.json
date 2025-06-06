@@ -1,0 +1,21 @@
+{
+    "configurations": [
+        {
+            "name": "Pico",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/build/generated/pico_base/pico/**"
+            ],
+            "forcedInclude": [
+                "${workspaceFolder}/build/generated/pico_base/pico/config_autogen.h"
+            ],
+            "defines": [],
+            "compileCommands": "${workspaceFolder}/build/compile_commands.json",
+            "cStandard": "c17",
+            "cppStandard": "gnu++17",
+            "intelliSenseMode": "linux-gcc-arm64",
+            "configurationProvider": "ms-vscode.cmake-tools"
+        }
+    ],
+    "version": 4
+}

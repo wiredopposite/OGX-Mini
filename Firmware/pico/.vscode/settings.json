@@ -1,0 +1,14 @@
+{
+    "cmake.sourceDirectory": "${workspaceFolder}",
+    "cmake.buildDirectory": "${workspaceFolder}/build",
+    "extensions.ignoreRecommendations": true,
+    "cortex-debug.gdbPath": "/usr/bin/gdb-multiarch",
+    "cortex-debug.objdumpPath": "/usr/bin/arm-none-eabi-objdump",
+    "cortex-debug.nmPath": "/usr/bin/arm-none-eabi-nm",
+    "cmake.configureArgs": [
+        "-DOGXMINI_BOARD=PI_PICO_W",
+    ],
+    "files.associations": {
+        "device_private.h": "c"
+    },
+}

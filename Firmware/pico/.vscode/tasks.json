@@ -1,0 +1,15 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "CMake Conifgure",
+            "type": "process",
+            "command": "${command:cmake.configure}",
+        },
+        {
+            "label": "CMake Build",
+            "type": "shell",
+            "command": "${command:cmake.build}",
+        },
+    ]
+}

@@ -1,0 +1,38 @@
+set(VERIFY_BUILD_VERSION            0)
+set(LED_ENABLED                     0)
+set(NEOPIXEL_ENABLED                0)
+set(NEOPIXEL_VCC_ENABLED            0)
+set(UART_BRIDGE_ENABLED             0)
+set(USBH_ENABLED                    0)
+set(USBH_PIO_ENABLED                0)
+set(USBD_PIO_ENABLED                0)
+set(TS3USB221_ENABLED               0)
+set(BLUETOOTH_ENABLED               0)
+set(USBH_VCC_ENABLED                0)
+
+set(SD_CARD_ENABLED                 0)
+set(SD_CARD_SPI_NUM                 0)
+set(SD_CARD_SPI_PIN_SCK             0)
+set(SD_CARD_SPI_PIN_MOSI            0)
+set(SD_CARD_SPI_PIN_MISO            0)
+set(SD_CARD_SPI_PIN_CS              0)
+
+set(BLUETOOTH_HARDWARE_PICOW        0)
+set(BLUETOOTH_HARDWARE_ESP32_I2C    1)
+set(BLUETOOTH_HARDWARE_ESP32_SPI    2)
+set(BLUETOOTH_HARDWARE              0)
+
+set(NEOPIXEL_FORMAT_RGB             0)
+set(NEOPIXEL_FORMAT_GRB             1)
+set(NEOPIXEL_FORMAT_WRGB            2)
+
+set(OGXM_BOARD_STANDARD             1)
+set(OGXM_BOARD_BLUETOOTH            2)
+set(OGXM_BOARD_DEVKIT               3)
+set(OGXM_BOARD_4CHANNEL             4)
+set(OGXM_BOARD_BLUETOOTH_USBH       5)
+
+set(GAMEPADS_MAX                    1)
+
+set(PICO_FLASH_SIZE_BYTES           2*1024*1024)
+set(PICO_PLATFORM                   rp2040)

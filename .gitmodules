@@ -1,21 +1,36 @@
-[submodule "Firmware/external/bluepad32"]
-	path = Firmware/external/bluepad32
-	url = https://github.com/ricardoquesada/bluepad32.git
-[submodule "Firmware/external/tinyusb"]
-	path = Firmware/external/tinyusb
-	url = https://github.com/hathach/tinyusb.git
-[submodule "Tools/dump-dvd-kit"]
-	path = Tools/dump-dvd-kit
-	url = https://github.com/XboxDev/dump-dvd-kit.git
-[submodule "Firmware/external/Pico-PIO-USB"]
-	path = Firmware/external/Pico-PIO-USB
-	url = https://github.com/wiredopposite/Pico-PIO-USB.git
 [submodule "WebApp"]
 	path = WebApp
 	url = https://github.com/wiredopposite/OGX-Mini-WebApp.git
-[submodule "Firmware/external/libfixmath"]
-	path = Firmware/external/libfixmath
-	url = https://github.com/PetteriAimonen/libfixmath.git
-[submodule "Firmware/ESP32_Blueretro"]
-	path = Firmware/ESP32_Blueretro
+[submodule "Firmware/BlueRetro"]
+	path = Firmware/BlueRetro
 	url = https://github.com/wiredopposite/BlueRetro.git
+[submodule "scripts/xremote/dump-dvd-kit"]
+	path = scripts/xremote/dump-dvd-kit
+	url = https://github.com/XboxDev/dump-dvd-kit.git
+[submodule "firmware/pico/external/pico_usb"]
+	path = firmware/pico/external/pico_usb
+	url = https://github.com/wiredopposite/pico_usb.git
+[submodule "firmware/pico/external/pico-sdk"]
+	path = firmware/pico/external/pico-sdk
+	url = https://github.com/raspberrypi/pico-sdk.git
+[submodule "firmware/pico/external/g726/g726"]
+	path = firmware/pico/external/g726/g726
+	url = https://github.com/fredrikhederstierna/g726.git
+[submodule "firmware/pico/external/libxsm3/libxsm3"]
+	path = firmware/pico/external/libxsm3/libxsm3
+	url = https://github.com/InvoxiPlayGames/libxsm3.git
+[submodule "firmware/pico/external/libfixmath"]
+	path = firmware/pico/external/libfixmath
+	url = https://github.com/PetteriAimonen/libfixmath.git
+[submodule "firmware/pico/external/tinyusb"]
+	path = firmware/pico/external/tinyusb
+	url = https://github.com/hathach/tinyusb.git
+[submodule "firmware/pico/external/Pico-PIO-USB"]
+	path = firmware/pico/external/Pico-PIO-USB
+	url = https://github.com/sekigon-gonnoc/Pico-PIO-USB.git
+[submodule "firmware/pico/external/bluepad32/bluepad32"]
+	path = firmware/pico/external/bluepad32/bluepad32
+	url = https://github.com/ricardoquesada/bluepad32.git
+[submodule "firmware/pico/external/bluepad32"]
+	path = firmware/pico/external/bluepad32
+	url = https://github.com/ricardoquesada/bluepad32.git

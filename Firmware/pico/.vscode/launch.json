@@ -1,0 +1,60 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug RP2040",
+            "type": "cortex-debug",
+            "request": "launch",
+            "servertype": "openocd",
+            "cwd": "${workspaceFolder}/build",
+            "executable": "${workspaceFolder}/build/OGX-Mini.elf",
+            "device": "RP2040",
+            "configFiles": [
+                "/openocd-rp2040/tcl/interface/cmsis-dap.cfg",
+                "/openocd-rp2040/tcl/target/rp2040.cfg"
+            ],
+            "runToEntryPoint": "main",
+            "preLaunchTask": "CMake Build",
+            "svdFile": "",
+            "openOCDLaunchCommands": [
+                // "set USE_CORE 1",
+                "adapter speed 5000"
+            ],
+            "openOCDPreConfigLaunchCommands": [],
+            "postRestartCommands": [],
+            "postLaunchCommands": [
+                // "handle SIGINT nostop noprint pass",
+                // "handle SIGTRAP nostop noprint pass"
+            ],
+            "searchDir": [
+                "/openocd-rp2040/tcl"
+            ]
+        },
+        {
+            "name": "Debug RP2350",
+            "type": "cortex-debug",
+            "request": "launch",
+            "servertype": "openocd",
+            "cwd": "${workspaceFolder}/build",
+            "executable": "${workspaceFolder}/build/OGX-Mini.elf",
+            "device": "RP2350",
+            "configFiles": [
+                "/openocd-rp2040/tcl/interface/cmsis-dap.cfg",
+                "/openocd-rp2040/tcl/target/rp2350.cfg"
+            ],
+            "runToEntryPoint": "main",
+            "preLaunchTask": "",
+            "svdFile": "",
+            "openOCDLaunchCommands": [
+                "set USE_CORE 0",
+                "adapter speed 5000"
+            ],
+            "openOCDPreConfigLaunchCommands": [],
+            "postRestartCommands": [],
+            "postLaunchCommands": [],
+            "searchDir": [
+                "/openocd-rp2040/tcl"
+            ]
+        },
+    ]
+}
