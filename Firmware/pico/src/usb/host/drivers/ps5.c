@@ -8,7 +8,6 @@
 #include "usb/host/tusb_host/tuh_hxx.h"
 #include "usb/descriptors/ps5.h"
 #include "usb/host/host_private.h"
-#include "assert_compat.h"
 
 typedef struct {
     ps5_report_out_t        report_out;
@@ -22,7 +21,7 @@ typedef struct {
         bool trig_r;
     } map;
 } ps5_state_t;
-_STATIC_ASSERT(sizeof(ps5_state_t) <= USBH_STATE_BUFFER_SIZE, "ps5_state_t size exceeds USBH_EPSIZE_MAX");
+_Static_assert(sizeof(ps5_state_t) <= USBH_STATE_BUFFER_SIZE, "ps5_state_t size exceeds USBH_EPSIZE_MAX");
 
 static ps5_state_t* ps5_state[GAMEPADS_MAX] = { NULL };
 
@@ -113,15 +112,15 @@ static void ps5_report_received(uint8_t index, usbh_periph_t subtype, uint8_t da
     gp_report->trigger_r = report_in->trigger_r;
 
     gp_report->joystick_lx = range_uint8_to_int16(report_in->joystick_lx);
-    gp_report->joystick_ly = range_uint8_to_int16(report_in->joystick_ly);
+    gp_report->joystick_ly = range_invert_int16(range_uint8_to_int16(report_in->joystick_ly));
     gp_report->joystick_rx = range_uint8_to_int16(report_in->joystick_rx);
-    gp_report->joystick_ry = range_uint8_to_int16(report_in->joystick_ry);
+    gp_report->joystick_ry = range_invert_int16(range_uint8_to_int16(report_in->joystick_ry));
 
     if (ps5->map.joy_l) {
-        settings_scale_joysticks(&ps5->profile.joystick_l, &gp_report->joystick_lx, &gp_report->joystick_ly, false);
+        settings_scale_joysticks(&ps5->profile.joystick_l, &gp_report->joystick_lx, &gp_report->joystick_ly);
     }
     if (ps5->map.joy_r) {
-        settings_scale_joysticks(&ps5->profile.joystick_r, &gp_report->joystick_rx, &gp_report->joystick_ry, false);
+        settings_scale_joysticks(&ps5->profile.joystick_r, &gp_report->joystick_rx, &gp_report->joystick_ry);
     }
     if (ps5->map.trig_l) {
         settings_scale_trigger(&ps5->profile.trigger_l, &gp_report->trigger_l);

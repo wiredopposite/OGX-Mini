@@ -6,7 +6,6 @@
 #include "usb/device/device.h"
 #include "usb/descriptors/switch.h"
 #include "usb/device/device_private.h"
-#include "assert_compat.h"
 
 typedef struct {
     switch_report_in_t  report_in;
@@ -14,7 +13,7 @@ typedef struct {
     uint8_t             protocol;
     gamepad_pad_t       gp_pad;
 } switch_state_t;
-_STATIC_ASSERT(sizeof(switch_state_t) <= USBD_STATUS_BUF_SIZE, "Switch state size exceeds buffer size");
+_Static_assert(sizeof(switch_state_t) <= USBD_STATUS_BUF_SIZE, "Switch state size exceeds buffer size");
 
 static switch_state_t* switch_state[USBD_DEVICES_MAX] = { NULL };
 

@@ -4,6 +4,8 @@
 */
 
 #include "led/neopixel/WS2812.hpp"
+#if NEOPIXEL_ENABLED
+
 #include "WS2812.pio.h"
 
 WS2812::WS2812(uint pin, uint length, PIO pio, uint sm)  {
@@ -112,3 +114,5 @@ void WS2812::show() {
         pio_sm_put_blocking(pio, sm, data[i]);
     }
 }
+
+#endif // NEOPIXEL_ENABLED

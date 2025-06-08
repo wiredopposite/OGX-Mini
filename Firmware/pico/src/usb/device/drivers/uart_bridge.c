@@ -1,37 +1,20 @@
+#include "usb/device/device_private.h"
+#include "board_config.h"
+#include "log/log.h"
+#if UART_BRIDGE_ENABLED
+
 #include <string.h>
-#include <stdio.h>
 #include <stdbool.h>
 #include <pico/stdlib.h>
 #include <hardware/uart.h>
 #include <hardware/gpio.h>
 #include "usb/descriptors/cdc.h"
-#include "usb/device/drivers/uart_bridge.h"
 
 #define CDC_BAUDRATE            ((uint32_t)115200)
 #define CDC_WORD_SIZE           ((uint8_t)8)
 #define CDC_BUFFER_SIZE         (64U * 16U)
 
-#ifndef UART_BRIDGE_UART
-#define UART_BRIDGE_UART        0
-#endif 
-
-#define UART_BRIDGE_INST        __CONCAT(uart, UART_BRIDGE_UART)
-
-#ifndef UART_BRIDGE_PIN_TX
-#define UART_BRIDGE_PIN_TX      16
-#endif
-
-#ifndef UART_BRIDGE_PIN_RX
-#define UART_BRIDGE_PIN_RX      17
-#endif
-
-#ifndef UART_BRIDGE_PIN_BOOT
-#define UART_BRIDGE_PIN_BOOT    20
-#endif
-
-#ifndef UART_BRIDGE_PIN_RESET
-#define UART_BRIDGE_PIN_RESET   8
-#endif
+#define UART_BRIDGE_INST        __CONCAT(uart, UART_BRIDGE_UART_NUM)
 
 typedef struct {
     uint8_t  buf[CDC_BUFFER_SIZE] __attribute__((aligned(4)));
@@ -148,6 +131,8 @@ static const cdc_desc_config_t UART_BRIDGE_DESC_CONFIG = {
 
 static uart_bridge_state_t uart_state = {0};
 
+void uart_bridge_task(usbd_handle_t* handle);
+
 static inline bool uart_ring_full(uart_ring_t* ring) {
     return ((ring->head + 1) % CDC_BUFFER_SIZE) == ring->tail;
 }
@@ -242,18 +227,18 @@ static bool uart_bridge_get_desc_cb(usbd_handle_t* handle, const usb_ctrl_req_t*
 static bool uart_bridge_ctrl_xfer_cb(usbd_handle_t* handle, const usb_ctrl_req_t* req) {
     if ((req->bmRequestType & (USB_REQ_TYPE_Msk | USB_REQ_RECIP_Msk)) !=
         (USB_REQ_TYPE_CLASS | USB_REQ_RECIP_INTERFACE)) {
-        printf("CDC: Invalid request type: %02X\n", req->bmRequestType);
+        ogxm_logd("CDC: Invalid request type: %02X\n", req->bmRequestType);
         return false;
     }
     switch (req->bRequest) {
     case USB_REQ_CDC_GET_LINE_CODING:
-        printf("CDC: Get line coding\n");
+        ogxm_logd("CDC: Get line coding\n");
         return usbd_send_ctrl_resp(handle, &uart_state.line_coding, 
                                    sizeof(uart_state.line_coding), NULL);
     case USB_REQ_CDC_SET_LINE_CODING:
-        printf("CDC: Set line coding\n");
+        ogxm_logd("CDC: Set line coding\n");
         if (req->wLength != sizeof(uart_state.line_coding)) {
-            printf("CDC: Invalid line coding length: %d\n", req->wLength);
+            ogxm_logd("CDC: Invalid line coding length: %d\n", req->wLength);
             return false;
         }
         if (memcmp(&uart_state.line_coding, req->data, sizeof(uart_state.line_coding)) == 0) {
@@ -286,11 +271,11 @@ static bool uart_bridge_ctrl_xfer_cb(usbd_handle_t* handle, const usb_ctrl_req_t
         uart_state.dtr = ((uart_state.line_state & USB_CDC_CONTROL_LINE_DTR) != 0);
         uart_state.rts = ((uart_state.line_state & USB_CDC_CONTROL_LINE_RTS) != 0);
         update_control_line_state(uart_state.dtr, uart_state.rts);
-        printf("CDC: Set control line state: DTR=%d, RTS=%d\n", 
+        ogxm_logd("CDC: Set control line state: DTR=%d, RTS=%d\n", 
             uart_state.dtr, uart_state.rts);
         return true;
     case USB_REQ_CDC_SEND_BREAK:
-        printf("CDC: Send break\n");
+        ogxm_logd("CDC: Send break\n");
         if (req->wValue == 0) {
             uart_set_break(UART_BRIDGE_INST, true);
         } else {
@@ -300,7 +285,7 @@ static bool uart_bridge_ctrl_xfer_cb(usbd_handle_t* handle, const usb_ctrl_req_t
         }
         return true;
     default:
-        printf("CDC: Unknown req: %02X\n", req->bRequest);
+        ogxm_logd("CDC: Unknown req: %02X\n", req->bRequest);
         break;
     }
     return false;
@@ -347,7 +332,7 @@ static void uart_bridge_ep_xfer_cb(usbd_handle_t* handle, uint8_t epaddr) {
     }
 }
 
-usbd_handle_t* uart_bridge_init(usbd_hw_type_t hw_type) {
+usbd_handle_t* uart_bridge_init(const usb_device_driver_cfg_t* cfg) {
     if (uart_state.alloc) {
         return NULL;
     }
@@ -360,7 +345,7 @@ usbd_handle_t* uart_bridge_init(usbd_hw_type_t hw_type) {
         .configured_cb = uart_bridge_configured_cb,
         .ep_xfer_cb = uart_bridge_ep_xfer_cb,
     };
-    usbd_handle_t* handle = usbd_init(hw_type, &driver, CDC_EPSIZE_CTRL);
+    usbd_handle_t* handle = usbd_init(cfg->usb.hw_type, &driver, CDC_EPSIZE_CTRL);
     if (handle != NULL) {
         uart_state.alloc = true;
         reset_line_state(&uart_state);
@@ -405,3 +390,29 @@ void uart_bridge_task(usbd_handle_t* handle) {
         uart_putc(UART_BRIDGE_INST, byte);
     }
 }
+
+const usb_device_driver_t USBD_DRIVER_UART_BRIDGE = {
+    .name = "UART Bridge",
+    .init = uart_bridge_init,
+    .task = uart_bridge_task,
+    .set_audio = NULL,
+    .set_pad = NULL,   
+};
+
+#else // !UART_BRIDGE_ENABLED
+
+usbd_handle_t* uart_bridge_init(const usb_device_driver_cfg_t* cfg) {
+    (void)cfg;
+    ogxm_loge("UART Bridge driver is not enabled. Please enable UART_BRIDGE_ENABLED in board_config.h.");
+    return NULL;
+}
+
+const usb_device_driver_t USBD_DRIVER_UART_BRIDGE = {
+    .name = "UART Bridge",
+    .init = uart_bridge_init,
+    .task = NULL,
+    .set_audio = NULL,
+    .set_pad = NULL,   
+};
+
+#endif // UART_BRIDGE_ENABLED

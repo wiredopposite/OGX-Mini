@@ -1,4 +1,5 @@
 #include "board_config.h"
+#if BLUETOOTH_ENABLED 
 #if (BLUETOOTH_HARDWARE == BLUETOOTH_HARDWARE_PICOW)
 
 #include <pico/mutex.h>
@@ -302,3 +303,4 @@ bool bluetooth_init(bt_connect_cb_t connect_cb, bt_gamepad_cb_t gamepad_cb, bt_a
 }
 
 #endif // (BLUETOOTH_HARDWARE == BLUETOOTH_HARDWARE_PICOW)
+#endif // BLUETOOTH_ENABLED

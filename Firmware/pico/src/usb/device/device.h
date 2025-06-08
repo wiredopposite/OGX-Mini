@@ -51,7 +51,7 @@ typedef struct {
  * 
  * @return true if initialization was successful, false otherwise
  */
-bool usb_device_init(const usb_device_config_t* config);
+bool usb_device_configure(const usb_device_config_t* config);
 
 /**
  * @brief Enable and connect the USB device

@@ -8,7 +8,6 @@
 #include "usb/host/tusb_host/tuh_hxx.h"
 #include "usb/descriptors/switch_pro.h"
 #include "usb/host/host_private.h"
-#include "assert_compat.h"
 
 typedef enum {
     SW_PRO_1_HANDSHAKE = 0,
@@ -35,7 +34,7 @@ typedef struct {
         bool trig_r;
     } map;
 } switch_pro_state_t;
-_STATIC_ASSERT(sizeof(switch_pro_state_t) <= USBH_STATE_BUFFER_SIZE, "switch_pro_state_t size exceeds USBH_EPSIZE_MAX");
+_Static_assert(sizeof(switch_pro_state_t) <= USBH_STATE_BUFFER_SIZE, "switch_pro_state_t size exceeds USBH_EPSIZE_MAX");
 
 static switch_pro_state_t* switch_pro_state[GAMEPADS_MAX] = { NULL };
 
@@ -203,10 +202,10 @@ static void switch_pro_report_received(uint8_t index, usbh_periph_t subtype, uin
     gp_report->joystick_ry = normalize_axis(joy_ry);
 
     if (sw_pro->map.joy_l) {
-        settings_scale_joysticks(&sw_pro->profile.joystick_l, &gp_report->joystick_lx, &gp_report->joystick_ly, false);
+        settings_scale_joysticks(&sw_pro->profile.joystick_l, &gp_report->joystick_lx, &gp_report->joystick_ly);
     }
     if (sw_pro->map.joy_r) {
-        settings_scale_joysticks(&sw_pro->profile.joystick_r, &gp_report->joystick_rx, &gp_report->joystick_ry, false);
+        settings_scale_joysticks(&sw_pro->profile.joystick_r, &gp_report->joystick_rx, &gp_report->joystick_ry);
     }
     if (sw_pro->map.trig_l) {
         settings_scale_trigger(&sw_pro->profile.trigger_l, &gp_report->trigger_l);

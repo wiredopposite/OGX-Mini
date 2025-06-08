@@ -1,11 +1,6 @@
-#pragma once
-
-#include <stdint.h>
-#include "gamepad/gamepad.h"
-#include "usb/device/device.h"
-
-#define COMBO_CHECK_INTERVAL_MS     600U
-#define COMBO_CHECK_COUNT           ((3U * 1000) / COMBO_CHECK_INTERVAL_MS)
+#include <stddef.h>
+#include <pico/time.h>
+#include "settings/button_combo.h"
 
 #define BUTTON_COMBO(dpad, buttons) (((uint32_t)(dpad) << 16) | (buttons))
 #define BUTTON_COMBO_NONE           ((uint32_t)0xFFFFFFFFU)
@@ -22,22 +17,21 @@ static const uint32_t BUTTON_COMBOS[USBD_TYPE_COUNT] = {
     [USBD_TYPE_UART_BRIDGE] = BUTTON_COMBO_NONE,
 };
 
-static inline usbd_type_t check_button_combo(uint8_t index, const gamepad_pad_t* pad) {
+static uint32_t check_time[GAMEPADS_MAX] = { 0 };
+static uint32_t last_combo[GAMEPADS_MAX] = { BUTTON_COMBO_NONE };
+
+usbd_type_t check_button_combo(uint8_t index, const gamepad_pad_t* pad) {
     if ((index >= GAMEPADS_MAX) || (pad == NULL)) {
         return USBD_TYPE_COUNT;
     }
-    static uint8_t check_count[GAMEPADS_MAX] = { 0 };
-    static uint32_t last_combo[GAMEPADS_MAX] = { BUTTON_COMBO_NONE };
-
-    if (BUTTON_COMBO(pad->dpad, pad->buttons) == last_combo[index]) {
-        check_count[index]++;
-    } else {
-        check_count[index] = 0;
+    const uint32_t now = time_us_32();
+    if (BUTTON_COMBO(pad->dpad, pad->buttons) != last_combo[index]) {
+        check_time[index] = now;
         last_combo[index] = BUTTON_COMBO(pad->dpad, pad->buttons);
         return USBD_TYPE_COUNT;
     }
-    if (check_count[index] >= COMBO_CHECK_COUNT) {
-        check_count[index] = 0;
+    if ((now - check_time[index]) >= COMBO_HOLD_TIME_US) {
+        check_time[index] = now;
         for (uint8_t type = 0; type < USBD_TYPE_COUNT; type++) {
             if ((BUTTON_COMBOS[type] == last_combo[index])) {
                 return (usbd_type_t)type;

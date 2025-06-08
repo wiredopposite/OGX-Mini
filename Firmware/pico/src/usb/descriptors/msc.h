@@ -5,6 +5,10 @@
 #include "common/usb_util.h"
 #include "common/class/msc_def.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define MSC_EPSIZE_CTRL ((uint8_t)8)
 #define MSC_EPADDR_IN   ((uint8_t)0x81)
 #define MSC_EPADDR_OUT  ((uint8_t)0x01)
@@ -157,3 +161,7 @@ static const usb_desc_string_t* MSC_DESC_STRING[] = {
     &MSC_DESC_STR_MANUFACTURER,
     &MSC_DESC_STR_PRODUCT
 };
+
+#ifdef __cplusplus
+}
+#endif

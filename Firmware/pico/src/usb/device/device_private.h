@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-#define USBD_STATUS_BUF_SIZE 0x500U
+#define USBD_STATUS_BUF_SIZE 0x400U
 
 typedef union {
     struct {
@@ -51,6 +51,7 @@ extern const usb_device_driver_t USBD_DRIVER_UART_BRIDGE;
 extern const usb_device_driver_t USBD_DRIVER_XBOXOG_HUB;
 extern const usb_device_driver_t USBD_DRIVER_XBOXOG_XMU;
 extern const usb_device_driver_t USBD_DRIVER_XBOXOG_XBLC;
+extern const usb_device_driver_t USBD_DRIVER_WEBAPP;
 
 void usb_device_rumble_cb(usbd_handle_t* handle, const gamepad_rumble_t* rumble);
 void usb_device_audio_cb(usbd_handle_t* handle, const gamepad_pcm_out_t* pcm_out);

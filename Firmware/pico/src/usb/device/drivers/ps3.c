@@ -1,14 +1,13 @@
-#include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
 #include <pico/rand.h>
 #include "usbd/usbd.h"
 
+#include "log/log.h"
 #include "gamepad/range.h"
 #include "usb/device/device.h"
 #include "usb/descriptors/ps3.h"
 #include "usb/device/device_private.h"
-#include "assert_compat.h"
 
 #define PS3_EF_OFFSET 6U
 
@@ -27,7 +26,7 @@ typedef struct {
     uint8_t                 bank_req_len;
     uint8_t                 host_mac_addr[6] __attribute__((aligned(4)));
 } ps3_state_t;
-_STATIC_ASSERT(sizeof(ps3_state_t) <= USBD_STATUS_BUF_SIZE, "PS3 state size exceeds buffer size");
+_Static_assert(sizeof(ps3_state_t) <= USBD_STATUS_BUF_SIZE, "PS3 state size exceeds buffer size");
 
 // static const uint8_t PS3_DEFAULT_BT_INFO[] = {
 //     0xFF, 0xFF,
@@ -235,7 +234,7 @@ static bool ps3_handle_set_report(usbd_handle_t* handle, const usb_ctrl_req_t* r
     const uint8_t report_id = req->wValue & 0xFF;
     const uint8_t report_type = req->wValue >> 8;
     ps3_state_t* ps3 = ps3_state[handle->port];
-    printf("PS3 Set Report: ID=0x%02X, Type=0x%02X, Length=%d\n", report_id, report_type, req->wLength);
+    ogxm_logd("PS3 Set Report: ID=0x%02X, Type=0x%02X, Length=%d\n", report_id, report_type, req->wLength);
 
     switch (report_type) {
     case USB_REQ_HID_REPORT_TYPE_OUTPUT:
@@ -284,14 +283,14 @@ static bool ps3_handle_set_report(usbd_handle_t* handle, const usb_ctrl_req_t* r
             }
             switch (cmd->command) {
             case PS3_STORAGE_CMD_READ:
-                printf("PS3 Read Storage: Bank=%d, Address=0x%02X\n", 
+                ogxm_logd("PS3 Read Storage: Bank=%d, Address=0x%02X\n", 
                        cmd->bank, cmd->address);
                 ps3->bank_select = cmd->bank;
                 ps3->bank_address = cmd->address;
                 ps3->bank_req_len = req->wLength;
                 break;
             case PS3_STORAGE_CMD_WRITE:
-                printf("PS3 Write Storage: Bank=%d, Address=0x%02X, Length=%d\n", 
+                ogxm_logd("PS3 Write Storage: Bank=%d, Address=0x%02X, Length=%d\n", 
                        cmd->bank, cmd->address, req->wLength);
                 int write_len = MIN((int)req->wLength - offsetof(ps3_cmd_storage_t, write.payload),
                                     MIN((int)sizeof(ps3->bank[0]) - cmd->address, cmd->write.len));
@@ -320,7 +319,7 @@ static bool ps3_handle_get_report(usbd_handle_t* handle, const usb_ctrl_req_t* r
     const uint8_t report_id = req->wValue & 0xFF;
     const uint8_t report_type = req->wValue >> 8;
     ps3_state_t* ps3 = ps3_state[handle->port];
-    printf("PS3 Get Report: ID=0x%02X, Type=0x%02X, Length=%d\n", report_id, report_type, req->wLength);
+    ogxm_logd("PS3 Get Report: ID=0x%02X, Type=0x%02X, Length=%d\n", report_id, report_type, req->wLength);
 
     switch (report_type) {
     case USB_REQ_HID_REPORT_TYPE_INPUT:
@@ -336,7 +335,7 @@ static bool ps3_handle_get_report(usbd_handle_t* handle, const usb_ctrl_req_t* r
                                        sizeof(PS3_DEFAULT_DS3_INFO), NULL);
         case PS3_REQ_FEATURE_REPORT_ID_STORAGE:
             {
-            printf("PS3 Get Storage Report: Bank=%d, Address=0x%02X, Length=%d\n", 
+            ogxm_logd("PS3 Get Storage Report: Bank=%d, Address=0x%02X, Length=%d\n", 
                    ps3->bank_select, ps3->bank_address, ps3->bank_req_len);
             int read_len = MIN(sizeof(ps3->bank[0]) - ps3->bank_address, ps3->bank_req_len);
             if (read_len < 0) {
@@ -492,7 +491,7 @@ static usbd_handle_t* ps3_init(const usb_device_driver_cfg_t* cfg) {
 
 static void ps3_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad, uint32_t flags) {
     ps3_state_t* ps3 = ps3_state[handle->port];
-    if (!usbd_ep_ready(handle, PS3_EPADDR_IN) || !ps3->reports_enabled || !(flags & GAMEPAD_FLAG_IN_PAD)) {
+    if (!ps3->reports_enabled || !(flags & GAMEPAD_FLAG_IN_PAD)) {
         return;
     }
     memset(&ps3->report_in.buttons, 0, sizeof(ps3->report_in.buttons));
@@ -518,9 +517,9 @@ static void ps3_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad, uint32_
     if (pad->trigger_r) { ps3->report_in.buttons[1] |= PS3_BTN1_R2; }
 
     ps3->report_in.joystick_lx = range_int16_to_uint8(pad->joystick_lx);
-    ps3->report_in.joystick_ly = range_int16_to_uint8(pad->joystick_ly);
+    ps3->report_in.joystick_ly = range_int16_to_uint8(range_invert_int16(pad->joystick_ly));
     ps3->report_in.joystick_rx = range_int16_to_uint8(pad->joystick_rx);
-    ps3->report_in.joystick_ry = range_int16_to_uint8(pad->joystick_ry);
+    ps3->report_in.joystick_ry = range_int16_to_uint8(range_invert_int16(pad->joystick_ry));
 
     ps3->report_in.a_l2 = pad->trigger_l;
     ps3->report_in.a_r2 = pad->trigger_r;
@@ -548,13 +547,24 @@ static void ps3_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad, uint32_
         ps3->report_in.a_cross       = (pad->buttons & GAMEPAD_BTN_A)   ? 0xFF : 0x00;
         ps3->report_in.a_square      = (pad->buttons & GAMEPAD_BTN_X)   ? 0xFF : 0x00;
     }
+    if (usbd_ep_ready(handle, PS3_EPADDR_IN)) {
+        usbd_ep_write(handle, PS3_EPADDR_IN, &ps3->report_in, PS3_REPORT_IN_SIZE);
+    }
+}
+
+static void ps3_task(usbd_handle_t* handle) {
+    ps3_state_t* ps3 = ps3_state[handle->port];
+    if (!ps3->reports_enabled || !usbd_ep_ready(handle, PS3_EPADDR_IN)) {
+        return;
+    }
+    /* PS3 expects constant reports */
     usbd_ep_write(handle, PS3_EPADDR_IN, &ps3->report_in, PS3_REPORT_IN_SIZE);
 }
 
 const usb_device_driver_t USBD_DRIVER_PS3 = {
     .name = "PS3",
     .init = ps3_init,
-    .task = NULL,
+    .task = ps3_task,
     .set_pad = ps3_set_pad,
     .set_audio = NULL,
 };

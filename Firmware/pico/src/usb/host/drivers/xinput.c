@@ -108,11 +108,11 @@ static void xinput_report_received(uint8_t index, usbh_periph_t subtype, uint8_t
 
     if (xin->map.joy_l) {
         settings_scale_joysticks(&xin->profile.joystick_l, &gp_report->joystick_lx, 
-                                    &gp_report->joystick_ly, true);
+                                 &gp_report->joystick_ly);
     }
     if (xin->map.joy_r) {
         settings_scale_joysticks(&xin->profile.joystick_r, &gp_report->joystick_rx, 
-                                    &gp_report->joystick_ry, true);
+                                 &gp_report->joystick_ry);
     }
     if (xin->map.trig_l) {
         settings_scale_trigger(&xin->profile.trigger_l, &gp_report->trigger_l);

@@ -1,8 +1,8 @@
 #include <pico/mutex.h>
 #include <pico/sync.h>
 #include <string.h>
+#include "log/log.h"
 #include "settings/nvs.h"
-#include "assert_compat.h"
 
 #ifndef NVS_SECTOR_COUNT
 #define NVS_SECTOR_COUNT        4
@@ -19,7 +19,7 @@ typedef struct __attribute__((packed, aligned(4))) {
     char    key[NVS_KEY_LEN_MAX];
     uint8_t value[NVS_VALUE_LEN_MAX];
 } nvs_entry_t;
-_STATIC_ASSERT(sizeof(nvs_entry_t) == FLASH_PAGE_SIZE, "NVS entry size mismatch");
+_Static_assert(sizeof(nvs_entry_t) == FLASH_PAGE_SIZE, "NVS entry size mismatch");
 
 static const char INVALID_KEY[] = "INVALID";
 
@@ -28,21 +28,23 @@ static uint32_t ints = 0;
 static uint8_t sector_buffer[FLASH_SECTOR_SIZE] __attribute__((aligned(4))) = {0};
 static volatile bool nvs_inited = false;
 
-static inline void nvs_lock(void) {
+static void __not_in_flash_func(nvs_lock)(void) {
     mutex_enter_blocking(&nvs_mutex);
-    ints = save_and_disable_interrupts();
+    ogxm_logd("NVS locked\n");
+    // ints = save_and_disable_interrupts();
 }
 
-static inline void nvs_unlock(void) {
-    restore_interrupts(ints);
+static void __not_in_flash_func(nvs_unlock)(void) {
+    // restore_interrupts(ints);
     mutex_exit(&nvs_mutex);
+    ogxm_logd("NVS unlocked\n");
 }
 
-static inline const nvs_entry_t* nvs_get_entry(uint32_t index) {
+static const nvs_entry_t* __not_in_flash_func(nvs_get_entry)(uint32_t index) {
     return (const nvs_entry_t*)(XIP_BASE + NVS_START_OFFSET + (index * sizeof(nvs_entry_t)));
 }
 
-static bool nvs_args_valid(const char* key, const void* value, size_t len) {
+static bool __not_in_flash_func(nvs_args_valid)(const char* key, const void* value, size_t len) {
     if ((key == NULL) || (value == NULL) || (len > NVS_VALUE_LEN_MAX) || (len == 0)) {
         return false;
     }
@@ -55,11 +57,11 @@ static bool nvs_args_valid(const char* key, const void* value, size_t len) {
     return true;
 }
 
-static inline bool nvs_entry_valid(const nvs_entry_t* entry) {
+static bool __not_in_flash_func(nvs_entry_valid)(const nvs_entry_t* entry) {
     return (strncmp(entry->key, INVALID_KEY, sizeof(INVALID_KEY)) != 0);
 }
 
-static void nvs_erase_all_internal(void) {
+static void __not_in_flash_func(nvs_erase_all_internal)(void) {
     for (uint32_t i = 0; i < NVS_SECTOR_COUNT; i++) {
         flash_range_erase(NVS_START_OFFSET + (i * FLASH_SECTOR_SIZE), FLASH_SECTOR_SIZE);
     }
@@ -72,7 +74,7 @@ static void nvs_erase_all_internal(void) {
 
 /* Public */
 
-void nvs_init(void) {
+void __not_in_flash_func(nvs_init)(void) {
     mutex_init(&nvs_mutex);
     nvs_lock();
     /* First entry should be marked invalid */
@@ -83,7 +85,7 @@ void nvs_init(void) {
     nvs_unlock();
 }
 
-void nvs_erase_all(void) {
+void __not_in_flash_func(nvs_erase_all)(void) {
     if (!nvs_inited) {
         return;
     }
@@ -92,7 +94,7 @@ void nvs_erase_all(void) {
     nvs_unlock();
 }
 
-bool nvs_read(const char* key, void* value, size_t len) {
+bool __not_in_flash_func(nvs_read)(const char* key, void* value, size_t len) {
     if (!nvs_inited || !nvs_args_valid(key, value, len)) {
         return false;
     }
@@ -109,7 +111,7 @@ bool nvs_read(const char* key, void* value, size_t len) {
     return false;
 }
 
-bool nvs_write(const char* key, const void* value, size_t len) {
+bool __not_in_flash_func(nvs_write)(const char* key, const void* value, size_t len) {
     if (!nvs_inited || !nvs_args_valid(key, value, len)) {
         return false;
     }

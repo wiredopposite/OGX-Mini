@@ -10,6 +10,9 @@ set(TS3USB221_ENABLED               0)
 set(BLUETOOTH_ENABLED               0)
 set(USBH_VCC_ENABLED                0)
 
+set(OGXM_LOG_ENABLED                0)
+set(OGXM_LOG_LEVEL                  2)
+
 set(SD_CARD_ENABLED                 0)
 set(SD_CARD_SPI_NUM                 0)
 set(SD_CARD_SPI_PIN_SCK             0)
@@ -32,7 +35,7 @@ set(OGXM_BOARD_DEVKIT               3)
 set(OGXM_BOARD_4CHANNEL             4)
 set(OGXM_BOARD_BLUETOOTH_USBH       5)
 
-set(GAMEPADS_MAX                    1)
+set(GAMEPADS_MAX                    4)
 
 set(PICO_FLASH_SIZE_BYTES           2*1024*1024)
 set(PICO_PLATFORM                   rp2040)

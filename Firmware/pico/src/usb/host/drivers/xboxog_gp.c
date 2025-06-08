@@ -1,12 +1,10 @@
 #include <string.h>
-
 #include "gamepad/gamepad.h"
 #include "gamepad/range.h"
 #include "settings/settings.h"
 #include "usb/host/tusb_host/tuh_hxx.h"
 #include "usb/descriptors/xboxog_gp.h"
 #include "usb/host/host_private.h"
-#include "assert_compat.h"
 
 typedef struct {
     xboxog_gp_report_in_t   prev_report_in;
@@ -20,7 +18,7 @@ typedef struct {
         bool trig_r;
     } map;
 } xid_gp_state_t;
-_STATIC_ASSERT(sizeof(xid_gp_state_t) <= USBH_STATE_BUFFER_SIZE, "xid_gp_state_t size exceeds USBH_EPSIZE_MAX");
+_Static_assert(sizeof(xid_gp_state_t) <= USBH_STATE_BUFFER_SIZE, "xid_gp_state_t size exceeds USBH_EPSIZE_MAX");
 
 static xid_gp_state_t* xid_gp_state[GAMEPADS_MAX] = { NULL };
 
@@ -96,17 +94,17 @@ static void xid_gp_report_received(uint8_t index, usbh_periph_t subtype, uint8_t
     }
 
     state->gp_report.joystick_lx = report->joystick_lx;
-    state->gp_report.joystick_ly = range_invert_int16(report->joystick_ly);
+    state->gp_report.joystick_ly = report->joystick_ly;
     state->gp_report.joystick_rx = report->joystick_rx;
-    state->gp_report.joystick_ry = range_invert_int16(report->joystick_ry);
+    state->gp_report.joystick_ry = report->joystick_ry;
 
     if (state->map.joy_l) {
         settings_scale_joysticks(&state->profile.joystick_l, &state->gp_report.joystick_lx, 
-                                 &state->gp_report.joystick_ly, true);
+                                 &state->gp_report.joystick_ly);
     }
     if (state->map.joy_r) {
         settings_scale_joysticks(&state->profile.joystick_r, &state->gp_report.joystick_rx, 
-                                 &state->gp_report.joystick_ry, true);
+                                 &state->gp_report.joystick_ry);
     }
 
     usb_host_driver_pad_cb(index, &state->gp_report, GAMEPAD_FLAG_IN_PAD | GAMEPAD_FLAG_IN_PAD_ANALOG);

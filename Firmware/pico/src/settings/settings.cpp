@@ -1,17 +1,17 @@
 #include <string>
 #include <cstring>
+#include "log/log.h"
 #include "gamepad/gamepad.h"
 #include "settings/nvs.h"
 #include "settings/settings.h"
 
-#define INIT_FLAG       ((uint8_t)0xA3)
-#define PROFILES_MAX    8U
+#define INIT_FLAG           ((uint16_t)0xFFA3)
 
-typedef struct {
-    uint8_t     init_flag;
-    usbd_type_t device_type;
-    uint32_t    addons;
-    uint8_t     active_profile_id[GAMEPADS_MAX];
+typedef struct __attribute__((aligned(4))) {
+    volatile uint16_t    init_flag;
+    volatile usbd_type_t device_type;
+    volatile uint32_t    addons;
+    volatile uint8_t     active_profile_id[GAMEPADS_MAX];
 } settings_t;
 
 static settings_t settings = {0};
@@ -34,13 +34,20 @@ static inline const std::string DATETIME_STR() {
 
 void settings_init(void) {
     if (settings.init_flag == INIT_FLAG) {
+        ogxm_logd("Settings already initialized\n");
         return;
     }
+    ogxm_logd("Initializing settings\n");
+
     nvs_init();
     nvs_read(SETTINGS_KEY().c_str(), &settings, sizeof(settings));
     if (settings.init_flag == INIT_FLAG) {
+        ogxm_logd("Settings already initialized with flag: %04X\n", settings.init_flag);
         return;
     }
+
+    ogxm_logd("Settings not initialized, setting default values\n");
+
     settings.init_flag = INIT_FLAG;
     settings.device_type = USBD_TYPE_XBOXOG_GP;
     settings.addons = 0;
@@ -52,12 +59,14 @@ void settings_init(void) {
     user_profile_t profile = {0};
     settings_get_default_profile(&profile); 
 
-    for (uint8_t i = 0; i < PROFILES_MAX; i++) {
+    for (uint8_t i = 0; i < USER_PROFILES_MAX; i++) {
         profile.id = i + 1;
         nvs_write(PROFILE_KEY(i + 1).c_str(), &profile, sizeof(profile));
     }
 
     nvs_write(SETTINGS_KEY().c_str(), &settings, sizeof(settings));
+
+    ogxm_logd("Settings initialized successfully\n");
 }
 
 usbd_type_t settings_get_device_type(void) {
@@ -68,13 +77,18 @@ bool settings_valid_datetime(void) {
     if (settings.init_flag != INIT_FLAG) {
         return false;
     }
+    ogxm_logd("Validating datetime: %s", DATETIME_STR().c_str());
+
     const std::string datetime = DATETIME_STR();
     std::string read_datetime;
     nvs_read(DATETIME_KEY().c_str(), read_datetime.data(), datetime.size());
 
     if (std::strncmp(datetime.c_str(), read_datetime.c_str(), datetime.size()) == 0) {
+        ogxm_logd("Datetime is valid\n");
         return true;
     }
+    ogxm_logd("Datetime is invalid, expected: %s, got: %s", 
+              datetime.c_str(), read_datetime.c_str());
     return false;
 }
 
@@ -82,24 +96,28 @@ void settings_write_datetime(void) {
     if (settings.init_flag != INIT_FLAG) {
         return;
     }
+    ogxm_logd("Writing datetime: %s", DATETIME_STR().c_str());
     nvs_write(DATETIME_KEY().c_str(), DATETIME_STR().c_str(), DATETIME_STR().size());
 }
 
 void settings_get_profile_by_index(uint8_t index, user_profile_t* profile) {
     if ((settings.init_flag != INIT_FLAG) || (index > GAMEPADS_MAX)) {
-        printf("returning default profile\n");
+        ogxm_logd("returning default profile\n");
         settings_get_default_profile(profile);
         return;
     }
+    ogxm_logd("Getting profile by index: %d\n", index);
     nvs_read(PROFILE_KEY(settings.active_profile_id[index]).c_str(), 
              profile, sizeof(user_profile_t));
 }
 
 void settings_get_profile_by_id(uint8_t id, user_profile_t* profile) {
-    if ((settings.init_flag != INIT_FLAG) || (id > PROFILES_MAX)) {
+    if ((settings.init_flag != INIT_FLAG) || 
+        (id > USER_PROFILES_MAX) || (id == 0)) {
         settings_get_default_profile(profile);
         return;
     }
+    ogxm_logd("Getting profile by ID: %d\n", id);
     nvs_read(PROFILE_KEY(id).c_str(), profile, sizeof(user_profile_t));
 }
 
@@ -111,17 +129,21 @@ uint8_t settings_get_active_profile_id(uint8_t index) {
 }
 
 void settings_store_device_type(usbd_type_t type) {
-    if (settings.init_flag != INIT_FLAG) {
+    if ((settings.init_flag != INIT_FLAG) ||
+        (type >= USBD_TYPE_COUNT) ||
+        ((type == USBD_TYPE_UART_BRIDGE) && !UART_BRIDGE_ENABLED)) {
         return;
     }
     settings.device_type = type;
+    ogxm_logd("Storing device type: %d\n", type);
     nvs_write(SETTINGS_KEY().c_str(), &settings, sizeof(settings));
 }
 
 void settings_store_profile(uint8_t index, const user_profile_t* profile) {
-    if ((settings.init_flag != INIT_FLAG) || (index > PROFILES_MAX)) {
+    if ((settings.init_flag != INIT_FLAG) || (index > USER_PROFILES_MAX)) {
         return;
     }
+    ogxm_logd("Storing profile, index: %d", index);
     nvs_write(PROFILE_KEY(settings.active_profile_id[index]).c_str(), 
               profile, sizeof(user_profile_t));
 }

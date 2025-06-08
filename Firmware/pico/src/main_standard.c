@@ -1,5 +1,5 @@
 #include "board_config.h"
-#if (OGXM_BOARD == OGXM_BOARD_DEVKIT)
+#if (OGXM_BOARD == OGXM_BOARD_STANDARD)
 
 #include <pico/stdlib.h>
 #include <pico/multicore.h>

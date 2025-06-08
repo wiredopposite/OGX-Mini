@@ -1,11 +1,10 @@
-#include <stdio.h>
 #include <string.h>
 #include "g72x.h"
 #include "xsm3.h"
+#include "log/log.h"
 #include "usb/device/device.h"
 #include "usb/descriptors/xinput.h"
 #include "usb/device/device_private.h"
-#include "assert_compat.h"
 
 #define G726_COMPRESSION_RATIO      8U
 #define PCM_SAMPES_PER_G726_BYTE    4U
@@ -45,7 +44,7 @@ typedef struct {
     gamepad_pcm_out_t       pcm_out;
     gamepad_pcm_in_t        pcm_in;
 } xinput_state_t;
-_STATIC_ASSERT(sizeof(xinput_state_t) <= USBD_STATUS_BUF_SIZE, "XINPUT state size exceeds buffer size");
+_Static_assert(sizeof(xinput_state_t) <= USBD_STATUS_BUF_SIZE, "XINPUT state size exceeds buffer size");
 
 static const uint8_t XINPUT_VENDOR_BLOB[] = {
 	0x28, 0x00, 0x00, 0x00, 0x00, 0x01, 0x04, 0x00, 

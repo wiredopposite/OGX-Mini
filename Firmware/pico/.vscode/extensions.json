@@ -3,6 +3,7 @@
         "ms-vscode.cpptools",
         "ms-vscode.cortex-debug",
         "ms-vscode.cmake-tools",
-        "ms-vscode.python"
+        "ms-vscode.python",
+        "ms-vscode.vscode-serial-monitor"
     ]
 }

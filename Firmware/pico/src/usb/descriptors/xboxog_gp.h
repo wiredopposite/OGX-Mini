@@ -3,7 +3,6 @@
 #include <stdint.h>
 #include "common/usb_def.h"
 #include "usb/descriptors/xid.h"
-#include "assert_compat.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -106,7 +105,7 @@ typedef struct __attribute__((packed)) {
     int16_t joystick_rx;
     int16_t joystick_ry;
 } xboxog_gp_report_in_t;
-_STATIC_ASSERT(sizeof(xboxog_gp_report_in_t) == 20, "xboxog_gp_report_in_t size mismatch");
+_Static_assert(sizeof(xboxog_gp_report_in_t) == 20, "xboxog_gp_report_in_t size mismatch");
 
 typedef struct __attribute__((packed)) {
     uint8_t report_id;
@@ -114,7 +113,7 @@ typedef struct __attribute__((packed)) {
     uint16_t rumble_l;
     uint16_t rumble_r;
 } xboxog_gp_report_out_t;
-_STATIC_ASSERT(sizeof(xboxog_gp_report_out_t) == 6, "xboxog_gp_report_out_t size mismatch");
+_Static_assert(sizeof(xboxog_gp_report_out_t) == 6, "xboxog_gp_report_out_t size mismatch");
 
 static const usb_desc_xid_t XBOXOG_GP_DESC_XID = {
     .bLength = sizeof(usb_desc_xid_t),

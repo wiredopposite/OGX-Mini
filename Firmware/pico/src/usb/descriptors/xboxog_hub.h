@@ -4,6 +4,10 @@
 #include "common/usb_def.h"
 #include "common/class/hub_def.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define USB_HUB_CHAR_XID    ((uint8_t)1 << 3)
 
 #define HUB_XID_EPSIZE_CTRL ((uint8_t)8)
@@ -66,3 +70,7 @@ static const hub_xid_desc_config_t HUB_XID_DESC_CONFIG = {
 };
 
 static const usb_desc_string_t HUB_XID_DESC_STR_LANGUAGE = USB_ARRAY_DESC(0x0409);
+
+#ifdef __cplusplus
+}
+#endif

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <stdint.h>
-#include "assert_compat.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -146,7 +145,7 @@ typedef struct __attribute__((packed)) {
     } flags;
     uint8_t sequence_id;
 } xgip_header_t;
-_STATIC_ASSERT(sizeof(xgip_header_t) == 3, "xgip_header_t is not the correct size");
+_Static_assert(sizeof(xgip_header_t) == 3, "xgip_header_t is not the correct size");
 
 typedef union __attribute__((packed)) {
     struct {
@@ -155,7 +154,7 @@ typedef union __attribute__((packed)) {
     };
     uint8_t raw;
 } xgip_payload_len_t;
-_STATIC_ASSERT(sizeof(xgip_payload_len_t) == 1, "xgip_payload_len_t is not the correct size");
+_Static_assert(sizeof(xgip_payload_len_t) == 1, "xgip_payload_len_t is not the correct size");
 
 typedef union __attribute__((packed)) {
     struct {
@@ -166,7 +165,7 @@ typedef union __attribute__((packed)) {
     };
     uint8_t raw;
 } xgip_status_t;
-_STATIC_ASSERT(sizeof(xgip_status_t) == 1, "xgip_status_in_t is not the correct size");
+_Static_assert(sizeof(xgip_status_t) == 1, "xgip_status_in_t is not the correct size");
 
 typedef union __attribute__((packed)) {
     struct {
@@ -176,7 +175,7 @@ typedef union __attribute__((packed)) {
     };
     uint8_t raw;
 } xgip_status_ext_t;
-_STATIC_ASSERT(sizeof(xgip_status_ext_t) == 1, "xgip_status_ext_t is not the correct size");
+_Static_assert(sizeof(xgip_status_ext_t) == 1, "xgip_status_ext_t is not the correct size");
 
 /* Device to host */
 
@@ -199,7 +198,7 @@ typedef struct __attribute__((packed, aligned(4))) {
     uint8_t             gip_ver_major;
     uint8_t             gip_ver_minor;
 } xgip_hello_device_in_t;
-_STATIC_ASSERT(sizeof(xgip_hello_device_in_t) == 32, "xgip_hello_device_in_t is not the correct size");
+_Static_assert(sizeof(xgip_hello_device_in_t) == 32, "xgip_hello_device_in_t is not the correct size");
 
 typedef struct __attribute__((packed, aligned(4))) {
     xgip_header_t       header;
@@ -209,14 +208,14 @@ typedef struct __attribute__((packed, aligned(4))) {
     uint8_t             reserved[2];
     uint8_t             events[]; // Optional field: events[0] is the event count if events are present
 } xgip_status_in_t;
-_STATIC_ASSERT(sizeof(xgip_status_in_t) == 8, "xgip_status_in_t is not the correct size");
+_Static_assert(sizeof(xgip_status_in_t) == 8, "xgip_status_in_t is not the correct size");
 
 typedef struct __attribute__((packed)) {
     xgip_header_t       header;
     xgip_payload_len_t  payload_len;
     xgip_status_t       status;
 } xgip_status_legacy_in_t;
-_STATIC_ASSERT(sizeof(xgip_status_legacy_in_t) == 5, "xgip_status_legacy_in_t is not the correct size");
+_Static_assert(sizeof(xgip_status_legacy_in_t) == 5, "xgip_status_legacy_in_t is not the correct size");
 
 typedef struct __attribute__((packed, aligned(4))) {
     xgip_header_t       header;
@@ -225,7 +224,7 @@ typedef struct __attribute__((packed, aligned(4))) {
     xgip_payload_len_t  total_len_high;
     uint8_t             data[58];
 } xgip_metadata_init_in_t;
-_STATIC_ASSERT(sizeof(xgip_metadata_init_in_t) == 64U, "xgip_metadata_init_in_t is not the correct size");
+_Static_assert(sizeof(xgip_metadata_init_in_t) == 64U, "xgip_metadata_init_in_t is not the correct size");
 
 typedef struct __attribute__((packed, aligned(4))) {
     xgip_header_t       header;
@@ -234,7 +233,7 @@ typedef struct __attribute__((packed, aligned(4))) {
     uint8_t             fragment_offset;
     uint8_t             data[58];
 } xgip_metadata_mid_in_t;
-_STATIC_ASSERT(sizeof(xgip_metadata_mid_in_t) == 64U, "xgip_metadata_mid_in_t is not the correct size");
+_Static_assert(sizeof(xgip_metadata_mid_in_t) == 64U, "xgip_metadata_mid_in_t is not the correct size");
 
 typedef struct __attribute__((packed, aligned(4))) {
     xgip_header_t       header;
@@ -243,7 +242,7 @@ typedef struct __attribute__((packed, aligned(4))) {
     xgip_payload_len_t  fragment_offset_high;
     uint8_t             data[58];
 } xgip_metadata_last_in_t;
-_STATIC_ASSERT(sizeof(xgip_metadata_last_in_t) == 64U, "xgip_metadata_last_in_t is not the correct size");
+_Static_assert(sizeof(xgip_metadata_last_in_t) == 64U, "xgip_metadata_last_in_t is not the correct size");
 
 typedef struct __attribute__((packed)) {
     xgip_header_t       header;
@@ -251,7 +250,7 @@ typedef struct __attribute__((packed)) {
     xgip_payload_len_t  msg_len_low;
     xgip_payload_len_t  msg_len_high;
 } xgip_metadata_complete_in_t;
-_STATIC_ASSERT(sizeof(xgip_metadata_complete_in_t) == 6U, "xgip_metadata_complete_in_t is not the correct size");
+_Static_assert(sizeof(xgip_metadata_complete_in_t) == 6U, "xgip_metadata_complete_in_t is not the correct size");
 
 typedef struct __attribute__((packed)) {
     xgip_header_t       header;
@@ -265,7 +264,7 @@ typedef struct __attribute__((packed)) {
     int16_t             joystick_ry;
     uint8_t             ext_data[]; // Share button or vendor-specific extension data
 } xgip_report_in_t;
-_STATIC_ASSERT(sizeof(xgip_report_in_t) == 18U, "xbone_report_in_t is not the correct size");
+_Static_assert(sizeof(xgip_report_in_t) == 18U, "xbone_report_in_t is not the correct size");
 
 typedef struct __attribute__((packed)) {
     xgip_header_t       header;
@@ -273,7 +272,7 @@ typedef struct __attribute__((packed)) {
     uint8_t             state;
     uint8_t             unk;
 } xgip_guide_button_in_t;
-_STATIC_ASSERT(sizeof(xgip_guide_button_in_t) == 6U, "xgip_guide_button_in_t is not the correct size");
+_Static_assert(sizeof(xgip_guide_button_in_t) == 6U, "xgip_guide_button_in_t is not the correct size");
 
 /* Host to device */
 
@@ -282,7 +281,7 @@ typedef struct __attribute__((packed)) {
     xgip_payload_len_t  payload_len;
     uint8_t             state;
 } xgip_cmd_set_state_t;
-_STATIC_ASSERT(sizeof(xgip_cmd_set_state_t) == 5U, "xgip_cmd_set_state_t is not the correct size");
+_Static_assert(sizeof(xgip_cmd_set_state_t) == 5U, "xgip_cmd_set_state_t is not the correct size");
 
 typedef struct __attribute__((packed)) {
     xgip_header_t       header;
@@ -291,7 +290,7 @@ typedef struct __attribute__((packed)) {
     uint8_t             pattern;
     uint8_t             intensity;
 } xgip_cmd_led_ebutton_t;
-_STATIC_ASSERT(sizeof(xgip_cmd_led_ebutton_t) == 7U, "xgip_cmd_led_ebutton_t is not the correct size");
+_Static_assert(sizeof(xgip_cmd_led_ebutton_t) == 7U, "xgip_cmd_led_ebutton_t is not the correct size");
 
 typedef struct __attribute__((packed)) {
     xgip_header_t       header;
@@ -301,8 +300,8 @@ typedef struct __attribute__((packed)) {
         struct {
             uint8_t right           : 1;
             uint8_t left            : 1;
-            uint8_t right_impulse   : 1;
-            uint8_t left_impulse    : 1;
+            uint8_t impulse_right   : 1;
+            uint8_t impulse_left    : 1;
             uint8_t reserved        : 4;
         };
         uint8_t raw;
@@ -315,7 +314,7 @@ typedef struct __attribute__((packed)) {
     uint8_t delay_ms;        // 0 - 255
     uint8_t repeat_count;    // 0 - 255
 } xgip_cmd_vibration_t;
-_STATIC_ASSERT(sizeof(xgip_cmd_vibration_t) == 13U, "xgip_cmd_vibration_t is not the correct size");
+_Static_assert(sizeof(xgip_cmd_vibration_t) == 13U, "xgip_cmd_vibration_t is not the correct size");
 
 #ifdef __cplusplus
 } 

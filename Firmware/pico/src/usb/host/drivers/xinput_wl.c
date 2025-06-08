@@ -9,7 +9,6 @@
 #include "usb/host/tusb_host/tuh_hxx.h"
 #include "usb/descriptors/xinput.h"
 #include "usb/host/host_private.h"
-#include "assert_compat.h"
 
 #define CHATPAD_KEEPALIVE_US  ((uint32_t)1*1000*1000)
 #define CHATPAD_KEEPALIVE_MS  (CHATPAD_KEEPALIVE_US / 1000U)
@@ -162,14 +161,6 @@ static void xinput_wl_report_received(uint8_t index, usbh_periph_t subtype, uint
     (void)subtype;
     xinput_wl_state_t* xin_wl = xin_wl_state[index];
     uint32_t gp_flags = 0;
-    // if (xin_wl->init_state != XINPUT_INIT_DONE) {
-    //     printf("XInput WL: Report received for index %d, daddr %d, itf %d, len %d\n", 
-    //         index, daddr, itf_num, len);
-    //     for (uint16_t i = 0; i < len; i++) {
-    //         printf("  %02X", data[i]);
-    //     }
-    //     printf("\n");
-    // }
     xinput_wl_event_t* event = (xinput_wl_event_t*)data;
     if (event->flags & XINPUT_WL_EVENT_CONNECTION) {
         if (event->status & XINPUT_WL_STATUS_CONTROLLER_PRESENT) {
@@ -225,11 +216,11 @@ static void xinput_wl_report_received(uint8_t index, usbh_periph_t subtype, uint
 
         if (xin_wl->map.joy_l) {
             settings_scale_joysticks(&xin_wl->profile.joystick_l, &gp_report->joystick_lx, 
-                                     &gp_report->joystick_ly, true);
+                                     &gp_report->joystick_ly);
         }
         if (xin_wl->map.joy_r) {
             settings_scale_joysticks(&xin_wl->profile.joystick_r, &gp_report->joystick_rx, 
-                                     &gp_report->joystick_ry, true);
+                                     &gp_report->joystick_ry);
         }
         if (xin_wl->map.trig_l) {
             settings_scale_trigger(&xin_wl->profile.trigger_l, &gp_report->trigger_l);

@@ -3,6 +3,8 @@
 #define BUILD_DATETIME                  @BUILD_DATETIME@
 #define BUILD_VERSION                   @BUILD_VERSION@
 #define VERIFY_BUILD_VERSION            @VERIFY_BUILD_VERSION@
+#define OGXM_LOG_ENABLED                @OGXM_LOG_ENABLED@
+#define OGXM_LOG_LEVEL                  @OGXM_LOG_LEVEL@
 
 #define GAMEPADS_MAX                    @GAMEPADS_MAX@
 

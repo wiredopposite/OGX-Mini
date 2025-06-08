@@ -19,16 +19,6 @@ typedef void (*hxx_ctrl_complete_cb_t)(uint8_t daddr, const uint8_t* data, uint1
 
 /* ---- USB Host Callbacks ---- */
 
-// /**
-//  * @brief Called when the USB interface is initialized.
-//  * 
-//  * @param type The type of USB host.
-//  * @param itf_class The class of the USB interface.
-//  * @param daddr The device address.
-//  * @param itf_num The interface number.
-//  */
-// void tuh_hxx_init_cb(usbh_type_t type, uint8_t daddr, uint8_t itf_num);
-
 /**
  * @brief Called when the USB interface is mounted.
  * 

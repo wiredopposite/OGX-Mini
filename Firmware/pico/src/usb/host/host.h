@@ -5,6 +5,10 @@
 #include <stdbool.h>
 #include "gamepad/gamepad.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum {
     USBH_TYPE_NONE = 0,
     USBH_TYPE_XID,
@@ -38,25 +42,40 @@ typedef enum {
     USBH_HW_PIO
 } usbh_hw_type_t;
 
+typedef struct {
+    bool                    use_mutex;
+    usbh_hw_type_t          hw_type;
+    usb_host_connect_cb_t   connect_cb;
+    usb_host_gamepad_cb_t   gamepad_cb;
+    usb_host_audio_cb_t     audio_cb;
+} usb_host_config_t;
+
 #if USBH_ENABLED
 
-/**
- * @brief Initialize the USB host system.
- * 
- * @param hw_type Hardware type (USB or PIO).
- * @param connect_cb Callback for device connection events.
- * @param gamepad_cb Callback for gamepad input events.
- * @param audio_cb Callback for audio input events.
- */
-void usb_host_init(usbh_hw_type_t hw_type, usb_host_connect_cb_t connect_cb, 
-                   usb_host_gamepad_cb_t gamepad_cb, usb_host_audio_cb_t audio_cb);
+// /**
+//  * @brief Initialize the USB host system.
+//  * 
+//  * @param hw_type Hardware type (USB or PIO).
+//  * @param connect_cb Callback for device connection events.
+//  * @param gamepad_cb Callback for gamepad input events.
+//  * @param audio_cb Callback for audio input events.
+//  */
+// void usb_host_init(usbh_hw_type_t hw_type, usb_host_connect_cb_t connect_cb, 
+//                    usb_host_gamepad_cb_t gamepad_cb, usb_host_audio_cb_t audio_cb);
+void usb_host_configure(const usb_host_config_t* config);
+
+void usb_host_enable(void);
+
+void usb_host_set_device_enabled(uint8_t index, bool enabled);
+
+void usb_host_set_rumble(uint8_t index, const gamepad_rumble_t* rumble);
+
+void usb_host_set_audio(uint8_t index, const gamepad_pcm_out_t* pcm);
 
 void usb_host_task(void);
 
-void usb_host_set_enabled(uint8_t index, bool enabled);
-
-void usb_host_send_rumble(uint8_t index, const gamepad_rumble_t* rumble);
-
-void usb_host_send_audio(uint8_t index, const gamepad_pcm_out_t* pcm);
-
 #endif // USBH_ENABLED
+
+#ifdef __cplusplus
+}
+#endif

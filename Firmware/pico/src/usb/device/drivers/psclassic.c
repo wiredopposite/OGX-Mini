@@ -5,7 +5,6 @@
 #include "usb/device/device.h"
 #include "usb/descriptors/psclassic.h"
 #include "usb/device/device_private.h"
-#include "assert_compat.h"
 
 #define JOY_POS_THRESHOLD       ((int16_t)10000)
 #define JOY_NEG_THRESHOLD       ((int16_t)-10000)
@@ -18,7 +17,7 @@ typedef struct {
     uint8_t                 protocol;
     gamepad_pad_t           gp_pad;
 } psclassic_state_t;
-_STATIC_ASSERT(sizeof(psclassic_state_t) <= USBD_STATUS_BUF_SIZE, "PSClassic state size exceeds buffer size");
+_Static_assert(sizeof(psclassic_state_t) <= USBD_STATUS_BUF_SIZE, "PSClassic state size exceeds buffer size");
 
 static psclassic_state_t* psclassic_state[USBD_DEVICES_MAX] = { NULL };
 

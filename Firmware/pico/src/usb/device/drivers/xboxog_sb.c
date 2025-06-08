@@ -7,7 +7,6 @@
 #include "usb/descriptors/xinput.h"
 #include "usb/descriptors/xboxog_sb.h"
 #include "usb/device/device_private.h"
-#include "assert_compat.h"
 
 #define DEFAULT_SENSITIVITY ((uint16_t)400)
 #define DEFAULT_DEADZONE    ((int16_t)7500)
@@ -134,7 +133,7 @@ typedef struct {
     int32_t             vmouse_x;
     int32_t             vmouse_y;
 } xbsb_state_t;
-_STATIC_ASSERT(sizeof(xbsb_state_t) <= USBD_STATUS_BUF_SIZE, "XBOXOG GP state size exceeds buffer size");
+_Static_assert(sizeof(xbsb_state_t) <= USBD_STATUS_BUF_SIZE, "XBOXOG GP state size exceeds buffer size");
 
 static xbsb_state_t *xbsb_state[USBD_DEVICES_MAX] = { NULL };
 

@@ -6,7 +6,6 @@
 #include "usb/descriptors/xboxog_gp.h"
 #include "usb/device/device_private.h"
 #include "usb/device/device.h"
-#include "assert_compat.h"
 
 #define REPORT_IN_CAPABILITIES {                \
     .report_id = 0x00,                          \
@@ -41,7 +40,7 @@ typedef struct {
     gamepad_pad_t           gp_pad;
     gamepad_pad_t           prev_gp_pad;
 } xboxog_gp_state_t;
-_STATIC_ASSERT(sizeof(xboxog_gp_state_t) <= USBD_STATUS_BUF_SIZE, "XBOXOG GP state size exceeds buffer size");
+_Static_assert(sizeof(xboxog_gp_state_t) <= USBD_STATUS_BUF_SIZE, "XBOXOG GP state size exceeds buffer size");
 
 static xboxog_gp_state_t* xboxog_gp_state[USBD_DEVICES_MAX] = { NULL };
 

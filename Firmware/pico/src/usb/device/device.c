@@ -1,9 +1,9 @@
 #include <string.h>
-#include <stdio.h>
 #include <stdatomic.h>
 #include <pico/stdlib.h>
 #include <pico/mutex.h>
 #include <hardware/gpio.h>
+#include "log/log.h"
 #include "usbd/usbd.h"
 #include "usb/device/device_private.h"
 #include "usb/device/drivers/generic_hub.h"
@@ -27,19 +27,13 @@ typedef enum {
     USBD_INT_TYPE_COUNT
 } usbd_internal_type_t;
 
-typedef enum {
-    GP_DATA_SAFE = 0,
-    GP_DATA_UNSAFE,
-    GP_DATA_COUNT
-} gp_data_type_t;
-
 typedef struct {
     mutex_t                     gp_mutex;
     atomic_bool                 pad_new;
-    gamepad_pad_t               pad[GP_DATA_COUNT];
-    uint32_t                    pad_flags[GP_DATA_COUNT];
+    gamepad_pad_t               pad;
+    uint32_t                    pad_flags;
     atomic_bool                 pcm_new;
-    gamepad_pcm_out_t           pcm_out[GP_DATA_COUNT];
+    gamepad_pcm_out_t           pcm_out;
 
     usbd_handle_t*              handle;
     const usb_device_driver_t*  driver;
@@ -66,8 +60,8 @@ static const usb_device_driver_t* USBD_DRIVERS[USBD_INT_TYPE_COUNT] = {
     [USBD_INT_TYPE_PS3]         = &USBD_DRIVER_PS3,
     [USBD_INT_TYPE_PSCLASSIC]   = &USBD_DRIVER_PSCLASSIC,
     [USBD_INT_TYPE_SWITCH]      = &USBD_DRIVER_SWITCH,
-    [USBD_INT_TYPE_WEBAPP]      = NULL,
-    [USBD_INT_TYPE_UART_BRIDGE] = NULL,
+    [USBD_INT_TYPE_WEBAPP]      = &USBD_DRIVER_WEBAPP,
+    [USBD_INT_TYPE_UART_BRIDGE] = &USBD_DRIVER_UART_BRIDGE,
     [USBD_INT_TYPE_XBOXOG_HUB]  = &USBD_DRIVER_XBOXOG_HUB,
     [USBD_INT_TYPE_XBOXOG_XMU]  = NULL,
     [USBD_INT_TYPE_XBOXOG_XBLC] = NULL,
@@ -121,7 +115,7 @@ void usb_device_audio_cb(usbd_handle_t* handle, const gamepad_pcm_out_t *pcm_out
     }
 }
 
-bool usb_device_init(const usb_device_config_t* config) {
+bool usb_device_configure(const usb_device_config_t* config) {
     if (config == NULL || usbd_system.inited) {
         return false;
     }
@@ -228,6 +222,15 @@ void usb_device_connect(void) {
 void usb_device_deinit(void) {
     ts3usb221_set_connected(usbd_system.pio ? USBD_HW_PIO : USBD_HW_USB, false);
     usbd_deinit(usbd_system.pio ? USBD_HW_PIO : USBD_HW_USB);
+    for (uint8_t i = 0; i < GAMEPADS_MAX; i++) {
+        if (usbd_system.use_mutex) {
+            mutex_enter_blocking(&usbd_system.gamepads[i].gp_mutex);
+            usbd_system.gamepads[i].handle = NULL;
+            mutex_exit(&usbd_system.gamepads[i].gp_mutex);
+        }
+    }
+    usbd_system.inited = false;
+    memset(&usbd_system, 0, sizeof(usbd_system_t));
 }
 
 bool usb_device_get_pad_unsafe(uint8_t index, gamepad_pad_t* pad) {
@@ -236,7 +239,7 @@ bool usb_device_get_pad_unsafe(uint8_t index, gamepad_pad_t* pad) {
         (usbd_system.gamepads[index].driver->set_pad == NULL)) {
         return false;
     }
-    memcpy(pad, &usbd_system.gamepads[index].pad[GP_DATA_SAFE], sizeof(gamepad_pad_t));
+    memcpy(pad, &usbd_system.gamepads[index].pad, sizeof(gamepad_pad_t));
     return true;
 }
 
@@ -248,35 +251,36 @@ bool usb_device_get_pad_safe(uint8_t index, gamepad_pad_t* pad) {
     }
     if (usbd_system.use_mutex) {
         mutex_enter_blocking(&usbd_system.gamepads[index].gp_mutex);
-        memcpy(pad, &usbd_system.gamepads[index].pad[GP_DATA_UNSAFE], sizeof(gamepad_pad_t));
+        memcpy(pad, &usbd_system.gamepads[index].pad, sizeof(gamepad_pad_t));
         mutex_exit(&usbd_system.gamepads[index].gp_mutex);
     } else {
-        memcpy(pad, &usbd_system.gamepads[index].pad[GP_DATA_SAFE], sizeof(gamepad_pad_t));
+        memcpy(pad, &usbd_system.gamepads[index].pad, sizeof(gamepad_pad_t));
     }
     return true;
 }
 
 void usb_device_set_pad(uint8_t index, const gamepad_pad_t* pad, uint32_t flags) {
-    if ((index >= GAMEPADS_MAX )|| (pad == NULL) || 
-        (usbd_system.gamepads[index].handle == NULL)) {
+    if ((usbd_system.gamepads[index].handle == NULL) ||
+        (usbd_system.gamepads[index].driver->set_pad == NULL)) {
         return;
     }
     if (usbd_system.use_mutex) {
         mutex_enter_blocking(&usbd_system.gamepads[index].gp_mutex);
 
         if ((flags & GAMEPAD_FLAG_IN_CHATPAD) == 0) {
-            memcpy(&usbd_system.gamepads[index].pad[GP_DATA_UNSAFE], 
+            memcpy(&usbd_system.gamepads[index].pad, 
                    pad, offsetof(gamepad_pad_t, chatpad));
+            usbd_system.gamepads[index].pad_flags |= flags;
         } else if ((flags & GAMEPAD_FLAG_IN_CHATPAD) && 
                    !(flags & GAMEPAD_FLAG_IN_PAD)) {
-            memcpy(&usbd_system.gamepads[index].pad[GP_DATA_UNSAFE].chatpad, 
+            memcpy(&usbd_system.gamepads[index].pad.chatpad, 
                    pad->chatpad, sizeof(pad->chatpad));
+            usbd_system.gamepads[index].pad_flags |= flags;
         } else {
-            memcpy(&usbd_system.gamepads[index].pad[GP_DATA_UNSAFE], 
+            memcpy(&usbd_system.gamepads[index].pad, 
                    pad, sizeof(gamepad_pad_t));
+            usbd_system.gamepads[index].pad_flags = flags;
         }
-        
-        usbd_system.gamepads[index].pad_flags[GP_DATA_UNSAFE] |= flags;
         atomic_store_explicit(&usbd_system.gamepads[index].pad_new, true, memory_order_release);
         mutex_exit(&usbd_system.gamepads[index].gp_mutex);
     } else {
@@ -288,27 +292,27 @@ void usb_device_set_pad(uint8_t index, const gamepad_pad_t* pad, uint32_t flags)
             );
         }
         if ((flags & GAMEPAD_FLAG_IN_CHATPAD) == 0) {
-            memcpy(&usbd_system.gamepads[index].pad[GP_DATA_SAFE], 
+            memcpy(&usbd_system.gamepads[index].pad, 
                    pad, offsetof(gamepad_pad_t, chatpad));
         } else if ((flags & GAMEPAD_FLAG_IN_CHATPAD) && 
                    !(flags & GAMEPAD_FLAG_IN_PAD)) {
-            memcpy(&usbd_system.gamepads[index].pad[GP_DATA_SAFE].chatpad, 
+            memcpy(&usbd_system.gamepads[index].pad.chatpad, 
                    pad->chatpad, sizeof(pad->chatpad));
         } else {
-            memcpy(&usbd_system.gamepads[index].pad[GP_DATA_SAFE], 
+            memcpy(&usbd_system.gamepads[index].pad, 
                    pad, sizeof(gamepad_pad_t));
         }
     }
 }
 
 void usb_device_set_audio(uint8_t index, const gamepad_pcm_out_t* pcm_out) {
-    if ((index >= GAMEPADS_MAX) || (pcm_out == NULL) || 
-        (usbd_system.gamepads[index].handle == NULL)) {
+    if ((usbd_system.gamepads[index].handle == NULL) ||
+        (usbd_system.gamepads[index].driver->set_audio == NULL)) {
         return;
     }
     if (usbd_system.use_mutex) {
         mutex_enter_blocking(&usbd_system.gamepads[index].gp_mutex);
-        memcpy(&usbd_system.gamepads[index].pcm_out[GP_DATA_UNSAFE], pcm_out, sizeof(gamepad_pcm_out_t));
+        memcpy(&usbd_system.gamepads[index].pcm_out, pcm_out, sizeof(gamepad_pcm_out_t));
         atomic_store_explicit(&usbd_system.gamepads[index].pcm_new, true, memory_order_release);
         mutex_exit(&usbd_system.gamepads[index].gp_mutex);
     } else {
@@ -328,45 +332,30 @@ void usb_device_task(void) {
             continue;
         }
         if (usbd_system.use_mutex) {
-            bool locked = false;
-            bool pad = false;
-            bool pcm = false;
-            if ((usbd_system.gamepads[i].driver->set_pad != NULL) &&
-                (pad = atomic_load_explicit(&usbd_system.gamepads[i].pad_new, memory_order_acquire))) {
+            if ((usbd_system.gamepads[i].driver->set_pad != NULL) && 
+                atomic_load_explicit(&usbd_system.gamepads[i].pad_new, memory_order_acquire)) {
                 mutex_enter_blocking(&usbd_system.gamepads[i].gp_mutex);
-                locked = true;
                 atomic_store_explicit(&usbd_system.gamepads[i].pad_new, false, memory_order_relaxed);
-                memcpy(&usbd_system.gamepads[i].pad[GP_DATA_SAFE], 
-                       &usbd_system.gamepads[i].pad[GP_DATA_UNSAFE], 
-                       sizeof(gamepad_pad_t));
-                usbd_system.gamepads[i].pad_flags[GP_DATA_SAFE] =
-                    usbd_system.gamepads[i].pad_flags[GP_DATA_UNSAFE];
-                usbd_system.gamepads[i].pad_flags[GP_DATA_UNSAFE] = 0;
-            }
-            if ((usbd_system.gamepads[i].driver->set_audio != NULL) &&
-                (pcm = atomic_load_explicit(&usbd_system.gamepads[i].pcm_new, memory_order_acquire))) {
-                if (!locked) {
-                    mutex_enter_blocking(&usbd_system.gamepads[i].gp_mutex);
-                    locked = true;
-                }
-                atomic_store_explicit(&usbd_system.gamepads[i].pcm_new, false, memory_order_relaxed);
-                memcpy(&usbd_system.gamepads[i].pcm_out[GP_DATA_SAFE], 
-                       &usbd_system.gamepads[i].pcm_out[GP_DATA_UNSAFE], 
-                       sizeof(gamepad_pcm_out_t));
-            }
-            if (locked) {
+                gamepad_pad_t pad = usbd_system.gamepads[i].pad;
+                uint32_t flags = usbd_system.gamepads[i].pad_flags;
+                usbd_system.gamepads[i].pad_flags = 0; // Reset flags after reading
                 mutex_exit(&usbd_system.gamepads[i].gp_mutex);
-            }
-            if (pad) {
                 usbd_system.gamepads[i].driver->set_pad(
                     usbd_system.gamepads[i].handle, 
-                    &usbd_system.gamepads[i].pad[GP_DATA_SAFE], 
-                    usbd_system.gamepads[i].pad_flags[GP_DATA_SAFE]);
+                    &pad, 
+                    flags
+                );
             }
-            if (pcm) {
+            if ((usbd_system.gamepads[i].driver->set_audio != NULL) &&
+                atomic_load_explicit(&usbd_system.gamepads[i].pcm_new, memory_order_acquire)) {
+                mutex_enter_blocking(&usbd_system.gamepads[i].gp_mutex);
+                atomic_store_explicit(&usbd_system.gamepads[i].pcm_new, false, memory_order_relaxed);
+                gamepad_pcm_out_t pcm = usbd_system.gamepads[i].pcm_out;
+                mutex_exit(&usbd_system.gamepads[i].gp_mutex);
                 usbd_system.gamepads[i].driver->set_audio(
                     usbd_system.gamepads[i].handle, 
-                    &usbd_system.gamepads[i].pcm_out[GP_DATA_SAFE]);
+                    &pcm
+                );
             }
         }
         if (usbd_system.gamepads[i].driver->task != NULL) {

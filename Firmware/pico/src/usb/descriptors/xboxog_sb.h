@@ -3,7 +3,6 @@
 #include <stdint.h>
 #include "common/usb_def.h"
 #include "usb/descriptors/xid.h"
-#include "assert_compat.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -220,7 +219,7 @@ typedef struct xbsb_report_in_ {
     int8_t      tunerDial;        //0-15 is from 9oclock, around clockwise
     int8_t      gearLever;        //7-13 is gears R,1,2,3,4,5
 } xbsb_report_in_t;
-_STATIC_ASSERT(sizeof(xbsb_report_in_t) == 26, "xbsb_report_in_t size mismatch");
+_Static_assert(sizeof(xbsb_report_in_t) == 26, "xbsb_report_in_t size mismatch");
 
 typedef struct xbsb_report_out_ {
     uint8_t zero;
@@ -246,7 +245,7 @@ typedef struct xbsb_report_out_ {
     uint8_t Gear5_Gear4;
     uint8_t dummy;
 } xbsb_report_out_t;
-_STATIC_ASSERT(sizeof(xbsb_report_out_t) == 22, "xbsb_report_out_t size mismatch");
+_Static_assert(sizeof(xbsb_report_out_t) == 22, "xbsb_report_out_t size mismatch");
 
 static const usb_desc_xid_t XBSB_DESC_XID = {
     .bLength                 = sizeof(usb_desc_xid_t),

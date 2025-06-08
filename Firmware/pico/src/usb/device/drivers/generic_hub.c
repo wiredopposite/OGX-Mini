@@ -5,7 +5,6 @@
 #include "usb/descriptors/generic_hub.h"
 #include "usb/descriptors/xboxog_hub.h"
 #include "usb/device/drivers/generic_hub.h"
-#include "assert_compat.h"
 
 typedef struct {
     usbd_handle_t* handle;
@@ -17,7 +16,7 @@ typedef struct {
     uint8_t      desc_hub_buf[sizeof(usb_desc_hub_t) + 1]; /* +1 = up to 7 ports */
     ds_device_t  devices[USBD_DEVICES_MAX];
 } hub_state_t;
-_STATIC_ASSERT(sizeof(hub_state_t) <= USBD_STATUS_BUF_SIZE, "HUB state buffer too large");
+_Static_assert(sizeof(hub_state_t) <= USBD_STATUS_BUF_SIZE, "HUB state buffer too large");
 
 static hub_state_t* hub_state = NULL;
 

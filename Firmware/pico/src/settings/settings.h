@@ -4,11 +4,12 @@
 #include <stdbool.h>
 #include "libfixmath/fix16.h"
 #include "usb/device/device.h"
-#include "assert_compat.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#define USER_PROFILES_MAX   8U
 
 typedef struct __attribute__((packed, aligned(4))) {
     fix16_t dz_inner;
@@ -19,8 +20,8 @@ typedef struct __attribute__((packed, aligned(4))) {
 
     fix16_t curve;
 } trigger_settings_t;
-_STATIC_ASSERT(sizeof(trigger_settings_t) == 20, "Trigger settings size mismatch");
-_STATIC_ASSERT((sizeof(trigger_settings_t) % 4) == 0, "Trigger settings size mismatch");
+_Static_assert(sizeof(trigger_settings_t) == 20, "Trigger settings size mismatch");
+_Static_assert((sizeof(trigger_settings_t) % 4) == 0, "Trigger settings size mismatch");
 
 typedef struct __attribute__((packed, aligned(4))) {
     fix16_t dz_inner;
@@ -47,8 +48,8 @@ typedef struct __attribute__((packed, aligned(4))) {
 
     uint8_t reserved;
 } joystick_settings_t;
-_STATIC_ASSERT(sizeof(joystick_settings_t) == 56, "Joystick settings size mismatch");
-_STATIC_ASSERT((sizeof(joystick_settings_t) % 4) == 0, "Joystick settings size mismatch");
+_Static_assert(sizeof(joystick_settings_t) == 56, "Joystick settings size mismatch");
+_Static_assert((sizeof(joystick_settings_t) % 4) == 0, "Joystick settings size mismatch");
 
 typedef struct __attribute__((packed, aligned(4))) {
     uint8_t id; /* Profile ID */
@@ -108,8 +109,8 @@ typedef struct __attribute__((packed, aligned(4))) {
     trigger_settings_t trigger_l;
     trigger_settings_t trigger_r;
 } user_profile_t;
-_STATIC_ASSERT(sizeof(user_profile_t) == 184, "User profile size mismatch");
-_STATIC_ASSERT((sizeof(user_profile_t) % 4) == 0, "User profile size mismatch");
+_Static_assert(sizeof(user_profile_t) == 184, "User profile size mismatch");
+_Static_assert((sizeof(user_profile_t) % 4) == 0, "User profile size mismatch");
 
 void settings_init(void);
 bool settings_valid_datetime(void);
@@ -129,7 +130,7 @@ static inline void settings_scale_trigger(const trigger_settings_t* set, uint8_t
 
 }
 
-static inline void settings_scale_joysticks(const joystick_settings_t* set, int16_t* joy_x, int16_t* joy_y, bool invert_y) {
+static inline void settings_scale_joysticks(const joystick_settings_t* set, int16_t* joy_x, int16_t* joy_y) {
     // #define fix16_i(x) fix16_from_int(x)
     // #define fix16_f(x) fix16_from_float(x)
 

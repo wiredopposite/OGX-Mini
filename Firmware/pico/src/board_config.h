@@ -1,20 +1,22 @@
 #pragma once
 
-#define BUILD_DATETIME                  "2025-06-06 13:21:35"
+#define BUILD_DATETIME                  "2025-06-08 14:11:24"
 #define BUILD_VERSION                   "1.0.0a4"
 #define VERIFY_BUILD_VERSION            0
+#define OGXM_LOG_ENABLED                0
+#define OGXM_LOG_LEVEL                  2
 
-#define GAMEPADS_MAX                    1
+#define GAMEPADS_MAX                    4
 
 #define LED_ENABLED                     0
 #define LED_PIN                         
 
-#define NEOPIXEL_ENABLED                0
+#define NEOPIXEL_ENABLED                1
 #define NEOPIXEL_FORMAT_RGB             0
 #define NEOPIXEL_FORMAT_GRB             1
 #define NEOPIXEL_FORMAT_WRGB            2
-#define NEOPIXEL_FORMAT                 
-#define NEOPIXEL_DATA_PIN               
+#define NEOPIXEL_FORMAT                 NEOPIXEL_FORMAT_RGB
+#define NEOPIXEL_DATA_PIN               16
 #define NEOPIXEL_VCC_ENABLED            0
 #define NEOPIXEL_VCC_ENABLE_PIN         
 
@@ -25,9 +27,9 @@
 #define UART_BRIDGE_PIN_BOOT            
 #define UART_BRIDGE_PIN_RESET           
 
-#define USBH_ENABLED                    0
-#define USBH_PIO_ENABLED                0
-#define USBH_PIO_DP_PIN                 
+#define USBH_ENABLED                    1
+#define USBH_PIO_ENABLED                1
+#define USBH_PIO_DP_PIN                 12
 #define USBH_VCC_ENABLED                0
 #define USBH_VCC_ENABLE_PIN             
 
@@ -38,11 +40,11 @@
 #define TS3USB221_PIN_MUX_OE            
 #define TS3USB221_PIN_MUX_SEL           
 
-#define BLUETOOTH_ENABLED               1
+#define BLUETOOTH_ENABLED               0
 #define BLUETOOTH_HARDWARE_PICOW        0
 #define BLUETOOTH_HARDWARE_ESP32_I2C    1
 #define BLUETOOTH_HARDWARE_ESP32_SPI    2
-#define BLUETOOTH_HARDWARE              BLUETOOTH_HARDWARE_PICOW
+#define BLUETOOTH_HARDWARE              0
 
 #define ESP32_I2C_NUM                   
 #define ESP32_I2C_PIN_SDA               
@@ -67,7 +69,7 @@
 #define OGXM_BOARD_DEVKIT               3
 #define OGXM_BOARD_4CHANNEL             4
 #define OGXM_BOARD_BLUETOOTH_USBH       5
-#define OGXM_BOARD                      OGXM_BOARD_BLUETOOTH
+#define OGXM_BOARD                      OGXM_BOARD_STANDARD
 
 #if ((OGXM_BOARD != OGXM_BOARD_DEVKIT) && USBH_PIO_ENABLED && USBD_PIO_ENABLED)
 #error "USB Host and Device PIO cannot be enabled at the same time"

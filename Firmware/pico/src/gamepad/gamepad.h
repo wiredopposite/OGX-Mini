@@ -3,13 +3,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "board_config.h"
-#include "assert_compat.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-// typedef struct gamepad_handle_ gamepad_handle_t;
 
 #define GAMPAD_PCM_FRAME_SIZE       16U
 
@@ -92,7 +89,7 @@ typedef struct __attribute__((packed, aligned(4))) {
     uint8_t  chatpad[3];
     uint8_t  reserved1;
 } gamepad_pad_t;
-_STATIC_ASSERT(sizeof(gamepad_pad_t) == 28, "Gamepad pad size mismatch");
+_Static_assert(sizeof(gamepad_pad_t) == 28, "Gamepad pad size mismatch");
 
 typedef struct __attribute__((packed, aligned(4))) {
     uint8_t l;
@@ -100,16 +97,16 @@ typedef struct __attribute__((packed, aligned(4))) {
     uint8_t l_duration;
     uint8_t r_duration;
 } gamepad_rumble_t;
-_STATIC_ASSERT(sizeof(gamepad_rumble_t) == 4, "Gamepad rumble size mismatch");
+_Static_assert(sizeof(gamepad_rumble_t) == 4, "Gamepad rumble size mismatch");
 
 typedef struct __attribute__((packed, aligned(4))) {
     int16_t  data[GAMPAD_PCM_FRAME_SIZE];
     uint16_t samples;
     uint16_t reserved;
 } gamepad_pcm_out_t, gamepad_pcm_in_t;
-_STATIC_ASSERT(sizeof(gamepad_pcm_out_t) == 36, "Gamepad PCM out size mismatch");
+_Static_assert(sizeof(gamepad_pcm_out_t) == 36, "Gamepad PCM out size mismatch");
 
-/* ---- IN/OUT Data Management ---- */
+/* ---- IN/OUT Data Flags ---- */
 
 #define GAMEPAD_FLAG_IN_PAD            ((uint32_t)1 << 0) /* New Device->Host pad data */
 #define GAMEPAD_FLAG_IN_PAD_ANALOG     ((uint32_t)1 << 1) /* New Device->Host pad data has analog data */
@@ -118,26 +115,6 @@ _STATIC_ASSERT(sizeof(gamepad_pcm_out_t) == 36, "Gamepad PCM out size mismatch")
 #define GAMEPAD_FLAG_OUT_PCM           ((uint32_t)1 << 4) /* New Host->Device PCM data */
 #define GAMEPAD_FLAG_OUT_RUMBLE        ((uint32_t)1 << 5) /* New Host->Device rumble data */
 #define GAMEPAD_FLAG_OUT_RUMBLE_DUR    ((uint32_t)1 << 6) /* New Host->Device rumble has duration info */
-
-// gamepad_handle_t* gamepad_init(uint8_t index);
-// uint8_t gamepad_get_index(gamepad_handle_t* handle);
-
-// /* ---- IN/Host Side methods ---- */
-
-// bool gamepad_new_out(gamepad_handle_t* handle);
-// void gamepad_set_pad(gamepad_handle_t* handle, const gamepad_pad_t* report_in, uint32_t flags);
-// void gamepad_set_chatpad(gamepad_handle_t* handle, const uint8_t chatpad[3]);
-// void gamepad_set_pcm_in(gamepad_handle_t* handle, const gamepad_pcm_in_t* pcm);
-// uint32_t gamepad_get_rumble(gamepad_handle_t* handle, gamepad_rumble_t* rumble);
-// uint32_t gamepad_get_pcm_out(gamepad_handle_t* handle, gamepad_pcm_out_t* pcm);
-
-// /* ---- OUT/Device side methods ---- */
-
-// bool gamepad_new_in(gamepad_handle_t* handle);
-// void gamepad_set_rumble(gamepad_handle_t* handle, const gamepad_rumble_t* rumble);
-// void gamepad_set_pcm_out(gamepad_handle_t* handle, const gamepad_pcm_out_t* pcm);
-// uint32_t gamepad_get_pad(gamepad_handle_t* handle, gamepad_pad_t* pad);
-// uint32_t gamepad_get_pcm_in(gamepad_handle_t* handle, gamepad_pcm_in_t* pcm);
 
 #ifdef __cplusplus
 }

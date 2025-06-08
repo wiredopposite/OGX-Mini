@@ -4,7 +4,6 @@
 #include "common/usb_util.h"
 #include "common/usb_def.h"
 #include "common/class/hid_def.h"
-#include "assert_compat.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -282,7 +281,7 @@ typedef struct __attribute__((packed, aligned(4))) {
         } read;
     };
 } ps3_cmd_storage_t;
-_STATIC_ASSERT(sizeof(ps3_cmd_storage_t) == 64, "ps3_cmd_storage_t size mismatch");
+_Static_assert(sizeof(ps3_cmd_storage_t) == 64, "ps3_cmd_storage_t size mismatch");
 
 typedef struct __attribute__((packed, aligned(4))) {
     uint8_t report_id;
@@ -291,7 +290,7 @@ typedef struct __attribute__((packed, aligned(4))) {
     uint8_t len;
     uint8_t payload[PS3_EP0_SIZE - 6];
 } ps3_cmd_storage_resp_t;
-_STATIC_ASSERT(sizeof(ps3_cmd_storage_resp_t) == 64, "ps3_cmd_storage_resp_t size mismatch");
+_Static_assert(sizeof(ps3_cmd_storage_resp_t) == 64, "ps3_cmd_storage_resp_t size mismatch");
 
 typedef struct __attribute__((packed)) {
     uint8_t deadzone;
@@ -319,7 +318,7 @@ typedef struct __attribute__((packed, aligned(4))) {
     ps3_deadzone_gain_t ry;
     uint8_t unk5[34];
 } ps3_info_t;
-_STATIC_ASSERT(sizeof(ps3_info_t) == 64, "ps3_info_t size mismatch");
+_Static_assert(sizeof(ps3_info_t) == 64, "ps3_info_t size mismatch");
 
 typedef struct __attribute__((packed)) {
     uint8_t report_id;
@@ -329,7 +328,7 @@ typedef struct __attribute__((packed)) {
     uint32_t serial;
     uint8_t pcb_rev;
 } ps3_bt_info_t;
-_STATIC_ASSERT(sizeof(ps3_bt_info_t) == 17, "ps3_bt_info_t size mismatch");
+_Static_assert(sizeof(ps3_bt_info_t) == 17, "ps3_bt_info_t size mismatch");
 
 typedef struct __attribute__((packed, aligned(4))) {
     uint8_t report_id;
@@ -337,7 +336,7 @@ typedef struct __attribute__((packed, aligned(4))) {
     uint8_t host_mac_addr[6];
     uint8_t unk1[55];
 } ps3_bt_pairing_t;
-_STATIC_ASSERT(sizeof(ps3_bt_pairing_t) == 64, "ps3_bt_pairing_t size mismatch");
+_Static_assert(sizeof(ps3_bt_pairing_t) == 64, "ps3_bt_pairing_t size mismatch");
 
 typedef struct __attribute__((packed)) {
     int16_t bias;
@@ -356,7 +355,7 @@ typedef struct __attribute__((packed, aligned(4))) {
     uint8_t unk2[64-33];
 } ps3_motion_calib_t;
 static const size_t siziziz = offsetof(ps3_motion_calib_t, accel_x);
-_STATIC_ASSERT(sizeof(ps3_motion_calib_t) == 64, "ps3_motion_calib_t size mismatch");
+_Static_assert(sizeof(ps3_motion_calib_t) == 64, "ps3_motion_calib_t size mismatch");
 
 typedef struct __attribute__((packed, aligned(4))) {
     uint8_t report_id;
@@ -401,7 +400,7 @@ typedef struct __attribute__((packed, aligned(4))) {
     // };
     uint8_t align[3]; // Padding
 } ps3_sixaxis_report_in_t;
-_STATIC_ASSERT(sizeof(ps3_sixaxis_report_in_t) == 52, "ps3_sixaxis_report_in_t size mismatch");
+_Static_assert(sizeof(ps3_sixaxis_report_in_t) == 52, "ps3_sixaxis_report_in_t size mismatch");
 
 typedef struct __attribute__((packed, aligned(4))) {
     uint8_t report_id;
@@ -422,7 +421,7 @@ typedef struct __attribute__((packed, aligned(4))) {
     } leds[5];                /* LEDx at (4 - x), last is not used */
     uint8_t reserved2[13];
 } ps3_report_out_t;
-_STATIC_ASSERT(sizeof(ps3_report_out_t) == 48, "ps3_report_out_t size mismatch");
+_Static_assert(sizeof(ps3_report_out_t) == 48, "ps3_report_out_t size mismatch");
 
 // static const uint8_t PS3_DEFAULT_OUT_REPORT[] = {
 //     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -433,7 +432,7 @@ _STATIC_ASSERT(sizeof(ps3_report_out_t) == 48, "ps3_report_out_t size mismatch")
 //     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 //     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 // };
-// _STATIC_ASSERT(sizeof(PS3_DEFAULT_OUT_REPORT) == sizeof(ps3_report_out_t), "PS3_DEFAULT_OUT_REPORT size mismatch");
+// _Static_assert(sizeof(PS3_DEFAULT_OUT_REPORT) == sizeof(ps3_report_out_t), "PS3_DEFAULT_OUT_REPORT size mismatch");
 
 static const uint8_t PS3_DEFAULT_STORAGE_BANK_A[] = {
     0x01, 0x04, 0x01, 0x03, 0x00, 0x00, 0x00, 0x00, 0xEE, 0x02, 0x01, 0x03, 0xEF, 0x04, 0x01, 0x03,

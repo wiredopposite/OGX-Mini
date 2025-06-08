@@ -5,13 +5,17 @@
 #include "gamepad/gamepad.h"
 #include "usb/host/host.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define USBH_STATE_BUFFER_SIZE 0x200U
 
 typedef enum {
-    USBH_PERIPH_GAMEPAD = 0,
-    USBH_PERIPH_CHATPAD,
-    USBH_PERIPH_AUDIO,
-    USBH_PERIPH_COUNT
+    PERIPH_GAMEPAD = 0,
+    PERIPH_CHATPAD,
+    PERIPH_AUDIO,
+    PERIPH_COUNT
 } usbh_periph_t;
 
 typedef void (*host_mounted_cb_t)(usbh_type_t type, uint8_t index, uint8_t daddr, uint8_t itf_num, const uint8_t* desc_report, uint16_t desc_len, uint8_t* state_buffer);
@@ -52,3 +56,7 @@ extern const usb_host_driver_t USBH_DRIVER_HID;
 void usb_host_driver_connect_cb(uint8_t index, usbh_type_t type, bool connected);
 void usb_host_driver_pad_cb(uint8_t index, const gamepad_pad_t* pad, uint32_t flags);
 void usb_host_driver_audio_cb(uint8_t index, const gamepad_pcm_out_t* pcm);
+
+#ifdef __cplusplus
+}
+#endif

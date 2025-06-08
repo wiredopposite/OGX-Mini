@@ -9,30 +9,39 @@
 extern "C" {
 #endif
 
-#define SWITCH_EPSIZE_CTRL ((uint8_t)64)
-#define SWITCH_EPSIZE_IN   ((uint16_t)32)
-#define SWITCH_EPSIZE_OUT  ((uint16_t)32)
-#define SWITCH_EPADDR_IN   ((uint8_t)1 | USB_EP_DIR_IN)
-#define SWITCH_EPADDR_OUT  ((uint8_t)2 | USB_EP_DIR_OUT)
+#define WEBAPP_EPSIZE_CTRL ((uint8_t)64)
+#define WEBAPP_EPSIZE_IN   ((uint16_t)32)
+#define WEBAPP_EPSIZE_OUT  ((uint16_t)32)
+#define WEBAPP_EPADDR_IN   ((uint8_t)1 | USB_EP_DIR_IN)
+#define WEBAPP_EPADDR_OUT  ((uint8_t)2 | USB_EP_DIR_OUT)
 
-static const usb_desc_device_t SWITCH_DESC_DEVICE = {
+#define WEBAPP_REQ_GET_PROFILE          ((uint8_t)0x50)
+#define WEBAPP_REQ_SET_PROFILE          ((uint8_t)0x60)
+#define WEBAPP_REQ_GET_DEVICE_TYPE      ((uint8_t)0x70)
+#define WEBAPP_REQ_SET_DEVICE_TYPE      ((uint8_t)0x80)
+#define WEBAPP_REQ_GET_GAMEPAD_INFO     ((uint8_t)0x90)
+
+#define WEBAPP_GET_PROFILE_REPORT_ID_BY_INDEX   ((uint8_t)0x01)
+#define WEBAPP_GET_PROFILE_REPORT_ID_BY_ID      ((uint8_t)0x02)
+
+static const usb_desc_device_t WEBAPP_DESC_DEVICE = {
     .bLength            = sizeof(usb_desc_device_t),
     .bDescriptorType    = USB_DTYPE_DEVICE,
     .bcdUSB             = USB_BCD_VERSION_2_0,
     .bDeviceClass       = 0x00,
     .bDeviceSubClass    = 0x00,
     .bDeviceProtocol    = 0x00,
-    .bMaxPacketSize0    = SWITCH_EPSIZE_CTRL,
-    .idVendor           = 0x0F0D,
-    .idProduct          = 0x0092,
+    .bMaxPacketSize0    = WEBAPP_EPSIZE_CTRL,
+    .idVendor           = 0xCafe,
+    .idProduct          = 0x4006,
     .bcdDevice          = 0x0100,
     .iManufacturer      = 1,
     .iProduct           = 2,
-    .iSerialNumber      = 3,
+    .iSerialNumber      = 0,
     .bNumConfigurations = 1
 };
 
-static const uint8_t SWITCH_DESC_REPORT[] = {
+static const uint8_t WEBAPP_DESC_REPORT[] = {
     0x05, 0x01,        // Usage Page (Generic Desktop Ctrls)
     0x09, 0x05,        // Usage (Game Pad)
     0xA1, 0x01,        // Collection (Application)
@@ -82,13 +91,13 @@ typedef struct __attribute__((packed)) {
     usb_desc_hid_t      hid;
     usb_desc_endpoint_t ep_out;
     usb_desc_endpoint_t ep_in;
-} switch_desc_config_t;
+} WEBAPP_desc_config_t;
 
-static const switch_desc_config_t SWITCH_DESC_CONFIG = {
+static const WEBAPP_desc_config_t WEBAPP_DESC_CONFIG = {
     .config = {
         .bLength            = sizeof(usb_desc_config_t),
         .bDescriptorType    = USB_DTYPE_CONFIGURATION,
-        .wTotalLength       = sizeof(switch_desc_config_t),
+        .wTotalLength       = sizeof(WEBAPP_desc_config_t),
         .bNumInterfaces     = 1,
         .bConfigurationValue= 1,
         .iConfiguration     = 0,
@@ -113,70 +122,34 @@ static const switch_desc_config_t SWITCH_DESC_CONFIG = {
         .bCountryCode       = 0x00,
         .bNumDescriptors    = 1,
         .bDescriptorType0   = USB_DTYPE_HID_REPORT,
-        .wDescriptorLength0 = sizeof(SWITCH_DESC_REPORT)
+        .wDescriptorLength0 = sizeof(WEBAPP_DESC_REPORT)
     },
     .ep_out = {
         .bLength            = sizeof(usb_desc_endpoint_t),
         .bDescriptorType    = USB_DTYPE_ENDPOINT,
-        .bEndpointAddress   = SWITCH_EPADDR_OUT,
+        .bEndpointAddress   = WEBAPP_EPADDR_OUT,
         .bmAttributes       = USB_EP_TYPE_INTERRUPT,
-        .wMaxPacketSize     = SWITCH_EPSIZE_OUT,
+        .wMaxPacketSize     = WEBAPP_EPSIZE_OUT,
         .bInterval          = 1
     },
     .ep_in = {
         .bLength            = sizeof(usb_desc_endpoint_t),
         .bDescriptorType    = USB_DTYPE_ENDPOINT,
-        .bEndpointAddress   = SWITCH_EPADDR_IN,
+        .bEndpointAddress   = WEBAPP_EPADDR_IN,
         .bmAttributes       = USB_EP_TYPE_INTERRUPT,
-        .wMaxPacketSize     = SWITCH_EPSIZE_IN,
+        .wMaxPacketSize     = WEBAPP_EPSIZE_IN,
         .bInterval          = 1
     }
 };
 
-static const usb_desc_string_t SWITCH_DESC_STR_LANGID   = USB_ARRAY_DESC(0x0409);
-static const usb_desc_string_t SWITCH_DESC_STR_VENDOR   = USB_STRING_DESC("HORI CO.,LTD.");
-static const usb_desc_string_t SWITCH_DESC_STR_PRODUCT  = USB_STRING_DESC("POKKEN CONTROLLER");
-static const usb_desc_string_t* SWITCH_DESC_STRING[] = {
-    &SWITCH_DESC_STR_LANGID,
-    &SWITCH_DESC_STR_VENDOR,
-    &SWITCH_DESC_STR_PRODUCT
+static const usb_desc_string_t WEBAPP_DESC_STR_LANGID   = USB_ARRAY_DESC(0x0409);
+static const usb_desc_string_t WEBAPP_DESC_STR_VENDOR   = USB_STRING_DESC("WiredOpposite");
+static const usb_desc_string_t WEBAPP_DESC_STR_PRODUCT  = USB_STRING_DESC("OGX-Mini WebApp");
+static const usb_desc_string_t* WEBAPP_DESC_STRING[] = {
+    &WEBAPP_DESC_STR_LANGID,
+    &WEBAPP_DESC_STR_VENDOR,
+    &WEBAPP_DESC_STR_PRODUCT
 };
-
-#define SWITCH_DPAD_UP              ((uint8_t)0x00)
-#define SWITCH_DPAD_UP_RIGHT        ((uint8_t)0x01)
-#define SWITCH_DPAD_RIGHT           ((uint8_t)0x02)
-#define SWITCH_DPAD_DOWN_RIGHT      ((uint8_t)0x03)
-#define SWITCH_DPAD_DOWN            ((uint8_t)0x04)
-#define SWITCH_DPAD_DOWN_LEFT       ((uint8_t)0x05)
-#define SWITCH_DPAD_LEFT            ((uint8_t)0x06)
-#define SWITCH_DPAD_UP_LEFT         ((uint8_t)0x07)
-#define SWITCH_DPAD_CENTER          ((uint8_t)0x08)
-
-#define SWITCH_BUTTON_Y             ((uint8_t)1 << 0)
-#define SWITCH_BUTTON_B             ((uint8_t)1 << 1)
-#define SWITCH_BUTTON_A             ((uint8_t)1 << 2)
-#define SWITCH_BUTTON_X             ((uint8_t)1 << 3)
-#define SWITCH_BUTTON_L             ((uint8_t)1 << 4)
-#define SWITCH_BUTTON_R             ((uint8_t)1 << 5)
-#define SWITCH_BUTTON_ZL            ((uint8_t)1 << 6)
-#define SWITCH_BUTTON_ZR            ((uint8_t)1 << 7)
-#define SWITCH_BUTTON_MINUS         ((uint8_t)1 << 8)
-#define SWITCH_BUTTON_PLUS          ((uint8_t)1 << 9)
-#define SWITCH_BUTTON_L3            ((uint8_t)1 << 10)
-#define SWITCH_BUTTON_R3            ((uint8_t)1 << 11)
-#define SWITCH_BUTTON_HOME          ((uint8_t)1 << 12)
-#define SWITCH_BUTTON_CAPTURE       ((uint8_t)1 << 13)
-
-typedef struct __attribute__((packed)) {
-    uint16_t buttons;
-    uint8_t dpad;
-    uint8_t joystick_lx;
-    uint8_t joystick_ly;
-    uint8_t joystick_rx;
-    uint8_t joystick_ry;
-    uint8_t vendor;
-} switch_report_in_t;
-_Static_assert(sizeof(switch_report_in_t) == 8, "DInput report size exceeds buffer size");
 
 #ifdef __cplusplus
 }

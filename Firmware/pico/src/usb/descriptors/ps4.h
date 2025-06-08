@@ -4,7 +4,6 @@
 #include "common/usb_util.h"
 #include "common/usb_def.h"
 #include "common/class/hid_def.h"
-#include "assert_compat.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -551,7 +550,7 @@ typedef struct __attribute__((packed, aligned(4))) {
 
     uint8_t unk[22];
 } ps4_report_in_t;
-_STATIC_ASSERT(sizeof(ps4_report_in_t) == 32, "ps4_report_in_t size mismatch");
+_Static_assert(sizeof(ps4_report_in_t) == 32, "ps4_report_in_t size mismatch");
 
 typedef struct __attribute__((packed, aligned(4))) {
     uint8_t report_id;
@@ -592,7 +591,7 @@ typedef struct __attribute__((packed, aligned(4))) {
 
     uint8_t unk[9];
 } ps4_report_out_t;
-_STATIC_ASSERT(sizeof(ps4_report_out_t) == 32, "ps4_report_out_t size mismatch");
+_Static_assert(sizeof(ps4_report_out_t) == 32, "ps4_report_out_t size mismatch");
 
 typedef enum {
     PS4_LED_BLUE = 0,

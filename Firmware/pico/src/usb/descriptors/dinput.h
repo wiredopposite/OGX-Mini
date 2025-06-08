@@ -4,7 +4,6 @@
 #include "common/usb_def.h"
 #include "common/usb_util.h"
 #include "common/class/hid_def.h"
-#include "assert_compat.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -219,7 +218,7 @@ typedef struct __attribute__((packed)) {
     uint8_t l2_axis;
     uint8_t r2_axis;
 } dinput_report_in_t;
-_STATIC_ASSERT(sizeof(dinput_report_in_t) == 19, "DInput report size exceeds buffer size");
+_Static_assert(sizeof(dinput_report_in_t) == 19, "DInput report size exceeds buffer size");
 
 #ifdef __cplusplus
 }

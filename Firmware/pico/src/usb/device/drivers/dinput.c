@@ -6,7 +6,6 @@
 #include "usb/device/device.h"
 #include "usb/descriptors/dinput.h"
 #include "usb/device/device_private.h"
-#include "assert_compat.h"
 
 #define REPORT_ID_MAGIC ((uint8_t)0x03)
 
@@ -16,7 +15,7 @@ typedef struct {
     uint8_t             protocol;
     gamepad_pad_t       gp_pad;
 } dinput_state_t;
-_STATIC_ASSERT(sizeof(dinput_state_t) <= USBD_STATUS_BUF_SIZE, "DInput state size exceeds buffer size");
+_Static_assert(sizeof(dinput_state_t) <= USBD_STATUS_BUF_SIZE, "DInput state size exceeds buffer size");
 
 static const uint8_t GUIDE_BTN_MAGIC[] = { 
     0x21, 0x26, 0x01, 0x07, 0x00, 0x00, 0x00, 0x00 

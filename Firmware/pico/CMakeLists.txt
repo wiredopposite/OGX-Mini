@@ -43,13 +43,15 @@ add_subdirectory(${EXTERNAL_DIR}/g726)
 add_subdirectory(${EXTERNAL_DIR}/libfixmath libfixmath)
 
 add_executable(${FW_NAME}
-    # ${SRC}/main_usb.c
+    ${SRC}/main_standard.c
     ${SRC}/main_bluetooth.c
-
-    ${SRC}/gamepad/gamepad.c
+    ${SRC}/main_devkit.c
+    
+    ${SRC}/log/log.c
 
     ${SRC}/settings/nvs.c
     ${SRC}/settings/settings.cpp
+    ${SRC}/settings/button_combo.c
 
     ${SRC}/sdcard/sdcard.c
 
@@ -69,8 +71,9 @@ add_executable(${FW_NAME}
     ${SRC}/usb/device/drivers/switch.c
     ${SRC}/usb/device/drivers/psclassic.c
     ${SRC}/usb/device/drivers/uart_bridge.c
+    ${SRC}/usb/device/drivers/webapp.c
 
-    ${SRC}/usb/host/host.c
+    ${SRC}/usb/host/host.cpp
     ${SRC}/usb/host/drivers/xboxog_gp.c
     ${SRC}/usb/host/drivers/xinput_wl.c
     ${SRC}/usb/host/drivers/xinput.c
@@ -198,6 +201,13 @@ target_compile_definitions(libfixmath PRIVATE
 target_include_directories(tinyusb_host
     INTERFACE
         ${SRC}/usb/host/tusb_host
+)
+
+target_compile_definitions(tinyusb_host
+    INTERFACE
+        # $<$<CONFIG:Release>:CFG_TUSB_DEBUG=0>
+        # $<$<CONFIG:Debug>:CFG_TUSB_DEBUG=2>
+        # $<$<CONFIG:Debug>:CFG_TUH_LOG_LEVEL=2>
 )
 
 pico_generate_pio_header(${FW_NAME} ${SRC}/led/neopixel/WS2812.pio)

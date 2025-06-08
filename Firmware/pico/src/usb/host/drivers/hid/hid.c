@@ -1,7 +1,6 @@
 #include <string.h>
-#include <stdio.h>
 #include <pico/stdlib.h>
-
+#include "log/log.h"
 #include "gamepad/range.h"
 #include "settings/settings.h"
 #include "usb/host/host_private.h"
@@ -65,7 +64,7 @@ static void hid_map_gamepad(hid_state_t* state, const uint8_t* report, uint16_t 
 void hid_mounted_cb(usbh_type_t type, uint8_t index, uint8_t daddr, uint8_t itf_num, 
                     const uint8_t* desc_report, uint16_t desc_len, uint8_t* state_buffer) {
     if ((desc_report == NULL) || (desc_len == 0)) {
-        printf("HID report descriptor is NULL or empty\n");
+        ogxm_loge("HID report descriptor is NULL or empty\n");
         return;
     }
     hid_state_t* state = &hid_state[index];
@@ -79,10 +78,10 @@ void hid_mounted_cb(usbh_type_t type, uint8_t index, uint8_t daddr, uint8_t itf_
 
     state->driver = HIDH_DRIVERS[type];
     if (state->driver == NULL) {
-        printf("Driver is null, using generic HID driver\n");
+        ogxm_logd("Driver is null, using generic HID driver\n");
         state->driver = &HIDH_DRIVER_GENERIC;
     }
-    printf("HID host driver: %s\n", state->driver->name);
+    ogxm_logd("HID host driver: %s\n", state->driver->name);
     if (state->driver->init_cb) {
         state->driver->init_cb(daddr, itf_num, state->buffer_out);
     }
@@ -102,6 +101,25 @@ void hid_report_cb(uint8_t index, usbh_periph_t subtype, uint8_t daddr,
                    uint8_t itf_num, const uint8_t* data, uint16_t len) {
     hid_state_t* state = &hid_state[index];
     hid_map_gamepad(state, data, len);
+
+    if (state->map.joy_l) {
+        settings_scale_joysticks(&state->profile.joystick_l, 
+                                  &state->gp_report.joystick_lx, 
+                                  &state->gp_report.joystick_ly);
+    }
+    if (state->map.joy_r) {
+        settings_scale_joysticks(&state->profile.joystick_r, 
+                                  &state->gp_report.joystick_rx, 
+                                  &state->gp_report.joystick_ry);
+    }
+    if (state->map.trig_l) {
+        settings_scale_trigger(&state->profile.trigger_l, 
+                               &state->gp_report.trigger_l);
+    }
+    if (state->map.trig_r) {
+        settings_scale_trigger(&state->profile.trigger_r, 
+                               &state->gp_report.trigger_r);
+    }
 
     if (memcmp(&state->gp_report, &state->prev_gp_report, sizeof(gamepad_pad_t)) != 0) {
         usb_host_driver_pad_cb(index, &state->gp_report, 0);
@@ -179,8 +197,8 @@ static void hid_map_gamepad(hid_state_t* state, const uint8_t* report, uint16_t 
             case HID_DESKTOP_USAGE_RX:
             case HID_DESKTOP_USAGE_RY:
             case HID_DESKTOP_USAGE_RZ:
-                // printf("HID Usage Desktop: %u, value: %u\n", field->usage, value);
-                // printf("HID Usage Desktop: %u, logical min: %d, logical max: %d\n", 
+                // ogxm_logv("HID Usage Desktop: %u, value: %u\n", field->usage, value);
+                // ogxm_logv("HID Usage Desktop: %u, logical min: %d, logical max: %d\n", 
                 //        field->usage, field->logical_min, field->logical_max);
                 for (uint8_t j = 0; j < ARRAY_SIZE(usage_map->desktop_map); j++) {
                     if (field->usage != usage_map->desktop_map[j].usage) {
@@ -267,7 +285,7 @@ static void hid_map_gamepad(hid_state_t* state, const uint8_t* report, uint16_t 
             if (!value || (field->usage >= HID_USAGE_BUTTON_COUNT)) {
                 break;
             }
-            // printf("HID Usage Button: %u\n", field->usage);
+            // ogxm_logv("HID Usage Button: %u\n", field->usage);
             pad->buttons |= GP_BIT16(profile->btns[usage_map->buttons[field->usage]]);
             break;
         }

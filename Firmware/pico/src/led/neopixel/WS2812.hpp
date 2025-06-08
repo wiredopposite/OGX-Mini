@@ -5,6 +5,9 @@
 
 #pragma once
 
+#include "board_config.h"
+#if NEOPIXEL_ENABLED
+
 #include <array>
 #include <pico/types.h>
 #include <hardware/pio.h>
@@ -58,3 +61,5 @@ class WS2812 {
         uint32_t convertData(uint32_t rgbw);
 
 };
+
+#endif // NEOPIXEL_ENABLED

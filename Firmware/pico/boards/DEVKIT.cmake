@@ -1,3 +1,6 @@
+set(OGXM_LOG_ENABLED            1)
+set(OGXM_LOG_LEVEL              2)
+
 set(LED_ENABLED                 1)
 set(LED_PIN                     25)
 
@@ -19,7 +22,7 @@ set(TS3USB221_ENABLED           1)
 set(TS3USB221_PIN_MUX_OE        20)
 set(TS3USB221_PIN_MUX_SEL       21)
 
-set(BLUETOOTH_ENABLED           1)
+set(BLUETOOTH_ENABLED           0)
 # set(BLUETOOTH_HARDWARE          BLUETOOTH_HARDWARE_ESP32_SPI)
 set(BLUETOOTH_HARDWARE          BLUETOOTH_HARDWARE_PICOW)
 
@@ -35,5 +38,5 @@ set(OGXM_BOARD                  OGXM_BOARD_DEVKIT)
 set(PICO_DEFAULT_UART           0)
 set(PICO_DEFAULT_UART_TX_PIN    16)
 set(PICO_DEFAULT_UART_RX_PIN    17)
-# set(PICO_BOARD                  pico)
-set(PICO_BOARD                  pico_w)
+set(PICO_BOARD                  pico)
+# set(PICO_BOARD                  pico_w)

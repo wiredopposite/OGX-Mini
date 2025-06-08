@@ -4,14 +4,13 @@
 #if SD_CARD_ENABLED
 
 #include <string.h>
-#include <stdio.h>
 #include "common/usb_util.h"
 #include "common/class/msc_def.h"
 #include "gamepad/range.h"
 #include "sdcard/sdcard.h"
 #include "usb/descriptors/msc.h"
 #include "usb/device/device.h"
-#include "assert_compat.h"
+#include "log/log.h"
 
 #define MSC_BLOCK_SIZE 512U
 
@@ -36,7 +35,7 @@ typedef struct {
     uint8_t block_in[MSC_BLOCK_SIZE] __attribute__((aligned(4)));
     uint8_t ep_out[MSC_EPSIZE_OUT] __attribute__((aligned(4)));
 } msc_state_t;
-_STATIC_ASSERT(sizeof(msc_state_t) <= USBD_STATUS_BUF_SIZE, "XBOXOG GP state size exceeds buffer size");
+_Static_assert(sizeof(msc_state_t) <= USBD_STATUS_BUF_SIZE, "XBOXOG GP state size exceeds buffer size");
 
 typedef struct __attribute__((packed)) {
     uint8_t  opcode;         // 0x28 for READ(10), 0x2A for WRITE(10)
@@ -165,7 +164,7 @@ static bool msc_write_bulk_blocking(usbd_handle_t* handle, const uint8_t* data, 
         uint16_t to_write = MIN(remaining, MSC_EPSIZE_IN);
         int32_t written = usbd_ep_write(handle, MSC_EPADDR_IN, data + (len - remaining), to_write);
         if (written < 0) {
-            printf("Error writing to MSC IN endpoint\n");
+            ogxm_loge("Error writing to MSC IN endpoint\n");
             return false;
         }
         while (!usbd_ep_ready(handle, MSC_EPADDR_IN)) {
@@ -245,7 +244,7 @@ static void msc_ep_xfer_cb(usbd_handle_t* handle, uint8_t epaddr) {
         int32_t len = usbd_ep_read(handle, MSC_EPADDR_OUT, 
                                    msc->ep_out, MSC_EPSIZE_OUT);
         if (len < 0) {
-            printf("Error reading MSC OUT endpoint\n");
+            ogxm_loge("Error reading MSC OUT endpoint\n");
             return;
         }
         if ((len == sizeof(usb_msc_cbw_t)) && 

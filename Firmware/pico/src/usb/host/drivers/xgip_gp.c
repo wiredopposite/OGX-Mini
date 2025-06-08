@@ -1,13 +1,12 @@
 #include <string.h>
 #include "host/usbh.h"
-
+#include "log/log.h"
 #include "gamepad/gamepad.h"
 #include "gamepad/range.h"
 #include "settings/settings.h"
 #include "usb/host/tusb_host/tuh_hxx.h"
 #include "usb/descriptors/xgip.h"
 #include "usb/host/host_private.h"
-#include "assert_compat.h"
 
 typedef enum {
     GIP_INIT_0 = 0,
@@ -34,7 +33,7 @@ typedef struct {
         bool trig_r;
     } map;
 } xgip_state_t;
-_STATIC_ASSERT(sizeof(xgip_state_t) <= USBH_STATE_BUFFER_SIZE, "xgip_state_t size exceeds USBH_EPSIZE_MAX");
+_Static_assert(sizeof(xgip_state_t) <= USBH_STATE_BUFFER_SIZE, "xgip_state_t size exceeds USBH_EPSIZE_MAX");
 
 static xgip_state_t* xgip_state[GAMEPADS_MAX] = { NULL };
 
@@ -52,7 +51,7 @@ static void xgip_init_cb(uint8_t daddr, uint8_t itf_num, const uint8_t* data,
     xgip_cmd_set_state_t* cmd = (xgip_cmd_set_state_t*)xgip->buf_out;
     memset(cmd, 0, sizeof(xgip_cmd_set_state_t));
     increment_seq_id(&xgip->state_seq_id);
-    printf("XGIP Init Callback: daddr=%u, itf_num=%u, success=%d, len=%u\n", 
+    ogxm_logv("XGIP Init Callback: daddr=%u, itf_num=%u, success=%d, len=%u\n", 
            daddr, itf_num, success, len);
 
     switch (xgip->init_state) {
@@ -115,7 +114,8 @@ static void xgip_mounted(usbh_type_t type, uint8_t index, uint8_t daddr, uint8_t
     state->map.trig_l = !settings_is_default_trigger(&state->profile.trigger_l);
     state->map.trig_r = !settings_is_default_trigger(&state->profile.trigger_r);
 
-    xgip_init_cb(daddr, itf_num, NULL, 0, true, state);
+    // xgip_init_cb(daddr, itf_num, NULL, 0, true, state);
+    tuh_hxx_receive_report(daddr, itf_num);
 }
 
 static void xgip_report_received(uint8_t index, usbh_periph_t subtype, uint8_t daddr, 
@@ -124,7 +124,6 @@ static void xgip_report_received(uint8_t index, usbh_periph_t subtype, uint8_t d
 
     xgip_state_t* xgip = xgip_state[index];
     xgip_header_t* header = (xgip_header_t*)data;
-    printf("XGIP Report Received: type=0x%02x, len=%u\n", header->type.raw, len);
 
     switch (header->type.raw) {
     case XGIP_LOW_LATENCY_GAMEPAD_INPUT:
@@ -135,7 +134,9 @@ static void xgip_report_received(uint8_t index, usbh_periph_t subtype, uint8_t d
             (memcmp(report + 4, &xgip->prev_report_in + 4, sizeof(xgip_report_in_t) - 4) == 0)) {
             break;
         }
+        bool sys_btn = ((xgip->gp_report.buttons & GP_BIT16(xgip->profile.btn_sys)) != 0);
         memset(&xgip->gp_report, 0, sizeof(gamepad_pad_t));
+        if (sys_btn) { xgip->gp_report.buttons |= GP_BIT16(xgip->profile.btn_sys); }
 
         if (report->buttons[1] & XGIP_BUTTON1_DPAD_DOWN)  { xgip->gp_report.dpad |= GP_BIT8(xgip->profile.d_down); }
         if (report->buttons[1] & XGIP_BUTTON1_DPAD_UP)    { xgip->gp_report.dpad |= GP_BIT8(xgip->profile.d_up); }
@@ -164,17 +165,17 @@ static void xgip_report_received(uint8_t index, usbh_periph_t subtype, uint8_t d
         }
 
         xgip->gp_report.joystick_lx = report->joystick_lx;
-        xgip->gp_report.joystick_ly = range_invert_int16(report->joystick_ly);
+        xgip->gp_report.joystick_ly = report->joystick_ly;
         xgip->gp_report.joystick_rx = report->joystick_rx;
-        xgip->gp_report.joystick_ry = range_invert_int16(report->joystick_ry);
+        xgip->gp_report.joystick_ry = report->joystick_ry;
 
         if (xgip->map.joy_l) {
             settings_scale_joysticks(&xgip->profile.joystick_l, &xgip->gp_report.joystick_lx, 
-                                     &xgip->gp_report.joystick_ly, true);
+                                     &xgip->gp_report.joystick_ly);
         }
         if (xgip->map.joy_r) {
             settings_scale_joysticks(&xgip->profile.joystick_r, &xgip->gp_report.joystick_rx, 
-                                     &xgip->gp_report.joystick_ry, true);
+                                     &xgip->gp_report.joystick_ry);
         }
 
         usb_host_driver_pad_cb(index, &xgip->gp_report, GAMEPAD_FLAG_IN_PAD);
@@ -186,10 +187,10 @@ static void xgip_report_received(uint8_t index, usbh_periph_t subtype, uint8_t d
         xgip_guide_button_in_t* guide_btn = (xgip_guide_button_in_t*)data;
         if ((guide_btn->state) && !(xgip->gp_report.buttons & GP_BIT16(xgip->profile.btn_sys))) {
             xgip->gp_report.buttons |= GP_BIT16(xgip->profile.btn_sys);
-            usb_host_driver_pad_cb(index, &xgip->gp_report, 0);
+            usb_host_driver_pad_cb(index, &xgip->gp_report, GAMEPAD_FLAG_IN_PAD);
         } else if ((!guide_btn->state) && (xgip->gp_report.buttons & GP_BIT16(xgip->profile.btn_sys))) {
             xgip->gp_report.buttons &= ~GP_BIT16(xgip->profile.btn_sys);
-            usb_host_driver_pad_cb(index, &xgip->gp_report, 0);
+            usb_host_driver_pad_cb(index, &xgip->gp_report, GAMEPAD_FLAG_IN_PAD);
         }
         }
         break;
@@ -207,23 +208,29 @@ static void xgip_report_received(uint8_t index, usbh_periph_t subtype, uint8_t d
 static void xgip_send_rumble(uint8_t index, uint8_t daddr, uint8_t itf_num, const gamepad_rumble_t* rumble) {
     xgip_state_t* xgip = (xgip_state_t*)xgip_state[index];
     xgip_cmd_vibration_t* vib = (xgip_cmd_vibration_t*)xgip->buf_out;
-    increment_seq_id(&xgip->rumble_seq_id);
+    // increment_seq_id(&xgip->rumble_seq_id);
+    ogxm_logd("Sending rumble\n");
 
     memset(vib, 0, sizeof(xgip_cmd_vibration_t));
     bool rumble_on = (rumble->l > 0) || (rumble->r > 0);
     bool duration = (((rumble->l_duration > 0) || (rumble->r_duration > 0)) && rumble_on);
 
     vib->header.type.raw        = XGIP_COMMAND_GAMEPAD_VIBRATION;
-    vib->header.sequence_id     = xgip->rumble_seq_id;
-    vib->payload_len.raw        = sizeof(xgip_cmd_vibration_t) - 4;
-    vib->motor.right            = (rumble->r > 0) ? 1 : 0;
-    vib->motor.left             = (rumble->l > 0) ? 1 : 0;
-    // vib->motor.left_impulse     = vib->motor.left;
-    // vib->motor.right_impulse    = vib->motor.right;
-    vib->vibration_left         = rumble->l / 0xFFU * 100U;
-    vib->vibration_right        = rumble->r / 0xFFU * 100U;
-    vib->duration_ms            = (duration ? MAX(rumble->l_duration, rumble->r_duration) : (rumble_on ? 100U : 0U));
+    vib->header.sequence_id     = 0;
+    vib->payload_len.raw        = sizeof(xgip_cmd_vibration_t) - sizeof(xgip_header_t) - 1;
+    vib->motor.right            = 1;
+    vib->motor.left             = 1;
+    vib->motor.impulse_left     = 1;
+    vib->motor.impulse_right    = 1;
+    vib->impulse_left           = 0;
+    vib->impulse_right          = 0;
+    vib->vibration_left         = rumble->l << 1;
+    vib->vibration_right        = rumble->r << 1;
+    vib->duration_ms            = (duration ? MAX(rumble->l_duration, rumble->r_duration) : (rumble_on ? 0xFFU : 0U));
+    vib->repeat_count           = 0xFFU;
     tuh_hxx_send_report(daddr, itf_num, xgip_state[index]->buf_out, sizeof(xgip_cmd_vibration_t));
+    // uint8_t xboxone_rumble[] = {0x09, 0x00, 0x00, 9, 0x00, ((1<<5)-1), 0x00, 0x00, 0x00, 0x00, 0xFF, 0x00, 0xFF};
+    // xboxone_rumble[8] = vib->motor.
 }
 
 const usb_host_driver_t USBH_DRIVER_XGIP_GP = {
