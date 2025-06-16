@@ -31,3 +31,9 @@
 [submodule "Firmware/pico/external/bluepad32"]
 	path = Firmware/pico/external/bluepad32
 	url = https://github.com/ricardoquesada/bluepad32.git
+[submodule "Firmware/ESP32/components/bluepad32"]
+	path = Firmware/ESP32/components/bluepad32
+	url = https://github.com/ricardoquesada/bluepad32.git
+[submodule "Firmware/ESP32/components/libfixmath/libfixmath"]
+	path = Firmware/ESP32/components/libfixmath/libfixmath
+	url = https://github.com/PetteriAimonen/libfixmath.git

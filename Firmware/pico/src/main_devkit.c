@@ -30,12 +30,13 @@ void core1_entry(void) {
     led_set_on(false);
 
     usb_host_config_t usbh_config = {
-        .use_mutex = true,
+        .multithread = true,
         .hw_type = USBH_HW_PIO,
         .connect_cb = host_connect_cb,
         .gamepad_cb = usb_device_set_pad,
         .audio_cb = usb_device_set_audio,
     };
+    
     usb_host_configure(&usbh_config);
     usb_host_enable();
 
@@ -64,7 +65,7 @@ static bool check_pad_timer_cb(repeating_timer_t *rt) {
 
 static void init_device(usbd_type_t device_type) {
     usb_device_config_t usbd_config = {
-        .use_mutex = true,
+        .multithread = true,
         .count = 1,
         .usb = {
             {
@@ -85,38 +86,39 @@ int main(void) {
     ogxm_log_init(true);
     settings_init();
     
-    usbd_type_t device_type = settings_get_device_type();
+    // usbd_type_t device_type = settings_get_device_type();
+    usbd_type_t device_type = USBD_TYPE_XINPUT;
 
     launch_core1();
     init_device(device_type);
     
     ogxm_logi("Device inited\n");
 
-    repeating_timer_t gp_check_timer;
-    add_repeating_timer_ms(COMBO_CHECK_INTERVAL_MS, check_pad_timer_cb, 
-                           NULL, &gp_check_timer);
+    // repeating_timer_t gp_check_timer;
+    // add_repeating_timer_ms(COMBO_CHECK_INTERVAL_MS, check_pad_timer_cb, 
+    //                        NULL, &gp_check_timer);
 
     while (true) {
         usb_device_task();
         sleep_ms(1);
 
-        if (check_pad) {
-            check_pad = false;
-            gamepad_pad_t pad = {0};
-            if (!usb_device_get_pad_unsafe(0, &pad)) {
-                continue;
-            }
-            usbd_type_t type = check_button_combo(0, &pad);
-            if ((type != USBD_TYPE_COUNT) && (type != device_type)) {
-                cancel_repeating_timer(&gp_check_timer);
-                multicore_reset_core1();
-                usb_device_deinit();
-                settings_store_device_type(type);
-                /*  Eventually write or modify the host stack to be able to 
-                    cleanly deinit and not need a full reboot */
-                full_reboot();
-            }
-        }
+        // if (check_pad) {
+        //     check_pad = false;
+        //     gamepad_pad_t pad = {0};
+        //     if (!usb_device_get_pad(0, &pad)) {
+        //         continue;
+        //     }
+        //     usbd_type_t type = check_button_combo(0, &pad);
+        //     if ((type != USBD_TYPE_COUNT) && (type != device_type)) {
+        //         cancel_repeating_timer(&gp_check_timer);
+        //         multicore_reset_core1();
+        //         usb_device_deinit();
+        //         settings_store_device_type(type);
+        //         /*  Eventually write or modify the host stack to be able to 
+        //             cleanly deinit and not need a full reboot */
+        //         full_reboot();
+        //     }
+        // }
     }
 }
 

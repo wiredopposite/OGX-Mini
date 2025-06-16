@@ -1,11 +1,9 @@
 cmake_minimum_required(VERSION 3.5)
 
-set(LIBFIXMATH_ROOT ${CMAKE_CURRENT_LIST_DIR}/../../../external/libfixmath) 
+set(LIBFIXMATH_ROOT ${CMAKE_CURRENT_LIST_DIR}/libfixmath) 
 
-if (NOT EXISTS ${LIBFIXMATH_ROOT})
-    message(FATAL_ERROR "External directory not found: ${LIBFIXMATH_ROOT}")
-else()
-    message(STATUS "Found libfixmath at ${LIBFIXMATH_ROOT}")
+if(NOT EXISTS ${LIBFIXMATH_ROOT}/libfixmath)
+    message(FATAL_ERROR "libfixmath directory not found at ${LIBFIXMATH_ROOT}. Please ensure the library is present.")
 endif()
 
 file(GLOB SRCS ${LIBFIXMATH_ROOT}/libfixmath/*.c)

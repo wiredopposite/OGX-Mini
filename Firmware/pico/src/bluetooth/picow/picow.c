@@ -119,6 +119,7 @@ static uni_error_t bp32_device_ready_cb(uni_hid_device_t* device) {
     if (bt_context.connect_cb) {
         bt_context.connect_cb(index, true);
     }
+    return UNI_ERROR_SUCCESS;
 }
 
 static void bp32_device_disconnect_cb(uni_hid_device_t* device) {
@@ -205,10 +206,10 @@ static void bp32_controller_data_cb(uni_hid_device_t* device, uni_controller_t* 
     pad->joystick_ry = range_int10_to_int16(uni->axis_ry);
 
     if (bt_context.gp_ctx[index].map.joy_l) {
-        settings_scale_joysticks(&profile->joystick_l, &pad->joystick_lx, &pad->joystick_ly, false);
+        settings_scale_joysticks(&profile->joystick_l, &pad->joystick_lx, &pad->joystick_ly);
     }
     if (bt_context.gp_ctx[index].map.joy_r) {
-        settings_scale_joysticks(&profile->joystick_r, &pad->joystick_rx, &pad->joystick_ry, false);
+        settings_scale_joysticks(&profile->joystick_r, &pad->joystick_rx, &pad->joystick_ry);
     }
     if (bt_context.gp_ctx[index].map.trigger_l) {
         settings_scale_trigger(&profile->trigger_l, &pad->trigger_l);
@@ -222,7 +223,7 @@ static void bp32_controller_data_cb(uni_hid_device_t* device, uni_controller_t* 
     if (bt_context.gamepad_cb) {
         bt_context.gamepad_cb(index, pad, GAMEPAD_FLAG_IN_PAD);
     }
-    memccpy(&bt_context.gp_ctx[index].prev_report, pad, 0, sizeof(gamepad_pad_t));
+    memcpy(&bt_context.gp_ctx[index].prev_report, pad, 0, sizeof(gamepad_pad_t));
 }
 
 static const uni_property_t* bp32_get_property_cb(uni_property_idx_t idx) {

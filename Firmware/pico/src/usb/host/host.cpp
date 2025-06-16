@@ -18,6 +18,7 @@
 #include "usb/host/tusb_host/tuh_hxx.h"
 #include "usb/host/tusb_host/tuh_xaudio.h"
 #include "usb/host/tusb_host/tusb_config.h"
+#include "usb/usb_ring.h"
 
 #define USBH_INTERFACES_MAX 8U /* Enough for Xbox360 Wireless */
 
@@ -46,76 +47,36 @@ static const usb_host_driver_t* USBH_DRIVERS[USBH_TYPE_COUNT] = {
 
 class EmuInterface {
 public:
-    EmuInterface(usbh_type_t d_type, usbh_periph_t p_type, uint8_t dev_addr, uint8_t itf, uint8_t index, bool use_mutex) 
+    EmuInterface(usbh_type_t d_type, usbh_periph_t p_type, uint8_t dev_addr, uint8_t itf, uint8_t index) 
         :   dev_type(d_type), 
             periph_type(p_type),
             driver(USBH_DRIVERS[d_type]), 
             daddr(dev_addr), 
             itf_num(itf),
-            gp_index(index) {
-        if (use_mutex) {
-            mutex_init(&mutex);
-        }
-    }
-    ~EmuInterface() {
-        if (mutex_is_initialized(&mutex)) {
-            // Make sure no one is using this class
-            mutex_enter_blocking(&mutex);
-            mutex_exit(&mutex);
-        }
-    }
+            gp_index(index) { }
+    ~EmuInterface() = default;
 
     volatile bool               disabled{false};
-    // volatile bool               unmount_pending{false};
     uint8_t                     gp_index{0};
     usbh_type_t                 dev_type;
     usbh_periph_t               periph_type;
     const usb_host_driver_t*    driver;
-    std::atomic<bool>           new_data{false};
     uint8_t                     daddr;
     uint8_t                     itf_num;
     uint8_t                     state_buffer[USBH_STATE_BUFFER_SIZE] __attribute__((aligned(4)));
-
-    template <typename T>
-    inline void get_data(T* buffer) {
-        if (mutex_is_initialized(&mutex)) {
-            mutex_enter_blocking(&mutex);
-            std::memcpy(buffer, this->buffer, sizeof(T));
-            new_data.store(false, std::memory_order_release);
-            mutex_exit(&mutex);
-        } else {
-            std::memcpy(buffer, this->buffer, sizeof(T));
-            new_data.store(false, std::memory_order_relaxed);
-        }
-    }
-
-    template <typename T>
-    inline void set_data(T* buffer) {
-        if (mutex_is_initialized(&mutex)) {
-            mutex_enter_blocking(&mutex);
-            std::memcpy(this->buffer, buffer, sizeof(T));
-            new_data.store(true, std::memory_order_release);
-            mutex_exit(&mutex);
-        } else {
-            std::memcpy(this->buffer, buffer, sizeof(T));
-            new_data.store(true, std::memory_order_relaxed);
-        }
-    }
-
-private:
-    mutex_t mutex;
-    uint8_t buffer[MAX(sizeof(gamepad_pad_t), sizeof(gamepad_pcm_out_t))] __attribute__((aligned(4)));
 };
 
 typedef struct {
-    volatile bool                   use_mutex{false};
-    // volatile bool                   unmount_pending{false};
+    volatile bool                   multithread{false};
     usbh_hw_type_t                  hw_type{USBH_HW_PIO};
     usb_host_connect_cb_t           connect_cb{nullptr};
     usb_host_gamepad_cb_t           gamepad_cb{nullptr};
     usb_host_audio_cb_t             audio_cb{nullptr};
     std::unique_ptr<EmuInterface>   tuh_itf[CFG_TUH_DEVICE_MAX][USBH_INTERFACES_MAX]{nullptr};
     std::unique_ptr<EmuInterface>*  gp_itf_lookup[GAMEPADS_MAX][PERIPH_COUNT]{nullptr};
+    ring_usb_buf_t                  buf_safe{0};
+    ring_usb_buf_t                  buf_unsafe{0};
+    ring_usb_t                      ring{0};
 } usbh_system_t;
 
 static usbh_system_t  usbh_system;
@@ -148,8 +109,7 @@ static bool assign_emu_itf(uint8_t daddr, uint8_t itf_num, usbh_type_t dev_type,
             periph_type,
             daddr, 
             itf_num, 
-            gp_index, 
-            usbh_system.use_mutex
+            gp_index
         );
     if (usbh_system.tuh_itf[daddr - 1][itf_num] == nullptr) {
         ogxm_loge("Failed to allocate memory for interface %d on device %d\n", itf_num, daddr);
@@ -285,15 +245,10 @@ void tuh_hxx_unmounted_cb(uint8_t daddr, uint8_t itf_num) {
     if (usbh_system.connect_cb) {
         usbh_system.connect_cb(emu_itf->gp_index, emu_itf->dev_type, false);
     }
-    // if (usbh_system.use_mutex) {
-    //     usbh_system.unmount_pending = true;
-    //     emu_itf->unmount_pending = true;
-    // } else {
-        uint8_t gp_index = emu_itf->gp_index;
-        usbh_periph_t periph_type = emu_itf->periph_type;
-        usbh_system.tuh_itf[daddr - 1][itf_num].reset();
-        usbh_system.gp_itf_lookup[gp_index][periph_type] = nullptr;
-    // }
+    uint8_t gp_index = emu_itf->gp_index;
+    usbh_periph_t periph_type = emu_itf->periph_type;
+    usbh_system.tuh_itf[daddr - 1][itf_num].reset();
+    usbh_system.gp_itf_lookup[gp_index][periph_type] = nullptr;
 }
 
 void tuh_hxx_report_received_cb(uint8_t daddr, uint8_t itf_num, const uint8_t* data, uint16_t len) {
@@ -342,7 +297,7 @@ void usb_host_configure(const usb_host_config_t* config) {
     usbh_system.connect_cb = config->connect_cb;
     usbh_system.gamepad_cb = config->gamepad_cb;
     usbh_system.audio_cb = config->audio_cb;
-    usbh_system.use_mutex = config->use_mutex;
+    usbh_system.multithread = config->multithread;
     usbh_system.hw_type = config->hw_type;
     vcc_set_enabled(false);
 }
@@ -385,7 +340,10 @@ void usb_host_set_device_enabled(uint8_t index, bool enabled) {
         return;
     }
     for (uint8_t i = 0; i < PERIPH_COUNT; i++) {
-        EmuInterface* emu_itf = usbh_system.tuh_itf[index][i].get();
+        if (usbh_system.gp_itf_lookup[index][i] == nullptr) {
+            continue;
+        }
+        EmuInterface* emu_itf = usbh_system.gp_itf_lookup[index][i]->get();
         if (emu_itf == nullptr) {
             continue;
         }
@@ -407,11 +365,19 @@ void usb_host_set_rumble(uint8_t index, const gamepad_rumble_t* rumble) {
         return;
     }
     EmuInterface* emu_itf = usbh_system.gp_itf_lookup[index][PERIPH_GAMEPAD]->get();
-    if (usbh_system.use_mutex) {
-        emu_itf->set_data(rumble);
-    } else {
-        const usb_host_driver_t* driver = emu_itf->driver;
-        if (driver && driver->send_rumble) {
+    if (emu_itf == nullptr || emu_itf->disabled) {
+        return;
+    }
+    const usb_host_driver_t* driver = emu_itf->driver;
+    if (driver && driver->send_rumble) {
+        if (usbh_system.multithread) {
+            ring_usb_buf_t* buf = &usbh_system.buf_unsafe;
+            buf->index = index;
+            buf->type = RING_USB_TYPE_RUMBLE;
+            buf->flags = 0;
+            memcpy(buf->payload, rumble, sizeof(gamepad_rumble_t));
+            ring_usb_push(&usbh_system.ring, buf);
+        } else {
             driver->send_rumble(index, emu_itf->daddr, emu_itf->itf_num, rumble);
         }
     }
@@ -423,55 +389,26 @@ void usb_host_set_audio(uint8_t index, const gamepad_pcm_out_t* pcm) {
         return;
     }
     EmuInterface* emu_itf = usbh_system.gp_itf_lookup[index][PERIPH_AUDIO]->get();
-    if (usbh_system.use_mutex) {
-        emu_itf->set_data(pcm);
-    } else {
-        const usb_host_driver_t* driver = emu_itf->driver;
-        if (driver && driver->send_audio) {
+    if ((emu_itf == nullptr) || emu_itf->disabled) {
+        return;
+    }
+    const usb_host_driver_t* driver = emu_itf->driver;
+    if (driver && driver->send_audio) {
+        if (usbh_system.multithread) {
+            ring_usb_buf_t* buf = &usbh_system.buf_unsafe;
+            buf->index = index;
+            buf->type = RING_USB_TYPE_PCM;
+            buf->flags = 0;
+            memcpy(buf->payload, pcm, sizeof(gamepad_pcm_out_t));
+            ring_usb_push(&usbh_system.ring, buf);
+        } else {
             driver->send_audio(index, emu_itf->daddr, emu_itf->itf_num, pcm);
         }
     }
 }
 
 void usb_host_task(void) {
-    // if (usbh_system.unmount_pending) {
-    //     usbh_system.unmount_pending = false;
-    //     for (uint8_t i = 0; i < GAMEPADS_MAX; i++) {
-    //         for (uint8_t j = 0; j < PERIPH_COUNT; j++) {
-    //             if (usbh_system.gp_itf_lookup[i][j] != nullptr) {
-    //                 EmuInterface* emu_itf = usbh_system.gp_itf_lookup[i][j]->get();
-    //                 if (emu_itf->unmount_pending) {
-    //                     emu_itf->unmount_pending = false;
-    //                     usbh_system.tuh_itf[emu_itf->daddr - 1][emu_itf->itf_num].reset();
-    //                     usbh_system.gp_itf_lookup[i][j] = nullptr;
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
     for (uint8_t i = 0; i < GAMEPADS_MAX; i++) {
-        if (usbh_system.use_mutex) {
-            if (usbh_system.gp_itf_lookup[i][PERIPH_GAMEPAD] != nullptr) {
-                EmuInterface* emu_itf = usbh_system.gp_itf_lookup[i][PERIPH_GAMEPAD]->get();
-                if (!emu_itf->disabled &&
-                    (emu_itf->driver->send_rumble != nullptr) &&
-                    emu_itf->new_data.load(std::memory_order_acquire)) {
-                    gamepad_rumble_t rumble;
-                    emu_itf->get_data(&rumble);
-                    emu_itf->driver->send_rumble(i, emu_itf->daddr, emu_itf->itf_num, &rumble);
-                }
-            }
-            if (usbh_system.gp_itf_lookup[i][PERIPH_AUDIO] != nullptr) {
-                EmuInterface* emu_itf = usbh_system.gp_itf_lookup[i][PERIPH_AUDIO]->get();
-                if (!emu_itf->disabled &&
-                    (emu_itf->driver->send_audio != nullptr) &&
-                    emu_itf->new_data.load(std::memory_order_acquire)) {
-                    gamepad_pcm_out_t pcm;
-                    emu_itf->get_data(&pcm);
-                    emu_itf->driver->send_audio(i, emu_itf->daddr, emu_itf->itf_num, &pcm);
-                }
-            }
-        }
         for (uint8_t j = 0; j < PERIPH_COUNT; j++) {
             if (usbh_system.gp_itf_lookup[i][j] != nullptr) {
                 EmuInterface* emu_itf = usbh_system.gp_itf_lookup[i][j]->get();
@@ -479,9 +416,47 @@ void usb_host_task(void) {
                     continue;
                 }
                 const usb_host_driver_t* driver = emu_itf->driver;
-                if (driver && driver->task_cb) {
+                if ((driver != nullptr) && driver->task_cb) {
                     driver->task_cb(emu_itf->gp_index, emu_itf->daddr, emu_itf->itf_num);
                 }
+            }
+        }
+    }
+    if (usbh_system.multithread) {
+        ring_usb_buf_t* buf = &usbh_system.buf_safe;
+
+        if (ring_usb_pop(&usbh_system.ring, buf)) {
+            EmuInterface* emu_itf = nullptr;
+
+            switch (buf->type) {
+            case RING_USB_TYPE_RUMBLE:
+                if (usbh_system.gp_itf_lookup[buf->index][PERIPH_GAMEPAD] == nullptr) {
+                    break;
+                }
+                emu_itf = usbh_system.gp_itf_lookup[buf->index][PERIPH_GAMEPAD]->get();
+                if ((emu_itf == nullptr) || emu_itf->disabled) {
+                    break;
+                }
+                emu_itf->driver->send_rumble(buf->index, emu_itf->daddr, 
+                                             emu_itf->itf_num, 
+                                             (gamepad_rumble_t*)buf->payload);
+                break;
+            case RING_USB_TYPE_PCM:
+                if (usbh_system.gp_itf_lookup[buf->index][PERIPH_AUDIO] == nullptr) {
+                    break;
+                }
+                emu_itf = usbh_system.gp_itf_lookup[buf->index][PERIPH_AUDIO]->get();
+                if ((emu_itf == nullptr) || emu_itf->disabled) {
+                    break;
+                }
+                emu_itf->driver->send_audio(buf->index, emu_itf->daddr, 
+                                            emu_itf->itf_num, 
+                                            (gamepad_pcm_t*)buf->payload);
+                break;
+            default:
+                ogxm_loge("usb_host_task: Unknown ring buffer type %d, index=%d\n", 
+                    buf->type, buf->index);
+                break;
             }
         }
     }

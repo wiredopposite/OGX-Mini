@@ -1,4 +1,4 @@
-# This script copies BTstack ESP32 port files to this project's components folder, ESP-IDF freaks out otherwise
+# This script copies BTstack ESP32 port files to this project's components folder
 
 import os
 import sys

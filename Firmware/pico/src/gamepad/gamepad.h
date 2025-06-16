@@ -78,13 +78,13 @@ typedef enum {
 typedef struct __attribute__((packed, aligned(4))) {
     uint8_t  dpad;
     uint8_t  reserved0;
+    uint16_t buttons;
     uint8_t  trigger_l;
     uint8_t  trigger_r;
     int16_t  joystick_lx;
     int16_t  joystick_ly;
     int16_t  joystick_rx;
     int16_t  joystick_ry;
-    uint16_t buttons;
     uint8_t  analog[GAMEPAD_ANALOG_COUNT];
     uint8_t  chatpad[3];
     uint8_t  reserved1;
@@ -103,7 +103,7 @@ typedef struct __attribute__((packed, aligned(4))) {
     int16_t  data[GAMPAD_PCM_FRAME_SIZE];
     uint16_t samples;
     uint16_t reserved;
-} gamepad_pcm_out_t, gamepad_pcm_in_t;
+} gamepad_pcm_out_t, gamepad_pcm_in_t, gamepad_pcm_t;
 _Static_assert(sizeof(gamepad_pcm_out_t) == 36, "Gamepad PCM out size mismatch");
 
 /* ---- IN/OUT Data Flags ---- */

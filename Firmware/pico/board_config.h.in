@@ -49,6 +49,7 @@
 #define ESP32_I2C_NUM                   @ESP32_I2C_NUM@
 #define ESP32_I2C_PIN_SDA               @ESP32_I2C_PIN_SDA@
 #define ESP32_I2C_PIN_SCL               @ESP32_I2C_PIN_SCL@
+#define ESP32_I2C_PIN_IRQ               @ESP32_I2C_PIN_IRQ@
 
 #define ESP32_SPI_NUM                   @ESP32_SPI_NUM@
 #define ESP32_SPI_PIN_MOSI              @ESP32_SPI_PIN_MOSI@
@@ -67,10 +68,16 @@
 #define OGXM_BOARD_STANDARD             @OGXM_BOARD_STANDARD@
 #define OGXM_BOARD_BLUETOOTH            @OGXM_BOARD_BLUETOOTH@
 #define OGXM_BOARD_DEVKIT               @OGXM_BOARD_DEVKIT@
+#define OGXM_BOARD_DEVKIT_ESP32         @OGXM_BOARD_DEVKIT_ESP32@
 #define OGXM_BOARD_4CHANNEL             @OGXM_BOARD_4CHANNEL@
 #define OGXM_BOARD_BLUETOOTH_USBH       @OGXM_BOARD_BLUETOOTH_USBH@
 #define OGXM_BOARD                      @OGXM_BOARD@
 
-#if ((OGXM_BOARD != OGXM_BOARD_DEVKIT) && USBH_PIO_ENABLED && USBD_PIO_ENABLED)
+#if (((OGXM_BOARD != OGXM_BOARD_DEVKIT) && (OGXM_BOARD != OGXM_BOARD_DEVKIT_ESP32)) \
+    && USBH_PIO_ENABLED && USBD_PIO_ENABLED)
 #error "USB Host and Device PIO cannot be enabled at the same time"
+#endif
+
+#if defined(UART_BRIDGE_PIN_RESET)
+#define ESP32_RESET_PIN UART_BRIDGE_PIN_RESET
 #endif

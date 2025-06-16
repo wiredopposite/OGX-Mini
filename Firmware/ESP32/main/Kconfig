@@ -1,32 +1,66 @@
 menu "OGXMini Options"
 
-    config I2C_RING_BUFFER_SIZE
-        int "Set I2C ring buffer size"
-        default 6
+    config LOG_ENABLED
+        bool "Enable logging"
+        default n
+        help
+            Enable logging to the console. This is useful for debugging and monitoring the system.
+    
+    config LOG_LEVEL
+        int "Set log level"
+        default 2
+        range 0 3
+        depends on LOG_ENABLED
+
+    choice
+        prompt "Communication Interface"
+        default I2C_ENABLED
+
+        config I2C_ENABLED
+            bool "Enable I2C support"
+            
+        config SPI_ENABLED
+            bool "Enable SPI support"
+    endchoice
 
     config I2C_PORT
         int "Set I2C port"
         default 0
+        depends on I2C_ENABLED
 
     config I2C_SDA_PIN
         int "Set I2C SDA pin"
         default 21
+        depends on I2C_ENABLED
 
     config I2C_SCL_PIN
         int "Set I2C SCL pin"
         default 22
+        depends on I2C_ENABLED
+
+    config I2C_IRQ_PIN
+        int "Set I2C IRQ pin"
+        default 9
+        depends on I2C_ENABLED
 
     config I2C_BAUDRATE
         int "Set I2C baudrate"
         default 1000000
+        depends on I2C_ENABLED
 
-    config RESET_PIN
-        int "Set reset pin"
-        default 9
-
-    config MULTI_SLAVE_MODE
+    config I2C_MULTI_SLAVE_MODE
         bool "Enable multiple slave devices"
         default n
+        depends on I2C_ENABLED
+
+    config WIRED_HEADSET_ENABLED
+        bool "Enable wired headset support"
+        default n
+        depends on SPI_ENABLED
+
+    # config RESET_PIN
+    #     int "Set reset pin"
+    #     default 9
 
     config ENABLE_LED_1
         bool "Enable LED 1"
@@ -44,7 +78,7 @@ menu "OGXMini Options"
 
     config LED_PIN_2
         int "Set LED 2 pin"
-        default 255
+        default 15
         depends on ENABLE_LED_2
 
     config ENABLE_LED_3
@@ -54,7 +88,7 @@ menu "OGXMini Options"
 
     config LED_PIN_3
         int "Set LED 3 pin"
-        default 255
+        default 15
         depends on ENABLE_LED_3
 
     config ENABLE_LED_4
@@ -64,7 +98,7 @@ menu "OGXMini Options"
 
     config LED_PIN_4
         int "Set LED 4 pin"
-        default 255
+        default 15
         depends on ENABLE_LED_4
     
 endmenu

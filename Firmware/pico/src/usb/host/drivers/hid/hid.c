@@ -93,9 +93,9 @@ void hid_mounted_cb(usbh_type_t type, uint8_t index, uint8_t daddr, uint8_t itf_
     tuh_hxx_receive_report(daddr, itf_num);
 }
 
-void hid_unmounted_cb(uint8_t index, uint8_t daddr, uint8_t itf_num) {
+// void hid_unmounted_cb(uint8_t index, uint8_t daddr, uint8_t itf_num) {
 
-}
+// }
 
 void hid_report_cb(uint8_t index, usbh_periph_t subtype, uint8_t daddr, 
                    uint8_t itf_num, const uint8_t* data, uint16_t len) {
@@ -145,7 +145,7 @@ void hid_send_audio(uint8_t index, uint8_t daddr, uint8_t itf_num, const gamepad
 const usb_host_driver_t USBH_DRIVER_HID = {
     .name = "HID",
     .mounted_cb = hid_mounted_cb,
-    .unmounted_cb = hid_unmounted_cb,
+    .unmounted_cb = NULL,
     .task_cb = NULL,
     .report_cb = hid_report_cb,
     .report_ctrl_cb = NULL,

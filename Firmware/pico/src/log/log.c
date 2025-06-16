@@ -9,11 +9,11 @@
 #include "log/log.h"
 
 static mutex_t log_mutex;
-static bool multi_core = false;
+static bool multithreaded = false;
 
-void ogxm_log_init(bool multicore) {
-    multi_core = multicore;
-    if (multi_core) {
+void ogxm_log_init(bool multithread) {
+    multithreaded = multithread;
+    if (multithreaded) {
         mutex_init(&log_mutex);
     }
     stdio_uart_init();
@@ -23,7 +23,7 @@ void ogxm_log_level(uint8_t level, const char* fmt, ...) {
     if (level > OGXM_LOG_LEVEL) {
         return;
     }
-    if (multi_core) {
+    if (multithreaded) {
         mutex_enter_blocking(&log_mutex);
     }
 
@@ -49,7 +49,7 @@ void ogxm_log_level(uint8_t level, const char* fmt, ...) {
             break;
     }
     va_end(args);
-    if (multi_core) {
+    if (multithreaded) {
         mutex_exit(&log_mutex);
     }
 }
@@ -58,7 +58,7 @@ void ogxm_log_hex_level(uint8_t level, const void* data, uint16_t len, const cha
     if (level > OGXM_LOG_LEVEL) {
         return;
     }
-    if (multi_core) {
+    if (multithreaded) {
         mutex_enter_blocking(&log_mutex);
     }
 
@@ -94,7 +94,7 @@ void ogxm_log_hex_level(uint8_t level, const void* data, uint16_t len, const cha
     }
     printf("\n");
 
-    if (multi_core) {
+    if (multithreaded) {
         mutex_exit(&log_mutex);
     }
 }

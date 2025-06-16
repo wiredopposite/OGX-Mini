@@ -11,6 +11,7 @@ set(BLUETOOTH_HARDWARE              BLUETOOTH_HARDWARE_ESP32_I2C)
 set(ESP32_I2C_NUM                   1)
 set(ESP32_I2C_PIN_SDA               18)
 set(ESP32_I2C_PIN_SCL               19)
+set(ESP32_I2C_PIN_IRQ               UART_BRIDGE_PIN_TX)
 
 set(OGXM_BOARD                      OGXM_BOARD_BLUETOOTH)
 

@@ -82,6 +82,13 @@
         "usbd.h": "c",
         "log.h": "c",
         "button_combo.h": "c",
-        "timer.h": "c"
+        "timer.h": "c",
+        "*.in": "cpp",
+        "bluetooth.h": "c",
+        "i2c.h": "c",
+        "ring.h": "c",
+        "stdint.h": "c",
+        "device.h": "c"
     },
+    "idf.port": "/dev/ttyUSB0",
 }

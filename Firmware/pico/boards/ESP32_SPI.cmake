@@ -15,8 +15,12 @@ set(ESP32_SPI_PIN_MISO              12)
 set(ESP32_SPI_PIN_CS                13)
 set(ESP32_SPI_PIN_IRQ               7)
 
+set(GAMEPAD_MAX                     1)
+
 set(OGXM_BOARD                      OGXM_BOARD_BLUETOOTH)
 
 set(PICO_DEFAULT_UART               0)
-set(PICO_DEFAULT_UART_TX_PIN        0)
-set(PICO_DEFAULT_UART_RX_PIN        1)
+set(PICO_DEFAULT_UART_TX_PIN        16)
+set(PICO_DEFAULT_UART_RX_PIN        17)
+
+set(VERIFY_BUILD_VERSION            1)

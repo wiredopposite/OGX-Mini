@@ -22,6 +22,8 @@ extern "C" {
 
 #define CDC_PROTOCOL USB_PROTOCOL_CDC_NONE
 
+#define USB_REQ_UART_BRIDGE_FINALIZE_FLASH ((uint8_t)0x01)
+
 enum {
     CDC_ITF_NUM_CTRL,
     CDC_ITF_NUM_DATA,
@@ -109,6 +111,101 @@ static const cdc_desc_config_t CDC_DESC_CONFIG = {
         .bDescriptorType        = USB_DTYPE_CS_INTERFACE,
         .bDescriptorSubType     = USB_DTYPE_CDC_ACM,
         .bmCapabilities         = 0
+    },
+    .cdc_union = {
+        .bFunctionLength        = sizeof(usb_cdc_desc_union_t),
+        .bDescriptorType        = USB_DTYPE_CS_INTERFACE,
+        .bDescriptorSubType     = USB_DTYPE_CDC_UNION,
+        .bMasterInterface0      = CDC_ITF_NUM_CTRL,
+        .bSlaveInterface0       = CDC_ITF_NUM_DATA
+    },
+    .cdc_notif_ep = {
+        .bLength                = sizeof(usb_desc_endpoint_t),
+        .bDescriptorType        = USB_DTYPE_ENDPOINT,
+        .bEndpointAddress       = CDC_EPADDR_NOTIF_IN,
+        .bmAttributes           = USB_EP_TYPE_INTERRUPT,
+        .wMaxPacketSize         = CDC_EPSIZE_NOTIF_IN,
+        .bInterval              = 0xFF
+    },
+    .cdc_data_itf = {
+        .bLength                = sizeof(usb_desc_itf_t),
+        .bDescriptorType        = USB_DTYPE_INTERFACE,
+        .bInterfaceNumber       = CDC_ITF_NUM_DATA,
+        .bAlternateSetting      = 0,
+        .bNumEndpoints          = 2,
+        .bInterfaceClass        = USB_CLASS_CDC_DATA,
+        .bInterfaceSubClass     = USB_SUBCLASS_NONE,
+        .bInterfaceProtocol     = USB_PROTOCOL_NONE,
+        .iInterface             = 0
+    },
+    .cdc_data_ep_out = {
+        .bLength                = sizeof(usb_desc_endpoint_t),
+        .bDescriptorType        = USB_DTYPE_ENDPOINT,
+        .bEndpointAddress       = CDC_EPADDR_DATA_OUT,
+        .bmAttributes           = USB_EP_TYPE_BULK,
+        .wMaxPacketSize         = CDC_EPSIZE_DATA_OUT,
+        .bInterval              = 1
+    },
+    .cdc_data_ep_in = {
+        .bLength                = sizeof(usb_desc_endpoint_t),
+        .bDescriptorType        = USB_DTYPE_ENDPOINT,
+        .bEndpointAddress       = CDC_EPADDR_DATA_IN,
+        .bmAttributes           = USB_EP_TYPE_BULK,
+        .wMaxPacketSize         = CDC_EPSIZE_DATA_IN,
+        .bInterval              = 1
+    }
+};
+
+static const cdc_desc_config_t UART_BRIDGE_DESC_CONFIG = {
+    .config = {
+        .bLength                = sizeof(usb_desc_config_t),
+        .bDescriptorType        = USB_DTYPE_CONFIGURATION,
+        .wTotalLength           = sizeof(cdc_desc_config_t),
+        .bNumInterfaces         = CDC_ITF_NUM_TOTAL,
+        .bConfigurationValue    = 1,
+        .iConfiguration         = 0,
+        .bmAttributes           = USB_ATTR_RESERVED | USB_ATTR_SELF_POWERED,
+        .bMaxPower              = 50, // 100mA
+    },
+    .com_iad = {
+        .bLength                = sizeof(usb_desc_iad_t),
+        .bDescriptorType        = USB_DTYPE_IAD,
+        .bFirstInterface        = CDC_ITF_NUM_CTRL,
+        .bInterfaceCount        = 2,
+        .bFunctionClass         = USB_CLASS_CDC,
+        .bFunctionSubClass      = USB_SUBCLASS_CDC_ABSTRACT_CONTROL,
+        .bFunctionProtocol      = CDC_PROTOCOL,
+        .iFunction              = 0
+    },
+    .com_itf = {
+        .bLength                = sizeof(usb_desc_itf_t),
+        .bDescriptorType        = USB_DTYPE_INTERFACE,
+        .bInterfaceNumber       = CDC_ITF_NUM_CTRL,
+        .bAlternateSetting      = 0,
+        .bNumEndpoints          = 1,
+        .bInterfaceClass        = USB_CLASS_CDC,
+        .bInterfaceSubClass     = USB_SUBCLASS_CDC_ABSTRACT_CONTROL,
+        .bInterfaceProtocol     = CDC_PROTOCOL,
+        .iInterface             = 0
+    },
+    .cdc_header = {
+        .bFunctionLength        = sizeof(usb_cdc_desc_header_t),
+        .bDescriptorType        = USB_DTYPE_CS_INTERFACE,
+        .bDescriptorSubType     = USB_DTYPE_CDC_HEADER,
+        .bcdCDC                 = 0x0110
+    },
+    .cdc_call_mgmt = {
+        .bFunctionLength        = sizeof(usb_cdc_desc_call_mgmt_t),
+        .bDescriptorType        = USB_DTYPE_CS_INTERFACE,
+        .bDescriptorSubType     = USB_DTYPE_CDC_CALL_MGMT,
+        .bmCapabilities         = USB_CDC_CALL_MGMT_CAP_CALL_MGMT,
+        .bDataInterface         = CDC_ITF_NUM_DATA
+    },
+    .cdc_acm = {
+        .bFunctionLength        = sizeof(usb_cdc_desc_acm_t),
+        .bDescriptorType        = USB_DTYPE_CS_INTERFACE,
+        .bDescriptorSubType     = USB_DTYPE_CDC_ACM,
+        .bmCapabilities         = USB_CDC_ACM_CAP_LINE_CODING | USB_CDC_ACM_CAP_SEND_BREAK
     },
     .cdc_union = {
         .bFunctionLength        = sizeof(usb_cdc_desc_union_t),

@@ -43,7 +43,7 @@ typedef enum {
 } usbh_hw_type_t;
 
 typedef struct {
-    bool                    use_mutex;
+    bool                    multithread;
     usbh_hw_type_t          hw_type;
     usb_host_connect_cb_t   connect_cb;
     usb_host_gamepad_cb_t   gamepad_cb;

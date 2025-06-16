@@ -7,11 +7,11 @@
 #include "neopixel/WS2812.hpp"
 
 #ifndef NEOPIXEL_PIO
-#define NEOPIXEL_PIO pio0
+#define NEOPIXEL_PIO pio1
 #endif
 
 #ifndef NEOPIXEL_PIO_SM
-#define NEOPIXEL_PIO_SM 4
+#define NEOPIXEL_PIO_SM 3
 #endif
 
 static WS2812& get_ws2812() {

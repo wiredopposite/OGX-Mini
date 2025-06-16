@@ -1,13 +1,12 @@
 #include <string.h>
-#include <stdatomic.h>
 #include <pico/stdlib.h>
-#include <pico/mutex.h>
 #include <hardware/gpio.h>
 #include "log/log.h"
 #include "usbd/usbd.h"
 #include "usb/device/device_private.h"
 #include "usb/device/drivers/generic_hub.h"
 #include "usb/device/device.h"
+#include "usb/usb_ring.h"
 
 typedef enum {
     USBD_INT_TYPE_XBOXOG_GP = 0,
@@ -28,20 +27,14 @@ typedef enum {
 } usbd_internal_type_t;
 
 typedef struct {
-    mutex_t                     gp_mutex;
-    atomic_bool                 pad_new;
-    gamepad_pad_t               pad;
-    uint32_t                    pad_flags;
-    atomic_bool                 pcm_new;
-    gamepad_pcm_out_t           pcm_out;
-
+    gamepad_pad_t               prev_pad;
     usbd_handle_t*              handle;
     const usb_device_driver_t*  driver;
 } usb_gamepad_t;
 
 typedef struct {
     bool            inited;
-    bool            use_mutex;
+    bool            multithread;
     bool            pio;
     bool            generic_hub;
     usbd_handle_t*  generic_hub_handle;
@@ -49,6 +42,9 @@ typedef struct {
     uint8_t         status_buffer[USBD_DEVICES_MAX][USBD_STATUS_BUF_SIZE] __attribute__((aligned(4)));
     app_rumble_cb_t rumble_cb;
     app_audio_cb_t  audio_cb;
+    ring_usb_t      ring;
+    ring_usb_buf_t  buf_safe;
+    ring_usb_buf_t  buf_unsafe;
 } usbd_system_t;
 
 static const usb_device_driver_t* USBD_DRIVERS[USBD_INT_TYPE_COUNT] = {
@@ -127,13 +123,7 @@ bool usb_device_configure(const usb_device_config_t* config) {
     memset(&usbd_system, 0, sizeof(usbd_system_t));
     usbd_system.audio_cb = config->audio_cb;
     usbd_system.rumble_cb = config->rumble_cb;
-    usbd_system.use_mutex = config->use_mutex;
-
-    if (usbd_system.use_mutex) {
-        for (uint8_t i = 0; i < GAMEPADS_MAX; i++) {
-            mutex_init(&usbd_system.gamepads[i].gp_mutex);
-        }
-    }
+    usbd_system.multithread = config->multithread;
 
     ts3usb221_init();
 
@@ -162,7 +152,8 @@ bool usb_device_configure(const usb_device_config_t* config) {
             if (usbd_system.gamepads[i].driver->init == NULL) {
                 continue;
             }
-            usbd_system.gamepads[i].handle = usbd_system.gamepads[i].driver->init(&drv_cfg);
+            usbd_system.gamepads[i].handle = 
+                usbd_system.gamepads[i].driver->init(&drv_cfg);
             if (usbd_system.gamepads[i].handle == NULL) {
                 continue;
             }
@@ -170,7 +161,8 @@ bool usb_device_configure(const usb_device_config_t* config) {
         }
         usbd_system.inited = true;
         return true;
-    } else if ((config->usb[0].type == USBD_TYPE_XBOXOG_GP) && (config->usb[0].addons != 0)) {
+    } else if ((config->usb[0].type == USBD_TYPE_XBOXOG_GP) && 
+               (config->usb[0].addons != 0)) {
         usbd_system.pio = true;
         usb_device_driver_cfg_t drv_cfg = {
             .xboxog_hub = {
@@ -222,108 +214,8 @@ void usb_device_connect(void) {
 void usb_device_deinit(void) {
     ts3usb221_set_connected(usbd_system.pio ? USBD_HW_PIO : USBD_HW_USB, false);
     usbd_deinit(usbd_system.pio ? USBD_HW_PIO : USBD_HW_USB);
-    for (uint8_t i = 0; i < GAMEPADS_MAX; i++) {
-        if (usbd_system.use_mutex) {
-            mutex_enter_blocking(&usbd_system.gamepads[i].gp_mutex);
-            usbd_system.gamepads[i].handle = NULL;
-            mutex_exit(&usbd_system.gamepads[i].gp_mutex);
-        }
-    }
     usbd_system.inited = false;
     memset(&usbd_system, 0, sizeof(usbd_system_t));
-}
-
-bool usb_device_get_pad_unsafe(uint8_t index, gamepad_pad_t* pad) {
-    if ((index >= GAMEPADS_MAX) || (pad == NULL) || 
-        (usbd_system.gamepads[index].handle == NULL) ||
-        (usbd_system.gamepads[index].driver->set_pad == NULL)) {
-        return false;
-    }
-    memcpy(pad, &usbd_system.gamepads[index].pad, sizeof(gamepad_pad_t));
-    return true;
-}
-
-bool usb_device_get_pad_safe(uint8_t index, gamepad_pad_t* pad) {
-    if ((index >= GAMEPADS_MAX) || (pad == NULL) || 
-        (usbd_system.gamepads[index].handle == NULL) ||
-        (usbd_system.gamepads[index].driver->set_pad == NULL)) {
-        return false;
-    }
-    if (usbd_system.use_mutex) {
-        mutex_enter_blocking(&usbd_system.gamepads[index].gp_mutex);
-        memcpy(pad, &usbd_system.gamepads[index].pad, sizeof(gamepad_pad_t));
-        mutex_exit(&usbd_system.gamepads[index].gp_mutex);
-    } else {
-        memcpy(pad, &usbd_system.gamepads[index].pad, sizeof(gamepad_pad_t));
-    }
-    return true;
-}
-
-void usb_device_set_pad(uint8_t index, const gamepad_pad_t* pad, uint32_t flags) {
-    if ((usbd_system.gamepads[index].handle == NULL) ||
-        (usbd_system.gamepads[index].driver->set_pad == NULL)) {
-        return;
-    }
-    if (usbd_system.use_mutex) {
-        mutex_enter_blocking(&usbd_system.gamepads[index].gp_mutex);
-
-        if ((flags & GAMEPAD_FLAG_IN_CHATPAD) == 0) {
-            memcpy(&usbd_system.gamepads[index].pad, 
-                   pad, offsetof(gamepad_pad_t, chatpad));
-            usbd_system.gamepads[index].pad_flags |= flags;
-        } else if ((flags & GAMEPAD_FLAG_IN_CHATPAD) && 
-                   !(flags & GAMEPAD_FLAG_IN_PAD)) {
-            memcpy(&usbd_system.gamepads[index].pad.chatpad, 
-                   pad->chatpad, sizeof(pad->chatpad));
-            usbd_system.gamepads[index].pad_flags |= flags;
-        } else {
-            memcpy(&usbd_system.gamepads[index].pad, 
-                   pad, sizeof(gamepad_pad_t));
-            usbd_system.gamepads[index].pad_flags = flags;
-        }
-        atomic_store_explicit(&usbd_system.gamepads[index].pad_new, true, memory_order_release);
-        mutex_exit(&usbd_system.gamepads[index].gp_mutex);
-    } else {
-        if (usbd_system.gamepads[index].driver->set_pad != NULL) {
-            usbd_system.gamepads[index].driver->set_pad(
-                usbd_system.gamepads[index].handle, 
-                pad, 
-                flags
-            );
-        }
-        if ((flags & GAMEPAD_FLAG_IN_CHATPAD) == 0) {
-            memcpy(&usbd_system.gamepads[index].pad, 
-                   pad, offsetof(gamepad_pad_t, chatpad));
-        } else if ((flags & GAMEPAD_FLAG_IN_CHATPAD) && 
-                   !(flags & GAMEPAD_FLAG_IN_PAD)) {
-            memcpy(&usbd_system.gamepads[index].pad.chatpad, 
-                   pad->chatpad, sizeof(pad->chatpad));
-        } else {
-            memcpy(&usbd_system.gamepads[index].pad, 
-                   pad, sizeof(gamepad_pad_t));
-        }
-    }
-}
-
-void usb_device_set_audio(uint8_t index, const gamepad_pcm_out_t* pcm_out) {
-    if ((usbd_system.gamepads[index].handle == NULL) ||
-        (usbd_system.gamepads[index].driver->set_audio == NULL)) {
-        return;
-    }
-    if (usbd_system.use_mutex) {
-        mutex_enter_blocking(&usbd_system.gamepads[index].gp_mutex);
-        memcpy(&usbd_system.gamepads[index].pcm_out, pcm_out, sizeof(gamepad_pcm_out_t));
-        atomic_store_explicit(&usbd_system.gamepads[index].pcm_new, true, memory_order_release);
-        mutex_exit(&usbd_system.gamepads[index].gp_mutex);
-    } else {
-        if (usbd_system.gamepads[index].driver->set_audio == NULL) {
-            return;
-        }
-        usbd_system.gamepads[index].driver->set_audio(
-            usbd_system.gamepads[index].handle, 
-            pcm_out
-        );
-    }
 }
 
 void usb_device_task(void) {
@@ -331,36 +223,96 @@ void usb_device_task(void) {
         if (usbd_system.gamepads[i].handle == NULL) {
             continue;
         }
-        if (usbd_system.use_mutex) {
-            if ((usbd_system.gamepads[i].driver->set_pad != NULL) && 
-                atomic_load_explicit(&usbd_system.gamepads[i].pad_new, memory_order_acquire)) {
-                mutex_enter_blocking(&usbd_system.gamepads[i].gp_mutex);
-                atomic_store_explicit(&usbd_system.gamepads[i].pad_new, false, memory_order_relaxed);
-                gamepad_pad_t pad = usbd_system.gamepads[i].pad;
-                uint32_t flags = usbd_system.gamepads[i].pad_flags;
-                usbd_system.gamepads[i].pad_flags = 0; // Reset flags after reading
-                mutex_exit(&usbd_system.gamepads[i].gp_mutex);
-                usbd_system.gamepads[i].driver->set_pad(
-                    usbd_system.gamepads[i].handle, 
-                    &pad, 
-                    flags
-                );
-            }
-            if ((usbd_system.gamepads[i].driver->set_audio != NULL) &&
-                atomic_load_explicit(&usbd_system.gamepads[i].pcm_new, memory_order_acquire)) {
-                mutex_enter_blocking(&usbd_system.gamepads[i].gp_mutex);
-                atomic_store_explicit(&usbd_system.gamepads[i].pcm_new, false, memory_order_relaxed);
-                gamepad_pcm_out_t pcm = usbd_system.gamepads[i].pcm_out;
-                mutex_exit(&usbd_system.gamepads[i].gp_mutex);
-                usbd_system.gamepads[i].driver->set_audio(
-                    usbd_system.gamepads[i].handle, 
-                    &pcm
-                );
-            }
-        }
         if (usbd_system.gamepads[i].driver->task != NULL) {
             usbd_system.gamepads[i].driver->task(usbd_system.gamepads[i].handle);
         }
     }
+    if (usbd_system.multithread && 
+        ring_usb_pop(&usbd_system.ring, &usbd_system.buf_safe)) {
+
+        uint8_t index = usbd_system.buf_safe.index;
+
+        switch (usbd_system.buf_safe.type) {
+            case RING_USB_TYPE_PAD:
+                usbd_system.gamepads[index].driver->set_pad(
+                    usbd_system.gamepads[index].handle, 
+                    (gamepad_pad_t*)usbd_system.buf_safe.payload, 
+                    usbd_system.buf_safe.flags
+                );
+                if (usbd_system.buf_safe.flags & GAMEPAD_FLAG_IN_PAD) {
+                    memcpy(&usbd_system.gamepads[index].prev_pad, 
+                            (gamepad_pad_t*)usbd_system.buf_safe.payload, 
+                            sizeof(gamepad_pad_t));
+                }
+                break;
+            case RING_USB_TYPE_PCM:
+                usbd_system.gamepads[index].driver->set_audio(
+                    usbd_system.gamepads[index].handle, 
+                    (gamepad_pcm_out_t*)usbd_system.buf_safe.payload
+                );
+                break;
+            default:
+                ogxm_loge("usb_device_task: Unknown ring buffer type %d, index=%d\n", 
+                    usbd_system.buf_safe.type, index);
+                break;
+        }
+    }
     usbd_task();
+}
+
+bool usb_device_get_pad(uint8_t index, gamepad_pad_t* pad) {
+    if ((index >= GAMEPADS_MAX) ||
+        (usbd_system.gamepads[index].handle == NULL) ||
+        (usbd_system.gamepads[index].driver->set_pad == NULL)) {
+        ogxm_loge("usb_device_get_pad: Invalid index %d\n", index);
+        return false;
+    }
+    memcpy(pad, &usbd_system.gamepads[index].prev_pad, sizeof(gamepad_pad_t));
+    return true;
+}
+
+void usb_device_set_pad(uint8_t index, const gamepad_pad_t* pad, uint32_t flags) {
+    if ((index >= GAMEPADS_MAX) ||
+        (usbd_system.gamepads[index].handle == NULL) ||
+        (usbd_system.gamepads[index].driver->set_pad == NULL)) {
+        ogxm_loge("usb_device_set_pad: Invalid index %d\n", index);
+        return;
+    }
+    if (usbd_system.multithread) {
+        usbd_system.buf_unsafe.type = RING_USB_TYPE_PAD;
+        usbd_system.buf_unsafe.index = index;
+        usbd_system.buf_unsafe.flags = flags;
+        memcpy(usbd_system.buf_unsafe.payload, pad, sizeof(gamepad_pad_t));
+        ring_usb_push(&usbd_system.ring, &usbd_system.buf_unsafe);
+    } else {
+        usbd_system.gamepads[index].driver->set_pad(
+            usbd_system.gamepads[index].handle, 
+            pad, 
+            flags
+        );
+        if (flags & GAMEPAD_FLAG_IN_PAD) {
+            memcpy(&usbd_system.gamepads[index].prev_pad, pad, sizeof(gamepad_pad_t));
+        }
+    }
+}
+
+void usb_device_set_audio(uint8_t index, const gamepad_pcm_out_t* pcm_out) {
+    if ((index >= GAMEPADS_MAX) ||
+        (usbd_system.gamepads[index].handle == NULL) ||
+        (usbd_system.gamepads[index].driver->set_audio == NULL)) {
+        ogxm_loge("usb_device_set_audio: Invalid index or no audio support\n");
+        return;
+    }
+    if (usbd_system.multithread) {
+        usbd_system.buf_unsafe.type = RING_USB_TYPE_PCM;
+        usbd_system.buf_unsafe.index = index;
+        usbd_system.buf_unsafe.flags = 0;
+        memcpy(usbd_system.buf_unsafe.payload, pcm_out, sizeof(gamepad_pcm_out_t));
+        ring_usb_push(&usbd_system.ring, &usbd_system.buf_unsafe);
+    } else {
+        usbd_system.gamepads[index].driver->set_audio(
+            usbd_system.gamepads[index].handle, 
+            pcm_out
+        );
+    }
 }

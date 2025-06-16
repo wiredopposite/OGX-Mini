@@ -1,23 +1,25 @@
 {
     "configurations": [
-      {
-        "name": "ESP-IDF",
-        "compilerPath": "${default}",
-        "compileCommands": "${config:idf.buildPath}/compile_commands.json",
-        "includePath": [
-          "${config:idf.espIdfPath}/components/**",
-          "${config:idf.espIdfPathWin}/components/**",
-          "${workspaceFolder}/main/**"
-        ],
-        "browse": {
-          "path": [
-            "${config:idf.espIdfPath}/components",
-            "${config:idf.espIdfPathWin}/components",
-            "${workspaceFolder}/main"
-          ],
-          "limitSymbolsToIncludedHeaders": true
+        {
+            "name": "ESP-IDF",
+            "compilerPath": "${default}",
+            "compileCommands": "${config:idf.buildPath}/compile_commands.json",
+            "includePath": [
+            "${config:idf.espIdfPath}/components/**",
+            "${config:idf.espIdfPathWin}/components/**",
+            "${workspaceFolder}/main/**",
+            "${workspaceFolder}/components/**"
+            ],
+            "browse": {
+            "path": [
+                "${config:idf.espIdfPath}/components",
+                "${config:idf.espIdfPathWin}/components",
+                "${workspaceFolder}/main",
+                "${workspaceFolder}/components"
+            ],
+            "limitSymbolsToIncludedHeaders": true
+            }
         }
-      }
     ],
     "version": 4
-  }
+}

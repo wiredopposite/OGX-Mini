@@ -4,12 +4,13 @@
 #if OGXM_LOG_ENABLED
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void ogxm_log_init(bool multicore);
+void ogxm_log_init(bool multithread);
 void ogxm_log_level(uint8_t level, const char* fmt, ...);
 void ogxm_log_hex_level(uint8_t level, const void* data, uint16_t len, const char* fmt, ...);
 

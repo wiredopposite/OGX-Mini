@@ -1,29 +1,28 @@
-include(${CMAKE_CURRENT_SOURCE_DIR}/../../FWDefines.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/../FWDefines.cmake)
 
 idf_component_register( 
     SRCS    
         "main.c" 
-        "main.cpp"
-        "Board/board_api.cpp"
-        "BTManager/BTManager.cpp"
-        "BTManager/BTManager_BP32.cpp"
-        "BLEServer/BLEServer.cpp"
-        "I2CDriver/I2CDriver.cpp"
-        "UserSettings/UserSettings.cpp"
-        "UserSettings/UserProfile.cpp"
-        "UserSettings/TriggerSettings.cpp"
-        "UserSettings/JoystickSettings.cpp"
+        "log/log.c"
+        "wired/wired_i2c.c"
+        "wired/wired_spi.c"
+        "led/led.c"
+        "settings/nvs.c"
+        "settings/settings.cpp"
+        "settings/button_combo.c"
+        "bluetooth/bluetooth.c"
+        "periph/i2c_master.c"
     INCLUDE_DIRS 
         "."
     REQUIRES 
         bluepad32 
         btstack 
-        driver 
         nvs_flash 
-        libfixmath 
+        libfixmath
 )
 
-target_compile_definitions(${COMPONENT_LIB} PRIVATE
+target_compile_definitions(${COMPONENT_LIB} 
+    PRIVATE
         FIRMWARE_NAME=\"${FW_NAME}\"
         FIRMWARE_VERSION=\"${FW_VERSION}\"
 )

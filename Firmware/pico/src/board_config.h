@@ -1,12 +1,12 @@
 #pragma once
 
-#define BUILD_DATETIME                  "2025-06-08 14:11:24"
+#define BUILD_DATETIME                  "2025-06-16 08:13:06"
 #define BUILD_VERSION                   "1.0.0a4"
 #define VERIFY_BUILD_VERSION            0
 #define OGXM_LOG_ENABLED                0
 #define OGXM_LOG_LEVEL                  2
 
-#define GAMEPADS_MAX                    4
+#define GAMEPADS_MAX                    1
 
 #define LED_ENABLED                     0
 #define LED_PIN                         
@@ -49,6 +49,7 @@
 #define ESP32_I2C_NUM                   
 #define ESP32_I2C_PIN_SDA               
 #define ESP32_I2C_PIN_SCL               
+#define ESP32_I2C_PIN_IRQ               
 
 #define ESP32_SPI_NUM                   
 #define ESP32_SPI_PIN_MOSI              
@@ -67,10 +68,16 @@
 #define OGXM_BOARD_STANDARD             1
 #define OGXM_BOARD_BLUETOOTH            2
 #define OGXM_BOARD_DEVKIT               3
-#define OGXM_BOARD_4CHANNEL             4
-#define OGXM_BOARD_BLUETOOTH_USBH       5
+#define OGXM_BOARD_DEVKIT_ESP32         4
+#define OGXM_BOARD_4CHANNEL             5
+#define OGXM_BOARD_BLUETOOTH_USBH       6
 #define OGXM_BOARD                      OGXM_BOARD_STANDARD
 
-#if ((OGXM_BOARD != OGXM_BOARD_DEVKIT) && USBH_PIO_ENABLED && USBD_PIO_ENABLED)
+#if (((OGXM_BOARD != OGXM_BOARD_DEVKIT) && (OGXM_BOARD != OGXM_BOARD_DEVKIT_ESP32)) \
+    && USBH_PIO_ENABLED && USBD_PIO_ENABLED)
 #error "USB Host and Device PIO cannot be enabled at the same time"
+#endif
+
+#if defined(UART_BRIDGE_PIN_RESET)
+#define ESP32_RESET_PIN UART_BRIDGE_PIN_RESET
 #endif

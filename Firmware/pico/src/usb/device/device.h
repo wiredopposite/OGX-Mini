@@ -32,7 +32,7 @@ typedef enum {
 } usbd_addon_t;
 
 typedef struct {
-    bool    use_mutex;      /* True if audio/pad set methods can be called from a different thread */
+    bool    multithread;    /* True if audio/pad set methods will be called from a different thread */
     uint8_t count;          /* The number of USB devices to emulate, if this is > 1, PIO USBD must be enabled */
     
     struct {
@@ -70,24 +70,17 @@ void usb_device_connect(void);
 void usb_device_deinit(void);
 
 /**
- * @brief Get the current gamepad state with mutex protection
+ * @brief Get the current gamepad state.
+ * 
+ * @note This function is not thread safe and should only be called from the 
+ *       same thread that calls usb_device_task().
  * 
  * @param index The index of the gamepad to get the state for
  * @param pad Pointer to a gamepad_pad_t structure to fill with the current state
  * 
- * @return true if the pad state was successfully retrieved, false otherwise
+ * @return true if the state was successfully retrieved, false otherwise
  */
-bool usb_device_get_pad_safe(uint8_t index, gamepad_pad_t* pad);
-
-/**
- * @brief Get the current gamepad state without mutex protection
- * 
- * @param index The index of the gamepad to get the state for
- * @param pad Pointer to a gamepad_pad_t structure to fill with the current state
- * 
- * @return true if the pad state was successfully retrieved, false otherwise
- */
-bool usb_device_get_pad_unsafe(uint8_t index, gamepad_pad_t* pad);
+bool usb_device_get_pad(uint8_t index, gamepad_pad_t* pad);
 
 /**
  * @brief Set the gamepad state

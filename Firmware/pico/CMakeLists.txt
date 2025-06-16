@@ -46,6 +46,8 @@ add_executable(${FW_NAME}
     ${SRC}/main_standard.c
     ${SRC}/main_bluetooth.c
     ${SRC}/main_devkit.c
+    ${SRC}/main_devkit_esp32.c
+    ${SRC}/shared.c
     
     ${SRC}/log/log.c
 
@@ -114,6 +116,7 @@ target_link_libraries(${FW_NAME}
         hardware_i2c
         hardware_spi
         hardware_flash
+        hardware_dma
         
         pico_usb
         libxsm3
@@ -131,6 +134,21 @@ target_compile_definitions(${FW_NAME}
         PICO_DEFAULT_UART_RX_PIN=${PICO_DEFAULT_UART_RX_PIN}
         PICO_FLASH_SIZE_BYTES=${PICO_FLASH_SIZE_BYTES}
 )
+
+target_compile_options(${FW_NAME} 
+    PUBLIC
+        $<$<CONFIG:Release>:-O3 -g0 -DNDEBUG -ffunction-sections -fdata-sections>
+)
+
+target_link_options(${FW_NAME}
+    PUBLIC
+        $<$<CONFIG:Release>:-Wl,--gc-sections>
+)
+
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(OGXM_LOG_ENABLED 1)
+    set(OGXM_LOG_LEVEL   3)
+endif()
 
 configure_file(
     ${CMAKE_CURRENT_LIST_DIR}/board_config.h.in
@@ -205,11 +223,22 @@ target_include_directories(tinyusb_host
 
 target_compile_definitions(tinyusb_host
     INTERFACE
-        # $<$<CONFIG:Release>:CFG_TUSB_DEBUG=0>
-        # $<$<CONFIG:Debug>:CFG_TUSB_DEBUG=2>
-        # $<$<CONFIG:Debug>:CFG_TUH_LOG_LEVEL=2>
+        $<$<CONFIG:Release>:CFG_TUSB_DEBUG=0>
+        # $<$<CONFIG:Debug>:CFG_TUSB_DEBUG=1>
+        # $<$<CONFIG:Debug>:CFG_TUH_LOG_LEVEL=1>
 )
 
+# target_compile_definitions(pico_usb
+#     PUBLIC
+#         $<$<CONFIG:Debug>:USB_LOG_ENABLE=1>
+#         $<$<CONFIG:Debug>:USB_LOG_LEVEL=2>
+# )
+
 pico_generate_pio_header(${FW_NAME} ${SRC}/led/neopixel/WS2812.pio)
+
+# set_target_properties(${FW_NAME}
+#     PROPERTIES
+#         OUTPUT_NAME "${FW_NAME}-${FW_VERSION}-${OGXMINI_BOARD}"
+# )
 
 pico_add_extra_outputs(${FW_NAME})
