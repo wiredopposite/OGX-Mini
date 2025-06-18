@@ -3,17 +3,17 @@
     "configurations": [
         {
             "name": "Pico RP2040 Debug",
-            "cwd": "${workspaceFolder}/debug/scripts",
+            "cwd": "${workspaceFolder}/debug_win/scripts",
             "executable": "${command:cmake.launchTargetPath}",
             "request": "launch",
             "type": "cortex-debug",
             "servertype": "openocd",
-            "serverpath": "${workspaceFolder}/debug/openocd.exe",
+            "serverpath": "${workspaceFolder}/debug_win/openocd.exe",
             "gdbPath": "arm-none-eabi-gdb",
             "device": "RP2040",
             "configFiles": [
-                "${workspaceFolder}/debug/scripts/interface/cmsis-dap.cfg",
-                "${workspaceFolder}/debug/scripts/target/rp2040.cfg"
+                "${workspaceFolder}/debug_win/scripts/interface/cmsis-dap.cfg",
+                "${workspaceFolder}/debug_win/scripts/target/rp2040.cfg"
             ],
             "svdFile": "${workspaceFolder}/external/pico-sdk/src/rp2040/hardware_regs/RP2040.svd",
             "runToEntryPoint": "main",
@@ -28,17 +28,17 @@
         },
         {
             "name": "Pico RP2350 Debug",
-            "cwd": "${workspaceFolder}/debug/scripts",
+            "cwd": "${workspaceFolder}/debug_win/scripts",
             "executable": "${command:cmake.launchTargetPath}",
             "request": "launch",
             "type": "cortex-debug",
             "servertype": "openocd",
-            "serverpath": "${workspaceFolder}/debug/openocd.exe",
+            "serverpath": "${workspaceFolder}/debug_win/openocd.exe",
             "gdbPath": "arm-none-eabi-gdb",
             "device": "RP2350",
             "configFiles": [
-                "${workspaceFolder}/debug/scripts/interface/cmsis-dap.cfg",
-                "${workspaceFolder}/debug/scripts/target/rp2350.cfg"
+                "${workspaceFolder}/debug_win/scripts/interface/cmsis-dap.cfg",
+                "${workspaceFolder}/debug_win/scripts/target/rp2350.cfg"
             ],
             "svdFile": "${workspaceFolder}/external/pico-sdk/src/rp2350/hardware_regs/RP2350.svd",
             "runToEntryPoint": "main",

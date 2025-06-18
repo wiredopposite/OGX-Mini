@@ -1,6 +1,6 @@
 #include <string.h>
-#include "class/hid/hid.h"
 #include "common/usb_def.h"
+#include "common/class/hid_def.h"
 #include "gamepad/gamepad.h"
 #include "gamepad/range.h"
 #include "settings/settings.h"
@@ -41,7 +41,7 @@ static void ps3_init_cb(uint8_t daddr, const uint8_t* data,
     tusb_control_request_t request = {
         .bmRequestType = 0 | USB_REQ_TYPE_CLASS | USB_REQ_RECIP_INTERFACE,
         .bRequest = 0,
-        .wValue = (HID_REPORT_TYPE_FEATURE << 8),
+        .wValue = (USB_REQ_HID_REPORT_TYPE_FEATURE << 8),
         .wIndex = 0,
         .wLength = 0,
     };
@@ -49,7 +49,7 @@ static void ps3_init_cb(uint8_t daddr, const uint8_t* data,
     switch (ps3->init_state) {
     case PS3_INIT_BT_INFO:
         request.bmRequestType |= USB_REQ_DIR_DEVTOHOST;
-        request.bRequest = HID_REQ_CONTROL_GET_REPORT;
+        request.bRequest = USB_REQ_HID_GET_REPORT;
         request.wValue |= PS3_REQ_FEATURE_REPORT_ID_BT_INFO;
         request.wLength = sizeof(ps3_bt_info_t);
         /* If we ever end up using this, move to device state */
@@ -60,7 +60,7 @@ static void ps3_init_cb(uint8_t daddr, const uint8_t* data,
     case PS3_INIT_ENABLE_REPORTS:
         {
         request.bmRequestType |= USB_REQ_DIR_HOSTTODEV;
-        request.bRequest = HID_REQ_CONTROL_SET_REPORT;
+        request.bRequest = USB_REQ_HID_SET_REPORT;
         request.wValue |= PS3_REQ_FEATURE_REPORT_ID_COMMAND;
         request.wIndex = 0x0000; 
         request.wLength = sizeof(ps3_cmd_header_t);
@@ -74,7 +74,7 @@ static void ps3_init_cb(uint8_t daddr, const uint8_t* data,
     case PS3_INIT_ENABLE_SENSORS:
         {
         request.bmRequestType |= USB_REQ_DIR_HOSTTODEV;
-        request.bRequest = HID_REQ_CONTROL_SET_REPORT;
+        request.bRequest = USB_REQ_HID_SET_REPORT;
         request.wValue |= PS3_REQ_FEATURE_REPORT_ID_COMMAND;
         request.wIndex = 0x0000; 
         request.wLength = sizeof(ps3_cmd_header_t);
@@ -124,8 +124,8 @@ static void ps3_mounted(usbh_type_t type, uint8_t index, uint8_t daddr, uint8_t 
     ps3->report_out.leds_bitmap = 1U << (index + 1);
 
     ps3->rumble_req.bmRequestType = USB_REQ_DIR_HOSTTODEV | USB_REQ_TYPE_CLASS | USB_REQ_RECIP_INTERFACE;
-    ps3->rumble_req.bRequest = HID_REQ_CONTROL_SET_REPORT;
-    ps3->rumble_req.wValue = (HID_REPORT_TYPE_OUTPUT << 8) | PS3_REQ_OUTPUT_REPORT_ID;
+    ps3->rumble_req.bRequest = USB_REQ_HID_SET_REPORT;
+    ps3->rumble_req.wValue = (USB_REQ_HID_REPORT_TYPE_OUTPUT << 8) | PS3_REQ_OUTPUT_REPORT_ID;
     ps3->rumble_req.wIndex = 0x0000;
     ps3->rumble_req.wLength = sizeof(ps3_report_out_t);
 
@@ -145,23 +145,23 @@ static void ps3_report_received(uint8_t index, usbh_periph_t subtype, uint8_t da
     }
     memset(&ps3->gp_report, 0, sizeof(gamepad_pad_t));
 
-    if (report_in->buttons[0] & PS3_BTN0_DPAD_UP)       { gp_report->dpad |= GP_BIT8(ps3->profile.d_up); }
-    if (report_in->buttons[0] & PS3_BTN0_DPAD_DOWN)     { gp_report->dpad |= GP_BIT8(ps3->profile.d_down); }
-    if (report_in->buttons[0] & PS3_BTN0_DPAD_LEFT)     { gp_report->dpad |= GP_BIT8(ps3->profile.d_left); }
-    if (report_in->buttons[0] & PS3_BTN0_DPAD_RIGHT)    { gp_report->dpad |= GP_BIT8(ps3->profile.d_right); }
+    gp_report->flags = GAMEPAD_FLAG_PAD | GAMEPAD_FLAG_ANALOG;
 
-    if (report_in->buttons[0] & PS3_BTN0_SELECT)   { gp_report->buttons |= GP_BIT16(ps3->profile.btn_back); }
-    if (report_in->buttons[0] & PS3_BTN0_START)    { gp_report->buttons |= GP_BIT16(ps3->profile.btn_start); }
-    if (report_in->buttons[0] & PS3_BTN0_L3)       { gp_report->buttons |= GP_BIT16(ps3->profile.btn_l3); }
-    if (report_in->buttons[0] & PS3_BTN0_R3)       { gp_report->buttons |= GP_BIT16(ps3->profile.btn_r3); }
-
-    if (report_in->buttons[1] & PS3_BTN1_SQUARE)   { gp_report->buttons |= GP_BIT16(ps3->profile.btn_x); }
-    if (report_in->buttons[1] & PS3_BTN1_CIRCLE)   { gp_report->buttons |= GP_BIT16(ps3->profile.btn_b); }
-    if (report_in->buttons[1] & PS3_BTN1_CROSS)    { gp_report->buttons |= GP_BIT16(ps3->profile.btn_a); }
-    if (report_in->buttons[1] & PS3_BTN1_TRIANGLE) { gp_report->buttons |= GP_BIT16(ps3->profile.btn_y); }
-    if (report_in->buttons[1] & PS3_BTN1_L1)       { gp_report->buttons |= GP_BIT16(ps3->profile.btn_lb); }
-    if (report_in->buttons[1] & PS3_BTN1_R1)       { gp_report->buttons |= GP_BIT16(ps3->profile.btn_rb); }
-    if (report_in->buttons[2] & PS3_BTN2_SYS)      { gp_report->buttons |= GP_BIT16(ps3->profile.btn_sys); }
+    if (report_in->buttons[0] & PS3_BTN0_DPAD_UP)    { gp_report->buttons |= GP_BIT(ps3->profile.btn_up); }
+    if (report_in->buttons[0] & PS3_BTN0_DPAD_DOWN)  { gp_report->buttons |= GP_BIT(ps3->profile.btn_down); }
+    if (report_in->buttons[0] & PS3_BTN0_DPAD_LEFT)  { gp_report->buttons |= GP_BIT(ps3->profile.btn_left); }
+    if (report_in->buttons[0] & PS3_BTN0_DPAD_RIGHT) { gp_report->buttons |= GP_BIT(ps3->profile.btn_right); }
+    if (report_in->buttons[0] & PS3_BTN0_SELECT)     { gp_report->buttons |= GP_BIT(ps3->profile.btn_back); }
+    if (report_in->buttons[0] & PS3_BTN0_START)      { gp_report->buttons |= GP_BIT(ps3->profile.btn_start); }
+    if (report_in->buttons[0] & PS3_BTN0_L3)         { gp_report->buttons |= GP_BIT(ps3->profile.btn_l3); }
+    if (report_in->buttons[0] & PS3_BTN0_R3)         { gp_report->buttons |= GP_BIT(ps3->profile.btn_r3); }
+    if (report_in->buttons[1] & PS3_BTN1_SQUARE)     { gp_report->buttons |= GP_BIT(ps3->profile.btn_x); }
+    if (report_in->buttons[1] & PS3_BTN1_CIRCLE)     { gp_report->buttons |= GP_BIT(ps3->profile.btn_b); }
+    if (report_in->buttons[1] & PS3_BTN1_CROSS)      { gp_report->buttons |= GP_BIT(ps3->profile.btn_a); }
+    if (report_in->buttons[1] & PS3_BTN1_TRIANGLE)   { gp_report->buttons |= GP_BIT(ps3->profile.btn_y); }
+    if (report_in->buttons[1] & PS3_BTN1_L1)         { gp_report->buttons |= GP_BIT(ps3->profile.btn_lb); }
+    if (report_in->buttons[1] & PS3_BTN1_R1)         { gp_report->buttons |= GP_BIT(ps3->profile.btn_rb); }
+    if (report_in->buttons[2] & PS3_BTN2_SYS)        { gp_report->buttons |= GP_BIT(ps3->profile.btn_sys); }
 
     gp_report->analog[ps3->profile.a_a]        = report_in->a_cross;
     gp_report->analog[ps3->profile.a_b]        = report_in->a_circle;
@@ -182,6 +182,12 @@ static void ps3_report_received(uint8_t index, usbh_periph_t subtype, uint8_t da
     gp_report->joystick_rx = range_uint8_to_int16(report_in->joystick_rx);
     gp_report->joystick_ry = range_invert_int16(range_uint8_to_int16(report_in->joystick_ry));
 
+    if (memcmp(gp_report, &ps3->prev_gp_report, sizeof(ps3_sixaxis_report_in_t)) == 0) {
+        tuh_hxx_receive_report(daddr, itf_num);
+        return;
+    }
+    memcpy(&ps3->prev_gp_report, gp_report, sizeof(gamepad_pad_t));
+
     if (ps3->map.trig_l) {
         settings_scale_trigger(&ps3->profile.trigger_l, &gp_report->trigger_l);
     }
@@ -195,10 +201,7 @@ static void ps3_report_received(uint8_t index, usbh_periph_t subtype, uint8_t da
         settings_scale_joysticks(&ps3->profile.joystick_r, &gp_report->joystick_rx, &gp_report->joystick_ry);
     }
 
-    if (memcmp(&ps3->prev_gp_report, gp_report, sizeof(gamepad_pad_t)) != 0) {
-        usb_host_driver_pad_cb(index, gp_report, GAMEPAD_FLAG_IN_PAD | GAMEPAD_FLAG_IN_PAD_ANALOG);
-        memcpy(&ps3->prev_gp_report, gp_report, sizeof(gamepad_pad_t));
-    }
+    usb_host_driver_pad_cb(index, gp_report);
     tuh_hxx_receive_report(daddr, itf_num);
 }
 

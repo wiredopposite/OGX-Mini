@@ -102,6 +102,12 @@ void hid_report_cb(uint8_t index, usbh_periph_t subtype, uint8_t daddr,
     hid_state_t* state = &hid_state[index];
     hid_map_gamepad(state, data, len);
 
+    if (memcmp(&state->gp_report, &state->prev_gp_report, sizeof(gamepad_pad_t)) == 0) {
+        tuh_hxx_receive_report(daddr, itf_num);
+        return;
+    }
+    memcpy(&state->gp_report, &state->prev_gp_report, sizeof(gamepad_pad_t));
+
     if (state->map.joy_l) {
         settings_scale_joysticks(&state->profile.joystick_l, 
                                   &state->gp_report.joystick_lx, 
@@ -121,10 +127,7 @@ void hid_report_cb(uint8_t index, usbh_periph_t subtype, uint8_t daddr,
                                &state->gp_report.trigger_r);
     }
 
-    if (memcmp(&state->gp_report, &state->prev_gp_report, sizeof(gamepad_pad_t)) != 0) {
-        usb_host_driver_pad_cb(index, &state->gp_report, 0);
-        memcpy(&state->prev_gp_report, &state->gp_report, sizeof(gamepad_pad_t));
-    }
+    usb_host_driver_pad_cb(index, &state->gp_report);
     tuh_hxx_receive_report(daddr, itf_num);
 }
 
@@ -175,6 +178,8 @@ static void hid_map_gamepad(hid_state_t* state, const uint8_t* report, uint16_t 
     const hid_usage_map_t* usage_map = state->driver->usage_map;
     const user_profile_t* profile = &state->profile;
     memset(pad, 0, sizeof(gamepad_pad_t));
+
+    pad->flags = GAMEPAD_FLAG_PAD;
 
     for (uint8_t i = 0; i < report_map->field_count; i++) {
         const hid_field_t* field = &report_map->fields[i];
@@ -229,45 +234,45 @@ static void hid_map_gamepad(hid_state_t* state, const uint8_t* report, uint16_t 
             case HID_DESKTOP_USAGE_HAT:
                 switch (value) {
                 case HID_HAT_UP:
-                    pad->dpad = GP_BIT8(profile->d_up);
+                    pad->buttons = GP_BIT(profile->btn_up);
                     break;
                 case HID_HAT_UP_RIGHT:
-                    pad->dpad = GP_BIT8(profile->d_up) | GP_BIT8(profile->d_right);
+                    pad->buttons = GP_BIT(profile->btn_up) | GP_BIT(profile->btn_right);
                     break;
                 case HID_HAT_RIGHT:
-                    pad->dpad = GP_BIT8(profile->d_right);
+                    pad->buttons = GP_BIT(profile->btn_right);
                     break;
                 case HID_HAT_DOWN_RIGHT:
-                    pad->dpad = GP_BIT8(profile->d_down) | GP_BIT8(profile->d_right);
+                    pad->buttons = GP_BIT(profile->btn_down) | GP_BIT(profile->btn_right);
                     break;
                 case HID_HAT_DOWN:
-                    pad->dpad = GP_BIT8(profile->d_down);
+                    pad->buttons = GP_BIT(profile->btn_down);
                     break;
                 case HID_HAT_DOWN_LEFT:
-                    pad->dpad = GP_BIT8(profile->d_down) | GP_BIT8(profile->d_left);
+                    pad->buttons = GP_BIT(profile->btn_down) | GP_BIT(profile->btn_left);
                     break;
                 case HID_HAT_LEFT:
-                    pad->dpad = GP_BIT8(profile->d_left);
+                    pad->buttons = GP_BIT(profile->btn_left);
                     break;
                 case HID_HAT_UP_LEFT:
-                    pad->dpad = GP_BIT8(profile->d_up) | GP_BIT8(profile->d_left);
+                    pad->buttons = GP_BIT(profile->btn_up) | GP_BIT(profile->btn_left);
                     break;
                 default:
-                    pad->dpad = 0;
+                    pad->buttons = 0;
                     break;
                 }
                 break;
             case HID_DESKTOP_USAGE_DPAD_UP:
-                pad->dpad |= (value ? GP_BIT8(profile->d_up) : 0);
+                pad->buttons |= (value ? GP_BIT(profile->btn_up) : 0);
                 break;
             case HID_DESKTOP_USAGE_DPAD_DOWN:
-                pad->dpad |= (value ? GP_BIT8(profile->d_down) : 0);
+                pad->buttons |= (value ? GP_BIT(profile->btn_down) : 0);
                 break;   
             case HID_DESKTOP_USAGE_DPAD_RIGHT:
-                pad->dpad |= (value ? GP_BIT8(profile->d_right) : 0);
+                pad->buttons |= (value ? GP_BIT(profile->btn_right) : 0);
                 break;
             case HID_DESKTOP_USAGE_DPAD_LEFT:
-                pad->dpad |= (value ? GP_BIT8(profile->d_left) : 0);
+                pad->buttons |= (value ? GP_BIT(profile->btn_left) : 0);
                 break;
             }
             break;
@@ -286,14 +291,14 @@ static void hid_map_gamepad(hid_state_t* state, const uint8_t* report, uint16_t 
                 break;
             }
             // ogxm_logv("HID Usage Button: %u\n", field->usage);
-            pad->buttons |= GP_BIT16(profile->btns[usage_map->buttons[field->usage]]);
+            pad->buttons |= GP_BIT(profile->btns[usage_map->buttons[field->usage]]);
             break;
         }
     }
-    if ((pad->buttons & GAMEPAD_BTN_LT) && !pad->trigger_l) {
+    if ((pad->buttons & GAMEPAD_BUTTON_LT) && !pad->trigger_l) {
         pad->trigger_l = R_UINT8_MAX;
     }
-    if ((pad->buttons & GAMEPAD_BTN_RT) && !pad->trigger_r) {
+    if ((pad->buttons & GAMEPAD_BUTTON_RT) && !pad->trigger_r) {
         pad->trigger_r = R_UINT8_MAX;
     }
 }

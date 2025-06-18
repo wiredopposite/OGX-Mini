@@ -1,11 +1,18 @@
 #pragma once
 
+#include "board_config.h"
+#if (BLUETOOTH_HARDWARE == BLUETOOTH_HARDWARE_ESP32_I2C) || \
+    (BLUETOOTH_HARDWARE == BLUETOOTH_HARDWARE_ESP32_SPI)
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
 #include <stdatomic.h>
-#include "board_config.h"
 #include "gamepad/gamepad.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #ifndef MAX
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
@@ -65,3 +72,9 @@ static inline bool ring_wired_pop(ring_wired_t* ring, uint8_t* data) {
     atomic_store_explicit(&ring->tail, (tail + 1) % WIRED_RING_SIZE, memory_order_release);
     return true;
 }
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif // BLUETOOTH_HARDWARE

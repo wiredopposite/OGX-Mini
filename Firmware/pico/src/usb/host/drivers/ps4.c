@@ -1,5 +1,4 @@
 #include <string.h>
-#include "class/hid/hid.h"
 #include "common/usb_def.h"
 #include "gamepad/gamepad.h"
 #include "gamepad/range.h"
@@ -58,49 +57,51 @@ static void ps4_report_received(uint8_t index, usbh_periph_t subtype, uint8_t da
 
     memset(gp_report, 0, sizeof(gamepad_pad_t));
 
+    gp_report->flags = GAMEPAD_FLAG_PAD;
+
     switch (report_in->hat) {
     case HID_HAT_UP:
-        gp_report->dpad |= GP_BIT8(ps4->profile.d_up);
+        gp_report->buttons |= GP_BIT(ps4->profile.btn_up);
         break;
     case HID_HAT_UP_RIGHT:
-        gp_report->dpad |= GP_BIT8(ps4->profile.d_up) | GP_BIT8(ps4->profile.d_right);
+        gp_report->buttons |= (GP_BIT(ps4->profile.btn_up) | GP_BIT(ps4->profile.btn_right));
         break;
     case HID_HAT_RIGHT:
-        gp_report->dpad |= GP_BIT8(ps4->profile.d_right);
+        gp_report->buttons |= GP_BIT(ps4->profile.btn_right);
         break;
     case HID_HAT_DOWN_RIGHT:
-        gp_report->dpad |= GP_BIT8(ps4->profile.d_down) | GP_BIT8(ps4->profile.d_right);
+        gp_report->buttons |= (GP_BIT(ps4->profile.btn_down) | GP_BIT(ps4->profile.btn_right));
         break;
     case HID_HAT_DOWN:
-        gp_report->dpad |= GP_BIT8(ps4->profile.d_down);
+        gp_report->buttons |= GP_BIT(ps4->profile.btn_down);
         break;
     case HID_HAT_DOWN_LEFT:
-        gp_report->dpad |= GP_BIT8(ps4->profile.d_down) | GP_BIT8(ps4->profile.d_left);
+        gp_report->buttons |= (GP_BIT(ps4->profile.btn_down) | GP_BIT(ps4->profile.btn_left));
         break;
     case HID_HAT_LEFT:
-        gp_report->dpad |= GP_BIT8(ps4->profile.d_left);
+        gp_report->buttons |= GP_BIT(ps4->profile.btn_left);
         break;
     case HID_HAT_UP_LEFT:
-        gp_report->dpad |= GP_BIT8(ps4->profile.d_up) | GP_BIT8(ps4->profile.d_left);
+        gp_report->buttons |= (GP_BIT(ps4->profile.btn_up) | GP_BIT(ps4->profile.btn_left));
         break;
     default:
         break;
     }
 
-    if (report_in->buttons0 & PS4_BUTTON0_SQUARE)       { gp_report->buttons |= GP_BIT16(ps4->profile.btn_x); }
-    if (report_in->buttons0 & PS4_BUTTON0_CIRCLE)       { gp_report->buttons |= GP_BIT16(ps4->profile.btn_b); }
-    if (report_in->buttons0 & PS4_BUTTON0_CROSS)        { gp_report->buttons |= GP_BIT16(ps4->profile.btn_a); }
-    if (report_in->buttons0 & PS4_BUTTON0_TRIANGLE)     { gp_report->buttons |= GP_BIT16(ps4->profile.btn_y); }
-    if (report_in->buttons1 & PS4_BUTTON1_L1)           { gp_report->buttons |= GP_BIT16(ps4->profile.btn_lb); }
-    if (report_in->buttons1 & PS4_BUTTON1_R1)           { gp_report->buttons |= GP_BIT16(ps4->profile.btn_rb); }
-    if (report_in->buttons1 & PS4_BUTTON1_L2)           { gp_report->buttons |= GP_BIT16(ps4->profile.btn_lt); }
-    if (report_in->buttons1 & PS4_BUTTON1_R2)           { gp_report->buttons |= GP_BIT16(ps4->profile.btn_rt); }
-    if (report_in->buttons1 & PS4_BUTTON1_SHARE)        { gp_report->buttons |= GP_BIT16(ps4->profile.btn_back); }
-    if (report_in->buttons1 & PS4_BUTTON1_OPTIONS)      { gp_report->buttons |= GP_BIT16(ps4->profile.btn_start); }
-    if (report_in->buttons1 & PS4_BUTTON1_L3)           { gp_report->buttons |= GP_BIT16(ps4->profile.btn_l3); }
-    if (report_in->buttons1 & PS4_BUTTON1_R3)           { gp_report->buttons |= GP_BIT16(ps4->profile.btn_r3); }
-    if (report_in->buttons2 & PS4_BUTTON2_SYS)          { gp_report->buttons |= GP_BIT16(ps4->profile.btn_sys); }
-    if (report_in->buttons2 & PS4_BUTTON2_TP)           { gp_report->buttons |= GP_BIT16(ps4->profile.btn_misc); }
+    if (report_in->buttons0 & PS4_BUTTON0_SQUARE)       { gp_report->buttons |= GP_BIT(ps4->profile.btn_x); }
+    if (report_in->buttons0 & PS4_BUTTON0_CIRCLE)       { gp_report->buttons |= GP_BIT(ps4->profile.btn_b); }
+    if (report_in->buttons0 & PS4_BUTTON0_CROSS)        { gp_report->buttons |= GP_BIT(ps4->profile.btn_a); }
+    if (report_in->buttons0 & PS4_BUTTON0_TRIANGLE)     { gp_report->buttons |= GP_BIT(ps4->profile.btn_y); }
+    if (report_in->buttons1 & PS4_BUTTON1_L1)           { gp_report->buttons |= GP_BIT(ps4->profile.btn_lb); }
+    if (report_in->buttons1 & PS4_BUTTON1_R1)           { gp_report->buttons |= GP_BIT(ps4->profile.btn_rb); }
+    if (report_in->buttons1 & PS4_BUTTON1_L2)           { gp_report->buttons |= GP_BIT(ps4->profile.btn_lt); }
+    if (report_in->buttons1 & PS4_BUTTON1_R2)           { gp_report->buttons |= GP_BIT(ps4->profile.btn_rt); }
+    if (report_in->buttons1 & PS4_BUTTON1_SHARE)        { gp_report->buttons |= GP_BIT(ps4->profile.btn_back); }
+    if (report_in->buttons1 & PS4_BUTTON1_OPTIONS)      { gp_report->buttons |= GP_BIT(ps4->profile.btn_start); }
+    if (report_in->buttons1 & PS4_BUTTON1_L3)           { gp_report->buttons |= GP_BIT(ps4->profile.btn_l3); }
+    if (report_in->buttons1 & PS4_BUTTON1_R3)           { gp_report->buttons |= GP_BIT(ps4->profile.btn_r3); }
+    if (report_in->buttons2 & PS4_BUTTON2_SYS)          { gp_report->buttons |= GP_BIT(ps4->profile.btn_sys); }
+    if (report_in->buttons2 & PS4_BUTTON2_TP)           { gp_report->buttons |= GP_BIT(ps4->profile.btn_misc); }
 
     gp_report->trigger_l = report_in->trigger_l;
     gp_report->trigger_r = report_in->trigger_r;
@@ -109,6 +110,12 @@ static void ps4_report_received(uint8_t index, usbh_periph_t subtype, uint8_t da
     gp_report->joystick_ly = range_invert_int16(range_uint8_to_int16(report_in->joystick_ly));
     gp_report->joystick_rx = range_uint8_to_int16(report_in->joystick_rx);
     gp_report->joystick_ry = range_invert_int16(range_uint8_to_int16(report_in->joystick_ry));
+
+    if (memcmp(gp_report, &ps4->prev_gp_report, sizeof(gamepad_pad_t)) == 0) {
+        tuh_hxx_receive_report(daddr, itf_num);
+        return;
+    }
+    memcpy(&ps4->prev_gp_report, gp_report, sizeof(gamepad_pad_t));
 
     if (ps4->map.joy_l) {
         settings_scale_joysticks(&ps4->profile.joystick_l, &gp_report->joystick_lx, &gp_report->joystick_ly);
@@ -122,10 +129,8 @@ static void ps4_report_received(uint8_t index, usbh_periph_t subtype, uint8_t da
     if (ps4->map.trig_r) {
         settings_scale_trigger(&ps4->profile.trigger_r, &gp_report->trigger_r);
     }
-    if (memcmp(&ps4->prev_gp_report, gp_report, sizeof(gamepad_pad_t)) != 0) {
-        usb_host_driver_pad_cb(index, gp_report, GAMEPAD_FLAG_IN_PAD);
-        memcpy(&ps4->prev_gp_report, gp_report, sizeof(gamepad_pad_t));
-    }
+
+    usb_host_driver_pad_cb(index, gp_report);
     tuh_hxx_receive_report(daddr, itf_num);
 }
 

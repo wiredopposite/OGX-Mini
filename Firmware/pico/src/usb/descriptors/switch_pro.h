@@ -28,8 +28,8 @@ extern "C" {
 
 #define SWITCH_PRO_BUTTON1_MINUS    ((uint8_t)1 << 0)
 #define SWITCH_PRO_BUTTON1_PLUS     ((uint8_t)1 << 1)
-#define SWITCH_PRO_BUTTON1_L3       ((uint8_t)1 << 2)
-#define SWITCH_PRO_BUTTON1_R3       ((uint8_t)1 << 3)
+#define SWITCH_PRO_BUTTON1_L3       ((uint8_t)1 << 3)
+#define SWITCH_PRO_BUTTON1_R3       ((uint8_t)1 << 2)
 #define SWITCH_PRO_BUTTON1_HOME     ((uint8_t)1 << 4)
 #define SWITCH_PRO_BUTTON1_CAPTURE  ((uint8_t)1 << 5)
 
@@ -44,7 +44,7 @@ typedef struct __attribute__((packed)) {
     uint8_t report_id;
     uint8_t command;
 } switch_pro_command_t;
-// STATIC_ASSERT(sizeof(switch_pro_command_t) == 2, "switch_pro_command_t size mismatch");
+_Static_assert(sizeof(switch_pro_command_t) == 2, "switch_pro_command_t size mismatch");
 
 typedef struct __attribute__((packed)) {
         uint8_t report_id;
@@ -76,7 +76,7 @@ typedef struct __attribute__((packed)) {
         uint16_t velocityY;
         uint16_t velocityZ;
 } switch_pro_report_in_t;
-// STATIC_ASSERT(sizeof(switch_pro_report_in_t) == 25, "switch_pro_report_in_t size mismatch");
+_Static_assert(sizeof(switch_pro_report_in_t) == 25, "switch_pro_report_in_t size mismatch");
 
 typedef struct __attribute__((packed)) {
     uint8_t report_id;
@@ -85,7 +85,7 @@ typedef struct __attribute__((packed)) {
     uint8_t rumble_r[4];
     uint8_t commands[]; // Command id + parameters
 } switch_pro_report_out_t;
-// STATIC_ASSERT(sizeof(switch_pro_report_out_t) == 10, "switch_pro_report_out_t size mismatch");
+_Static_assert(sizeof(switch_pro_report_out_t) == 10, "switch_pro_report_out_t size mismatch");
 
 #ifdef __cplusplus
 }

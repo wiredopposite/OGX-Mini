@@ -7,32 +7,6 @@
 #include "usb/device/device_private.h"
 #include "usb/device/device.h"
 
-#define REPORT_IN_CAPABILITIES {                \
-    .report_id = 0x00,                          \
-    .length = sizeof(xboxog_gp_report_in_t),    \
-    .buttons = 0xFF,                            \
-    .reserved0 = 0x00,                          \
-    .a = 0xFF,                                  \
-    .b = 0xFF,                                  \
-    .x = 0xFF,                                  \
-    .y = 0xFF,                                  \
-    .white = 0xFF,                              \
-    .black = 0xFF,                              \
-    .trigger_l = 0xFF,                          \
-    .trigger_r = 0xFF,                          \
-    .joystick_lx = 0xFF,                        \
-    .joystick_ly = 0xFF,                        \
-    .joystick_rx = 0xFF,                        \
-    .joystick_ry = 0xFF                         \
-}
-
-#define REPORT_OUT_CAPABILITIES {               \
-    .report_id = 0x00,                          \
-    .length = sizeof(xboxog_gp_report_out_t),   \
-    .rumble_l = 0xFFFF,                         \
-    .rumble_r = 0xFFFF,                         \
-}
-
 typedef struct {
     xboxog_gp_report_in_t   report_in;
     xboxog_gp_report_out_t  report_out;
@@ -100,17 +74,11 @@ static bool xboxog_gp_ctrl_xfer_cb(usbd_handle_t* handle, const usb_ctrl_req_t* 
             const uint8_t report_id = req->wValue >> 8;
             switch (report_id) {
             case USB_XID_REPORT_CAPABILITIES_IN:
-                {
-                xboxog_gp_report_in_t report_in = REPORT_IN_CAPABILITIES;
-                return usbd_send_ctrl_resp(handle, &report_in,
-                                           sizeof(report_in), NULL);
-                }
+                return usbd_send_ctrl_resp(handle, &XBOXOG_GP_CAPABILITIES_IN,
+                                           sizeof(XBOXOG_GP_CAPABILITIES_IN), NULL);
             case USB_XID_REPORT_CAPABILITIES_OUT:
-                {
-                xboxog_gp_report_out_t report_out = REPORT_OUT_CAPABILITIES;
-                return usbd_send_ctrl_resp(handle, &report_out,
-                                           sizeof(report_out), NULL);
-                }
+                return usbd_send_ctrl_resp(handle, &XBOXOG_GP_CAPABILITIES_OUT,
+                                           sizeof(XBOXOG_GP_CAPABILITIES_OUT), NULL);
             default:
                 break;
             }
@@ -180,22 +148,22 @@ static usbd_handle_t* xboxog_gp_init(const usb_device_driver_cfg_t* cfg) {
     return handle;
 }
 
-static void xboxog_gp_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad, uint32_t flags) {
-    if (!usbd_ep_ready(handle, XBOXOG_GP_EPADDR_IN) || !(flags & GAMEPAD_FLAG_IN_PAD)) {
+static void xboxog_gp_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad) {
+    if (!usbd_ep_ready(handle, XBOXOG_GP_EPADDR_IN) || !(pad->flags & GAMEPAD_FLAG_PAD)) {
         return;
     }
     xboxog_gp_state_t* xb = xboxog_gp_state[handle->port];
 
     xb->report_in.buttons = 0;
 
-    if (pad->dpad & GAMEPAD_D_UP)          { xb->report_in.buttons |= XBOXOG_GP_BUTTON_UP; }
-    if (pad->dpad & GAMEPAD_D_DOWN)        { xb->report_in.buttons |= XBOXOG_GP_BUTTON_DOWN; }
-    if (pad->dpad & GAMEPAD_D_LEFT)        { xb->report_in.buttons |= XBOXOG_GP_BUTTON_LEFT; }
-    if (pad->dpad & GAMEPAD_D_RIGHT)       { xb->report_in.buttons |= XBOXOG_GP_BUTTON_RIGHT; }
-    if (pad->buttons & GAMEPAD_BTN_START)  { xb->report_in.buttons |= XBOXOG_GP_BUTTON_START; }
-    if (pad->buttons & GAMEPAD_BTN_BACK)   { xb->report_in.buttons |= XBOXOG_GP_BUTTON_BACK; }
-    if (pad->buttons & GAMEPAD_BTN_L3)     { xb->report_in.buttons |= XBOXOG_GP_BUTTON_L3; }
-    if (pad->buttons & GAMEPAD_BTN_R3)     { xb->report_in.buttons |= XBOXOG_GP_BUTTON_R3; }
+    if (pad->buttons & GAMEPAD_BUTTON_UP)       { xb->report_in.buttons |= XBOXOG_GP_BUTTON_UP; }
+    if (pad->buttons & GAMEPAD_BUTTON_DOWN)     { xb->report_in.buttons |= XBOXOG_GP_BUTTON_DOWN; }
+    if (pad->buttons & GAMEPAD_BUTTON_LEFT)     { xb->report_in.buttons |= XBOXOG_GP_BUTTON_LEFT; }
+    if (pad->buttons & GAMEPAD_BUTTON_RIGHT)    { xb->report_in.buttons |= XBOXOG_GP_BUTTON_RIGHT; }
+    if (pad->buttons & GAMEPAD_BUTTON_START)    { xb->report_in.buttons |= XBOXOG_GP_BUTTON_START; }
+    if (pad->buttons & GAMEPAD_BUTTON_BACK)     { xb->report_in.buttons |= XBOXOG_GP_BUTTON_BACK; }
+    if (pad->buttons & GAMEPAD_BUTTON_L3)       { xb->report_in.buttons |= XBOXOG_GP_BUTTON_L3; }
+    if (pad->buttons & GAMEPAD_BUTTON_R3)       { xb->report_in.buttons |= XBOXOG_GP_BUTTON_R3; }
 
     xb->report_in.trigger_l = pad->trigger_l;
     xb->report_in.trigger_r = pad->trigger_r;
@@ -205,7 +173,7 @@ static void xboxog_gp_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad, u
     xb->report_in.joystick_rx = pad->joystick_rx;
     xb->report_in.joystick_ry = pad->joystick_ry;
 
-    if (flags & GAMEPAD_FLAG_IN_PAD_ANALOG) {
+    if (pad->flags & GAMEPAD_FLAG_ANALOG) {
         xb->report_in.a     = pad->analog[GAMEPAD_ANALOG_A];
         xb->report_in.b     = pad->analog[GAMEPAD_ANALOG_B];
         xb->report_in.x     = pad->analog[GAMEPAD_ANALOG_X];
@@ -213,18 +181,14 @@ static void xboxog_gp_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad, u
         xb->report_in.white = pad->analog[GAMEPAD_ANALOG_LB];
         xb->report_in.black = pad->analog[GAMEPAD_ANALOG_RB];
     } else {
-        xb->report_in.a     =   (pad->buttons & GAMEPAD_BTN_A) ? 0xFF : 0x00;
-        xb->report_in.b     =   (pad->buttons & GAMEPAD_BTN_B) ? 0xFF : 0x00;
-        xb->report_in.x     =   (pad->buttons & GAMEPAD_BTN_X) ? 0xFF : 0x00;
-        xb->report_in.y     =   (pad->buttons & GAMEPAD_BTN_Y) ? 0xFF : 0x00;
-        xb->report_in.white =   (pad->buttons & GAMEPAD_BTN_LB) ? 0xFF : 0x00;
-        xb->report_in.black =   (pad->buttons & GAMEPAD_BTN_RB) ? 0xFF : 0x00;
+        xb->report_in.a     =   (pad->buttons & GAMEPAD_BUTTON_A) ? 0xFFU : 0x00U;
+        xb->report_in.b     =   (pad->buttons & GAMEPAD_BUTTON_B) ? 0xFFU : 0x00U;
+        xb->report_in.x     =   (pad->buttons & GAMEPAD_BUTTON_X) ? 0xFFU : 0x00U;
+        xb->report_in.y     =   (pad->buttons & GAMEPAD_BUTTON_Y) ? 0xFFU : 0x00U;
+        xb->report_in.white =   (pad->buttons & GAMEPAD_BUTTON_LB) ? 0xFFU : 0x00U;
+        xb->report_in.black =   (pad->buttons & GAMEPAD_BUTTON_RB) ? 0xFFU : 0x00U;
     }
     usbd_ep_write(handle, XBOXOG_GP_EPADDR_IN, &xb->report_in, sizeof(xb->report_in));
-}
-
-static bool xboxog_send_report_ready(usbd_handle_t* handle) {
-    return usbd_ep_ready(handle, XBOXOG_GP_EPADDR_IN);
 }
 
 const usb_device_driver_t USBD_DRIVER_XBOXOG_GP = {

@@ -74,20 +74,20 @@ static inline uint8_t headset_encode_byte(g726_state* ctx, const int16_t* pcm_in
             (g726_16_encoder(pcm_in[3], AUDIO_ENCODING_LINEAR, ctx) & 0x03);
 }
 
-/* Decodes 4 pcm samples at a time */
-static void headset_decode_byte(g726_state* ctx, const uint8_t g726_in, int16_t* pcm_out) {
-    int code = (g726_in >> 6) & 0x03;
-    pcm_out[0] = g726_16_decoder(code, AUDIO_ENCODING_LINEAR, ctx);
+// /* Decodes 4 pcm samples at a time */
+// static void headset_decode_byte(g726_state* ctx, const uint8_t g726_in, int16_t* pcm_out) {
+//     int code = (g726_in >> 6) & 0x03;
+//     pcm_out[0] = g726_16_decoder(code, AUDIO_ENCODING_LINEAR, ctx);
 
-    code = (g726_in >> 4) & 0x03;
-    pcm_out[1] = g726_16_decoder(code, AUDIO_ENCODING_LINEAR, ctx);
+//     code = (g726_in >> 4) & 0x03;
+//     pcm_out[1] = g726_16_decoder(code, AUDIO_ENCODING_LINEAR, ctx);
 
-    code = (g726_in >> 2) & 0x03;
-    pcm_out[2] = g726_16_decoder(code, AUDIO_ENCODING_LINEAR, ctx);
+//     code = (g726_in >> 2) & 0x03;
+//     pcm_out[2] = g726_16_decoder(code, AUDIO_ENCODING_LINEAR, ctx);
 
-    code = g726_in & 0x03;
-    pcm_out[3] = g726_16_decoder(code, AUDIO_ENCODING_LINEAR, ctx);
-}
+//     code = g726_in & 0x03;
+//     pcm_out[3] = g726_16_decoder(code, AUDIO_ENCODING_LINEAR, ctx);
+// }
 
 static void xinput_init_cb(usbd_handle_t* handle) {
     (void)handle;
@@ -235,7 +235,7 @@ static void xinput_ep_xfer_cb(usbd_handle_t* handle, uint8_t epaddr) {
         {
         int32_t len = usbd_ep_read(handle, XINPUT_EPADDR_GP_OUT,
                                    &xinput->report_out, sizeof(xinput->report_out));
-        if ((len >= sizeof(xinput_report_out_t)) &&
+        if (((uint16_t)len >= sizeof(xinput_report_out_t)) &&
             (xinput->report_out.report_id == XINPUT_REPORT_ID_OUT_RUMBLE)) {
             xinput->gp_rumble.l = xinput->report_out.rumble_l;
             xinput->gp_rumble.r = xinput->report_out.rumble_r;
@@ -324,104 +324,28 @@ static usbd_handle_t* xinput_init(const usb_device_driver_cfg_t* cfg) {
 //     }
 // }
 
-// static void xinput_task(usbd_handle_t* handle, gamepad_handle_t* gp_handle) {
-//     xinput_state_t* xinput = xinput_state[handle->port];
-//     if (usbd_ep_ready(handle, XINPUT_EPADDR_GP_IN)) {
-//         gamepad_pad_t* gp = &xinput->gp_pad;
-//         uint32_t gp_flags = gamepad_get_pad(gp_handle, gp);
-
-//         if (gp_flags & GAMEPAD_FLAG_IN_PAD) {
-//             xinput->report_in.buttons = 0;
-
-//             if (gp->dpad & GAMEPAD_D_UP)         { xinput->report_in.buttons |= XINPUT_BUTTON_UP; }
-//             if (gp->dpad & GAMEPAD_D_DOWN)       { xinput->report_in.buttons |= XINPUT_BUTTON_DOWN; }
-//             if (gp->dpad & GAMEPAD_D_LEFT)       { xinput->report_in.buttons |= XINPUT_BUTTON_LEFT; }
-//             if (gp->dpad & GAMEPAD_D_RIGHT)      { xinput->report_in.buttons |= XINPUT_BUTTON_RIGHT; }
-//             if (gp->buttons & GAMEPAD_BTN_START) { xinput->report_in.buttons |= XINPUT_BUTTON_START; }
-//             if (gp->buttons & GAMEPAD_BTN_BACK)  { xinput->report_in.buttons |= XINPUT_BUTTON_BACK; }
-//             if (gp->buttons & GAMEPAD_BTN_L3)    { xinput->report_in.buttons |= XINPUT_BUTTON_L3; }
-//             if (gp->buttons & GAMEPAD_BTN_R3)    { xinput->report_in.buttons |= XINPUT_BUTTON_R3; }
-//             if (gp->buttons & GAMEPAD_BTN_LB)    { xinput->report_in.buttons |= XINPUT_BUTTON_LB; }
-//             if (gp->buttons & GAMEPAD_BTN_RB)    { xinput->report_in.buttons |= XINPUT_BUTTON_RB; }
-//             if (gp->buttons & GAMEPAD_BTN_SYS)   { xinput->report_in.buttons |= XINPUT_BUTTON_HOME; }
-//             if (gp->buttons & GAMEPAD_BTN_A)     { xinput->report_in.buttons |= XINPUT_BUTTON_A; }
-//             if (gp->buttons & GAMEPAD_BTN_B)     { xinput->report_in.buttons |= XINPUT_BUTTON_B; }
-//             if (gp->buttons & GAMEPAD_BTN_X)     { xinput->report_in.buttons |= XINPUT_BUTTON_X; }
-//             if (gp->buttons & GAMEPAD_BTN_Y)     { xinput->report_in.buttons |= XINPUT_BUTTON_Y; }
-
-//             xinput->report_in.trigger_l = gp->trigger_l;
-//             xinput->report_in.trigger_r = gp->trigger_r;
-//             xinput->report_in.joystick_lx = gp->joystick_lx;
-//             xinput->report_in.joystick_ly = gp->joystick_ly;
-//             xinput->report_in.joystick_rx = gp->joystick_rx;
-//             xinput->report_in.joystick_ry = gp->joystick_ry;
-
-//             usbd_ep_write(handle, XINPUT_EPADDR_GP_IN, &xinput->report_in, sizeof(xinput->report_in));
-//         }
-//     }
-//     if (!xinput->audio_en || (xinput->audio_state != XINPUT_AUDIO_INIT_DONE)) {
-//         return;
-//     }
-//     // gamepad_pcm_in_t* pcm = &xinput->pcm_in;
-//     // gp_flags = gamepad_get_pcm_in(gp_handle, pcm);
-//     // if ((gp_flags & GAMEPAD_FLAG_PCM_IN) && (pcm->samples > 0)) {
-//     //     xinput_send_audio(handle, pcm);
-//     // } else if (xinput->audio_en && (xinput->audio_state == XINPUT_AUDIO_INIT_DONE)) {
-//     //     /* Send silence if no audio data is available */
-//     //     const int16_t silence[PCM_SAMPES_PER_G726_BYTE] = {0};
-//     //     for (uint8_t i = 0; i < sizeof(xinput->g726_in); i++) {
-//     //         xinput->g726_in[i] = headset_encode_byte(&xinput->g726_ctx_encode, silence);
-//     //     }
-//     //     usbd_ep_write(handle, XINPUT_EPADDR_AUDIO_IN, xinput->g726_in, sizeof(xinput->g726_in));
-//     // }
-// }
-
-static void xinput_send_audio(usbd_handle_t* handle, const gamepad_pcm_in_t* pcm) {
-    if (xinput_state[handle->port] == NULL) {
-        return;
-    }
+static void xinput_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad) {
     xinput_state_t* xinput = xinput_state[handle->port];
-    if (xinput->audio_en && (xinput->audio_state == XINPUT_AUDIO_INIT_DONE)) {
-        const int16_t* pcm_start = (const int16_t*)pcm->data;
-        const int16_t* pcm_end = pcm_start + pcm->samples;
-        uint16_t idx = 0;
-
-        while (((pcm_start + PCM_SAMPES_PER_G726_BYTE) <= pcm_end) && (idx < sizeof(xinput->g726_in))) {
-            xinput->g726_in[idx++] = headset_encode_byte(&xinput->g726_ctx_encode, pcm_start);
-            pcm_start += PCM_SAMPES_PER_G726_BYTE;
-        }
-        if (idx < sizeof(xinput->g726_in)) {
-            const int16_t silence[PCM_SAMPES_PER_G726_BYTE] = {0};
-            while (idx < sizeof(xinput->g726_in)) {
-                xinput->g726_in[idx++] = headset_encode_byte(&xinput->g726_ctx_encode, silence);
-            }
-        }
-        usbd_ep_write(handle, XINPUT_EPADDR_AUDIO_IN, xinput->g726_in, idx);
-    }
-}
-
-static void xinput_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad, uint32_t flags) {
-    xinput_state_t* xinput = xinput_state[handle->port];
-    if (!usbd_ep_ready(handle, XINPUT_EPADDR_GP_IN) || !(flags & GAMEPAD_FLAG_IN_PAD)) {
+    if (!usbd_ep_ready(handle, XINPUT_EPADDR_GP_IN) || !(pad->flags & GAMEPAD_FLAG_PAD)) {
         return;
     }
     xinput->report_in.buttons = 0;
 
-    if (pad->dpad & GAMEPAD_D_UP)         { xinput->report_in.buttons |= XINPUT_BUTTON_UP; }
-    if (pad->dpad & GAMEPAD_D_DOWN)       { xinput->report_in.buttons |= XINPUT_BUTTON_DOWN; }
-    if (pad->dpad & GAMEPAD_D_LEFT)       { xinput->report_in.buttons |= XINPUT_BUTTON_LEFT; }
-    if (pad->dpad & GAMEPAD_D_RIGHT)      { xinput->report_in.buttons |= XINPUT_BUTTON_RIGHT; }
-    if (pad->buttons & GAMEPAD_BTN_START) { xinput->report_in.buttons |= XINPUT_BUTTON_START; }
-    if (pad->buttons & GAMEPAD_BTN_BACK)  { xinput->report_in.buttons |= XINPUT_BUTTON_BACK; }
-    if (pad->buttons & GAMEPAD_BTN_L3)    { xinput->report_in.buttons |= XINPUT_BUTTON_L3; }
-    if (pad->buttons & GAMEPAD_BTN_R3)    { xinput->report_in.buttons |= XINPUT_BUTTON_R3; }
-    if (pad->buttons & GAMEPAD_BTN_LB)    { xinput->report_in.buttons |= XINPUT_BUTTON_LB; }
-    if (pad->buttons & GAMEPAD_BTN_RB)    { xinput->report_in.buttons |= XINPUT_BUTTON_RB; }
-    if (pad->buttons & GAMEPAD_BTN_SYS)   { xinput->report_in.buttons |= XINPUT_BUTTON_HOME; }
-    if (pad->buttons & GAMEPAD_BTN_A)     { xinput->report_in.buttons |= XINPUT_BUTTON_A; }
-    if (pad->buttons & GAMEPAD_BTN_B)     { xinput->report_in.buttons |= XINPUT_BUTTON_B; }
-    if (pad->buttons & GAMEPAD_BTN_X)     { xinput->report_in.buttons |= XINPUT_BUTTON_X; }
-    if (pad->buttons & GAMEPAD_BTN_Y)     { xinput->report_in.buttons |= XINPUT_BUTTON_Y; }
+    if (pad->buttons & GAMEPAD_BUTTON_UP)       { xinput->report_in.buttons |= XINPUT_BUTTON_UP; }
+    if (pad->buttons & GAMEPAD_BUTTON_DOWN)     { xinput->report_in.buttons |= XINPUT_BUTTON_DOWN; }
+    if (pad->buttons & GAMEPAD_BUTTON_LEFT)     { xinput->report_in.buttons |= XINPUT_BUTTON_LEFT; }
+    if (pad->buttons & GAMEPAD_BUTTON_RIGHT)    { xinput->report_in.buttons |= XINPUT_BUTTON_RIGHT; }
+    if (pad->buttons & GAMEPAD_BUTTON_START)    { xinput->report_in.buttons |= XINPUT_BUTTON_START; }
+    if (pad->buttons & GAMEPAD_BUTTON_BACK)     { xinput->report_in.buttons |= XINPUT_BUTTON_BACK; }
+    if (pad->buttons & GAMEPAD_BUTTON_L3)       { xinput->report_in.buttons |= XINPUT_BUTTON_L3; }
+    if (pad->buttons & GAMEPAD_BUTTON_R3)       { xinput->report_in.buttons |= XINPUT_BUTTON_R3; }
+    if (pad->buttons & GAMEPAD_BUTTON_LB)       { xinput->report_in.buttons |= XINPUT_BUTTON_LB; }
+    if (pad->buttons & GAMEPAD_BUTTON_RB)       { xinput->report_in.buttons |= XINPUT_BUTTON_RB; }
+    if (pad->buttons & GAMEPAD_BUTTON_SYS)      { xinput->report_in.buttons |= XINPUT_BUTTON_HOME; }
+    if (pad->buttons & GAMEPAD_BUTTON_A)        { xinput->report_in.buttons |= XINPUT_BUTTON_A; }
+    if (pad->buttons & GAMEPAD_BUTTON_B)        { xinput->report_in.buttons |= XINPUT_BUTTON_B; }
+    if (pad->buttons & GAMEPAD_BUTTON_X)        { xinput->report_in.buttons |= XINPUT_BUTTON_X; }
+    if (pad->buttons & GAMEPAD_BUTTON_Y)        { xinput->report_in.buttons |= XINPUT_BUTTON_Y; }
 
     xinput->report_in.trigger_l = pad->trigger_l;
     xinput->report_in.trigger_r = pad->trigger_r;

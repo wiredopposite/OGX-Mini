@@ -134,28 +134,35 @@ static void xgip_report_received(uint8_t index, usbh_periph_t subtype, uint8_t d
             (memcmp(report + 4, &xgip->prev_report_in + 4, sizeof(xgip_report_in_t) - 4) == 0)) {
             break;
         }
-        bool sys_btn = ((xgip->gp_report.buttons & GP_BIT16(xgip->profile.btn_sys)) != 0);
+        bool sys_btn = ((xgip->gp_report.buttons & GP_BIT(xgip->profile.btn_sys)) != 0);
         memset(&xgip->gp_report, 0, sizeof(gamepad_pad_t));
-        if (sys_btn) { xgip->gp_report.buttons |= GP_BIT16(xgip->profile.btn_sys); }
+        
+        xgip->gp_report.flags = GAMEPAD_FLAG_PAD;
 
-        if (report->buttons[1] & XGIP_BUTTON1_DPAD_DOWN)  { xgip->gp_report.dpad |= GP_BIT8(xgip->profile.d_down); }
-        if (report->buttons[1] & XGIP_BUTTON1_DPAD_UP)    { xgip->gp_report.dpad |= GP_BIT8(xgip->profile.d_up); }
-        if (report->buttons[1] & XGIP_BUTTON1_DPAD_LEFT)  { xgip->gp_report.dpad |= GP_BIT8(xgip->profile.d_left); }
-        if (report->buttons[1] & XGIP_BUTTON1_DPAD_RIGHT) { xgip->gp_report.dpad |= GP_BIT8(xgip->profile.d_right); }
+        if (sys_btn) { xgip->gp_report.buttons |= GP_BIT(xgip->profile.btn_sys); }
 
-        if (report->buttons[0] & XGIP_BUTTON0_MENU) { xgip->gp_report.buttons |= GP_BIT16(xgip->profile.btn_start); }
-        if (report->buttons[0] & XGIP_BUTTON0_VIEW) { xgip->gp_report.buttons |= GP_BIT16(xgip->profile.btn_back); }
-        if (report->buttons[0] & XGIP_BUTTON0_A)    { xgip->gp_report.buttons |= GP_BIT16(xgip->profile.btn_a); }
-        if (report->buttons[0] & XGIP_BUTTON0_B)    { xgip->gp_report.buttons |= GP_BIT16(xgip->profile.btn_b); }
-        if (report->buttons[0] & XGIP_BUTTON0_X)    { xgip->gp_report.buttons |= GP_BIT16(xgip->profile.btn_x); }
-        if (report->buttons[0] & XGIP_BUTTON0_Y)    { xgip->gp_report.buttons |= GP_BIT16(xgip->profile.btn_y); }
-        if (report->buttons[1] & XGIP_BUTTON1_L3)   { xgip->gp_report.buttons |= GP_BIT16(xgip->profile.btn_l3); }
-        if (report->buttons[1] & XGIP_BUTTON1_R3)   { xgip->gp_report.buttons |= GP_BIT16(xgip->profile.btn_r3); }
-        if (report->buttons[1] & XGIP_BUTTON1_LB)   { xgip->gp_report.buttons |= GP_BIT16(xgip->profile.btn_lb); }
-        if (report->buttons[1] & XGIP_BUTTON1_RB)   { xgip->gp_report.buttons |= GP_BIT16(xgip->profile.btn_rb); }
+        if (report->buttons[1] & XGIP_BUTTON1_DPAD_DOWN)  { xgip->gp_report.buttons |= GP_BIT(xgip->profile.btn_down); }
+        if (report->buttons[1] & XGIP_BUTTON1_DPAD_UP)    { xgip->gp_report.buttons |= GP_BIT(xgip->profile.btn_up); }
+        if (report->buttons[1] & XGIP_BUTTON1_DPAD_LEFT)  { xgip->gp_report.buttons |= GP_BIT(xgip->profile.btn_left); }
+        if (report->buttons[1] & XGIP_BUTTON1_DPAD_RIGHT) { xgip->gp_report.buttons |= GP_BIT(xgip->profile.btn_right); }
+        if (report->buttons[0] & XGIP_BUTTON0_MENU) { xgip->gp_report.buttons |= GP_BIT(xgip->profile.btn_start); }
+        if (report->buttons[0] & XGIP_BUTTON0_VIEW) { xgip->gp_report.buttons |= GP_BIT(xgip->profile.btn_back); }
+        if (report->buttons[0] & XGIP_BUTTON0_A)    { xgip->gp_report.buttons |= GP_BIT(xgip->profile.btn_a); }
+        if (report->buttons[0] & XGIP_BUTTON0_B)    { xgip->gp_report.buttons |= GP_BIT(xgip->profile.btn_b); }
+        if (report->buttons[0] & XGIP_BUTTON0_X)    { xgip->gp_report.buttons |= GP_BIT(xgip->profile.btn_x); }
+        if (report->buttons[0] & XGIP_BUTTON0_Y)    { xgip->gp_report.buttons |= GP_BIT(xgip->profile.btn_y); }
+        if (report->buttons[1] & XGIP_BUTTON1_L3)   { xgip->gp_report.buttons |= GP_BIT(xgip->profile.btn_l3); }
+        if (report->buttons[1] & XGIP_BUTTON1_R3)   { xgip->gp_report.buttons |= GP_BIT(xgip->profile.btn_r3); }
+        if (report->buttons[1] & XGIP_BUTTON1_LB)   { xgip->gp_report.buttons |= GP_BIT(xgip->profile.btn_lb); }
+        if (report->buttons[1] & XGIP_BUTTON1_RB)   { xgip->gp_report.buttons |= GP_BIT(xgip->profile.btn_rb); }
 
         xgip->gp_report.trigger_l = range_uint10_to_uint8(report->trigger_l);
         xgip->gp_report.trigger_r = range_uint10_to_uint8(report->trigger_r);
+
+        xgip->gp_report.joystick_lx = report->joystick_lx;
+        xgip->gp_report.joystick_ly = report->joystick_ly;
+        xgip->gp_report.joystick_rx = report->joystick_rx;
+        xgip->gp_report.joystick_ry = report->joystick_ry;
         
         if (xgip->map.trig_l) {
             settings_scale_trigger(&xgip->profile.trigger_l, &xgip->gp_report.trigger_l);
@@ -163,12 +170,6 @@ static void xgip_report_received(uint8_t index, usbh_periph_t subtype, uint8_t d
         if (xgip->map.trig_r) {
             settings_scale_trigger(&xgip->profile.trigger_r, &xgip->gp_report.trigger_r);
         }
-
-        xgip->gp_report.joystick_lx = report->joystick_lx;
-        xgip->gp_report.joystick_ly = report->joystick_ly;
-        xgip->gp_report.joystick_rx = report->joystick_rx;
-        xgip->gp_report.joystick_ry = report->joystick_ry;
-
         if (xgip->map.joy_l) {
             settings_scale_joysticks(&xgip->profile.joystick_l, &xgip->gp_report.joystick_lx, 
                                      &xgip->gp_report.joystick_ly);
@@ -178,19 +179,19 @@ static void xgip_report_received(uint8_t index, usbh_periph_t subtype, uint8_t d
                                      &xgip->gp_report.joystick_ry);
         }
 
-        usb_host_driver_pad_cb(index, &xgip->gp_report, GAMEPAD_FLAG_IN_PAD);
+        usb_host_driver_pad_cb(index, &xgip->gp_report);
         memcpy(&xgip->prev_report_in, report, sizeof(xgip_report_in_t));
         }
         break;
     case XGIP_COMMAND_GUIDE_BTN_STATUS:
         {
         xgip_guide_button_in_t* guide_btn = (xgip_guide_button_in_t*)data;
-        if ((guide_btn->state) && !(xgip->gp_report.buttons & GP_BIT16(xgip->profile.btn_sys))) {
-            xgip->gp_report.buttons |= GP_BIT16(xgip->profile.btn_sys);
-            usb_host_driver_pad_cb(index, &xgip->gp_report, GAMEPAD_FLAG_IN_PAD);
-        } else if ((!guide_btn->state) && (xgip->gp_report.buttons & GP_BIT16(xgip->profile.btn_sys))) {
-            xgip->gp_report.buttons &= ~GP_BIT16(xgip->profile.btn_sys);
-            usb_host_driver_pad_cb(index, &xgip->gp_report, GAMEPAD_FLAG_IN_PAD);
+        if ((guide_btn->state) && !(xgip->gp_report.buttons & GP_BIT(xgip->profile.btn_sys))) {
+            xgip->gp_report.buttons |= GP_BIT(xgip->profile.btn_sys);
+            usb_host_driver_pad_cb(index, &xgip->gp_report);
+        } else if ((!guide_btn->state) && (xgip->gp_report.buttons & GP_BIT(xgip->profile.btn_sys))) {
+            xgip->gp_report.buttons &= ~GP_BIT(xgip->profile.btn_sys);
+            usb_host_driver_pad_cb(index, &xgip->gp_report);
         }
         }
         break;

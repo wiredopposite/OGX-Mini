@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "usb/host/host.h"
+#include "usb/host/host_types.h"
 
 typedef struct {
     uint16_t vid;
@@ -64,12 +64,12 @@ typedef struct {
 } usbh_type_map_t;
 
 static const usbh_type_map_t HW_IDS_MAP[] = {
-    { HW_IDS_DINPUT,        sizeof(HW_IDS_DINPUT) / sizeof(hardware_id_t),      USBH_TYPE_HID_DINPUT },
-    { HW_IDS_PS4,           sizeof(HW_IDS_PS4) / sizeof(hardware_id_t),         USBH_TYPE_HID_PS4 },
-    { HW_IDS_PS5,           sizeof(HW_IDS_PS5) / sizeof(hardware_id_t),         USBH_TYPE_HID_PS5 },
-    { HW_IDS_PS3,           sizeof(HW_IDS_PS3) / sizeof(hardware_id_t),         USBH_TYPE_HID_PS3 },
-    { HW_IDS_SWITCH,        sizeof(HW_IDS_SWITCH) / sizeof(hardware_id_t),      USBH_TYPE_HID_SWITCH },
-    { HW_IDS_SWITCH_PRO,    sizeof(HW_IDS_SWITCH_PRO) / sizeof(hardware_id_t),  USBH_TYPE_HID_SWITCH_PRO },
-    { HW_IDS_PSCLASSIC,     sizeof(HW_IDS_PSCLASSIC) / sizeof(hardware_id_t),   USBH_TYPE_HID_PSCLASSIC },
-    { HW_IDS_N64,           sizeof(HW_IDS_N64) / sizeof(hardware_id_t),         USBH_TYPE_HID_N64 },
+    { HW_IDS_DINPUT,        (sizeof(HW_IDS_DINPUT)       / sizeof(hardware_id_t)),    USBH_TYPE_HID_DINPUT },
+    { HW_IDS_PS4,           (sizeof(HW_IDS_PS4)          / sizeof(hardware_id_t)),    USBH_TYPE_HID_PS4 },
+    { HW_IDS_PS5,           (sizeof(HW_IDS_PS5)          / sizeof(hardware_id_t)),    USBH_TYPE_HID_PS5 },
+    { HW_IDS_PS3,           (sizeof(HW_IDS_PS3)          / sizeof(hardware_id_t)),    USBH_TYPE_HID_PS3 },
+    { HW_IDS_SWITCH,        (sizeof(HW_IDS_SWITCH)       / sizeof(hardware_id_t)),    USBH_TYPE_HID_SWITCH },
+    { HW_IDS_SWITCH_PRO,    (sizeof(HW_IDS_SWITCH_PRO)   / sizeof(hardware_id_t)),    USBH_TYPE_HID_SWITCH_PRO },
+    { HW_IDS_PSCLASSIC,     (sizeof(HW_IDS_PSCLASSIC)    / sizeof(hardware_id_t)),    USBH_TYPE_HID_PSCLASSIC },
+    { HW_IDS_N64,           (sizeof(HW_IDS_N64)          / sizeof(hardware_id_t)),    USBH_TYPE_HID_N64 },
 };

@@ -141,36 +141,36 @@ static usbd_handle_t* psclassic_init(const usb_device_driver_cfg_t* cfg) {
     return handle;
 }
 
-static void psclassic_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad, uint32_t flags) {
-    if (!usbd_ep_ready(handle, PSCLASSIC_EPADDR_IN) || !(flags & GAMEPAD_FLAG_IN_PAD)) {
+static void psclassic_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad) {
+    if (!usbd_ep_ready(handle, PSCLASSIC_EPADDR_IN) || !(pad->flags & GAMEPAD_FLAG_PAD)) {
         return;
     }
     psclassic_state_t* psc = psclassic_state[handle->port];
     memset(&psc->report_in, 0, sizeof(psc->report_in));
 
     switch (pad->dpad) {
-    case GAMEPAD_D_UP:      
+    case GAMEPAD_DPAD_UP:      
         psc->report_in.buttons = PSCLASSIC_DPAD_UP;     
         break;
-    case GAMEPAD_D_DOWN:    
+    case GAMEPAD_DPAD_DOWN:    
         psc->report_in.buttons = PSCLASSIC_DPAD_DOWN;   
         break;
-    case GAMEPAD_D_LEFT:    
+    case GAMEPAD_DPAD_LEFT:    
         psc->report_in.buttons = PSCLASSIC_DPAD_LEFT;   
         break;
-    case GAMEPAD_D_RIGHT:   
+    case GAMEPAD_DPAD_RIGHT:   
         psc->report_in.buttons = PSCLASSIC_DPAD_RIGHT;  
         break;
-    case GAMEPAD_D_UP | GAMEPAD_D_LEFT:    
+    case GAMEPAD_DPAD_UP | GAMEPAD_DPAD_LEFT:    
         psc->report_in.buttons = PSCLASSIC_DPAD_UP_LEFT; 
         break;
-    case GAMEPAD_D_UP | GAMEPAD_D_RIGHT:   
+    case GAMEPAD_DPAD_UP | GAMEPAD_DPAD_RIGHT:   
         psc->report_in.buttons = PSCLASSIC_DPAD_UP_RIGHT; 
         break;
-    case GAMEPAD_D_DOWN | GAMEPAD_D_LEFT:    
+    case GAMEPAD_DPAD_DOWN | GAMEPAD_DPAD_LEFT:    
         psc->report_in.buttons = PSCLASSIC_DPAD_DOWN_LEFT; 
         break;
-    case GAMEPAD_D_DOWN | GAMEPAD_D_RIGHT:   
+    case GAMEPAD_DPAD_DOWN | GAMEPAD_DPAD_RIGHT:   
         psc->report_in.buttons = PSCLASSIC_DPAD_DOWN_RIGHT; 
         break;
     default:    
@@ -205,14 +205,14 @@ static void psclassic_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad, u
         psc->report_in.buttons = PSCLASSIC_DPAD_UP;
     }
 
-    if (pad->buttons & GAMEPAD_BTN_A)       { psc->report_in.buttons |= PSCLASSIC_BTN_CROSS; }
-    if (pad->buttons & GAMEPAD_BTN_B)       { psc->report_in.buttons |= PSCLASSIC_BTN_CIRCLE; }
-    if (pad->buttons & GAMEPAD_BTN_X)       { psc->report_in.buttons |= PSCLASSIC_BTN_SQUARE; }
-    if (pad->buttons & GAMEPAD_BTN_Y)       { psc->report_in.buttons |= PSCLASSIC_BTN_TRIANGLE; }
-    if (pad->buttons & GAMEPAD_BTN_LB)      { psc->report_in.buttons |= PSCLASSIC_BTN_L1; }
-    if (pad->buttons & GAMEPAD_BTN_RB)      { psc->report_in.buttons |= PSCLASSIC_BTN_R1; }
-    if (pad->buttons & GAMEPAD_BTN_BACK)    { psc->report_in.buttons |= PSCLASSIC_BTN_SELECT; }
-    if (pad->buttons & GAMEPAD_BTN_START)   { psc->report_in.buttons |= PSCLASSIC_BTN_START; }
+    if (pad->buttons & GAMEPAD_BUTTON_A)       { psc->report_in.buttons |= PSCLASSIC_BTN_CROSS; }
+    if (pad->buttons & GAMEPAD_BUTTON_B)       { psc->report_in.buttons |= PSCLASSIC_BTN_CIRCLE; }
+    if (pad->buttons & GAMEPAD_BUTTON_X)       { psc->report_in.buttons |= PSCLASSIC_BTN_SQUARE; }
+    if (pad->buttons & GAMEPAD_BUTTON_Y)       { psc->report_in.buttons |= PSCLASSIC_BTN_TRIANGLE; }
+    if (pad->buttons & GAMEPAD_BUTTON_LB)      { psc->report_in.buttons |= PSCLASSIC_BTN_L1; }
+    if (pad->buttons & GAMEPAD_BUTTON_RB)      { psc->report_in.buttons |= PSCLASSIC_BTN_R1; }
+    if (pad->buttons & GAMEPAD_BUTTON_BACK)    { psc->report_in.buttons |= PSCLASSIC_BTN_SELECT; }
+    if (pad->buttons & GAMEPAD_BUTTON_START)   { psc->report_in.buttons |= PSCLASSIC_BTN_START; }
     
     if (pad->trigger_l) { psc->report_in.buttons |= PSCLASSIC_BTN_L2; }
     if (pad->trigger_r) { psc->report_in.buttons |= PSCLASSIC_BTN_R2; }

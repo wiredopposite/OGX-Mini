@@ -1,5 +1,8 @@
 #pragma once
 
+#include "board_config.h"
+#if SD_CARD_ENABLED
+
 #include <stdint.h>
 #include "common/usb_def.h"
 #include "common/usb_util.h"
@@ -165,3 +168,5 @@ static const usb_desc_string_t* MSC_DESC_STRING[] = {
 #ifdef __cplusplus
 }
 #endif
+
+#endif // SD_CARD_ENABLED

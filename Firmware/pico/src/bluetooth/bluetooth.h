@@ -6,22 +6,20 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "gamepad/gamepad.h"
+#include "gamepad/callbacks.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef void (*bt_connect_cb_t)(uint8_t index, bool connected);
-typedef void (*bt_gamepad_cb_t)(uint8_t index, const gamepad_pad_t* pad, uint32_t flags);
-typedef void (*bt_audio_cb_t)(uint8_t index, const gamepad_pcm_out_t* pcm);
+/* Wont't return on Pico W if bluetooth is started successfully */
+bool bluetooth_init(gamepad_connect_cb_t connect_cb, gamepad_pad_cb_t gamepad_cb, gamepad_pcm_cb_t pcm_cb);
 
-bool bluetooth_init(bt_connect_cb_t connect_cb, bt_gamepad_cb_t gamepad_cb, bt_audio_cb_t audio_cb);
 void bluetooth_task(void);
 
-/* Thread safe methods */
+void bluetooth_set_rumble(uint8_t index, const gamepad_rumble_t* rumble); /* Thread safe */
 
-void bluetooth_set_rumble(uint8_t index, const gamepad_rumble_t* rumble);
-void bluetooth_set_audio(uint8_t index, const gamepad_pcm_in_t* pcm);
+void bluetooth_set_audio(uint8_t index, const gamepad_pcm_in_t* pcm); /* Thread safe */
 
 #ifdef __cplusplus
 }

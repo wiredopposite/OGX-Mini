@@ -3,13 +3,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "gamepad/gamepad.h"
+#include "gamepad/callbacks.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-typedef void (*app_rumble_cb_t)(uint8_t index, const gamepad_rumble_t *rumble);
-typedef void (*app_audio_cb_t)(uint8_t index, const gamepad_pcm_out_t *pcm_out);
 
 typedef enum {
     USBD_TYPE_XBOXOG_GP = 0,
@@ -40,8 +38,8 @@ typedef struct {
         uint8_t         addons; /* Bitmask of addons to use with the device, see usbd_addon_t */
     } usb[GAMEPADS_MAX];
 
-    app_rumble_cb_t rumble_cb;  /* Callback for rumble receive events */
-    app_audio_cb_t  audio_cb;   /* Callback for audio receive events */
+    gamepad_rumble_cb_t rumble_cb;  /* Callback for rumble receive events */
+    gamepad_pcm_cb_t    audio_cb;   /* Callback for audio receive events */
 } usb_device_config_t;
 
 /**
@@ -87,9 +85,8 @@ bool usb_device_get_pad(uint8_t index, gamepad_pad_t* pad);
  * 
  * @param index The index of the gamepad to set the state for
  * @param pad Pointer to a gamepad_pad_t structure containing the new state
- * @param flags Flags to indicate which parts of the pad are being set
  */
-void usb_device_set_pad(uint8_t index, const gamepad_pad_t* pad, uint32_t flags);
+void usb_device_set_pad(uint8_t index, const gamepad_pad_t* pad);
 
 /**
  * @brief Set the audio output for a gamepad

@@ -24,20 +24,17 @@ _Static_assert(sizeof(nvs_entry_t) == FLASH_PAGE_SIZE, "NVS entry size mismatch"
 static const char INVALID_KEY[] = "INVALID";
 
 static mutex_t nvs_mutex;
-static uint32_t ints = 0;
 static uint8_t sector_buffer[FLASH_SECTOR_SIZE] __attribute__((aligned(4))) = {0};
 static volatile bool nvs_inited = false;
 
 static void __not_in_flash_func(nvs_lock)(void) {
     mutex_enter_blocking(&nvs_mutex);
-    ogxm_logd("NVS locked\n");
-    // ints = save_and_disable_interrupts();
+    ogxm_logv("NVS locked\n");
 }
 
 static void __not_in_flash_func(nvs_unlock)(void) {
-    // restore_interrupts(ints);
     mutex_exit(&nvs_mutex);
-    ogxm_logd("NVS unlocked\n");
+    ogxm_logv("NVS unlocked\n");
 }
 
 static const nvs_entry_t* __not_in_flash_func(nvs_get_entry)(uint32_t index) {
@@ -48,7 +45,7 @@ static bool __not_in_flash_func(nvs_args_valid)(const char* key, const void* val
     if ((key == NULL) || (value == NULL) || (len > NVS_VALUE_LEN_MAX) || (len == 0)) {
         return false;
     }
-    if (strnlen(key, NVS_KEY_LEN_MAX) >= NVS_KEY_LEN_MAX) {
+    if (strnlen(key, NVS_KEY_LEN_MAX) >= (NVS_KEY_LEN_MAX - 1)) {
         return false;
     }
     if (strncmp(key, INVALID_KEY, sizeof(INVALID_KEY)) == 0) {
@@ -66,7 +63,7 @@ static void __not_in_flash_func(nvs_erase_all_internal)(void) {
         flash_range_erase(NVS_START_OFFSET + (i * FLASH_SECTOR_SIZE), FLASH_SECTOR_SIZE);
     }
     nvs_entry_t entry = {0};
-    strncpy(entry.key, INVALID_KEY, sizeof(INVALID_KEY));
+    strncpy(entry.key, INVALID_KEY, sizeof(entry.key));
     for (uint32_t i = 0; i < NVS_ENTRIES_MAX_INT; i++) {
         flash_range_program(NVS_START_OFFSET + (i * FLASH_PAGE_SIZE), (uint8_t*)&entry, FLASH_PAGE_SIZE);
     }
@@ -80,6 +77,7 @@ void __not_in_flash_func(nvs_init)(void) {
     /* First entry should be marked invalid */
     if (nvs_entry_valid(nvs_get_entry(0))) {
         nvs_erase_all_internal();
+        ogxm_logd("NVS initialized, erased existing entries\n");
     }
     nvs_inited = true;
     nvs_unlock();
@@ -128,8 +126,8 @@ bool __not_in_flash_func(nvs_write)(const char* key, const void* value, size_t l
             flash_range_erase(sector_offset, FLASH_SECTOR_SIZE);
 
             nvs_entry_t* entry_buf = (nvs_entry_t*)(sector_buffer + entry_offset);
-            strncpy(entry_buf->key, key, NVS_KEY_LEN_MAX);
-            entry_buf->key[strnlen(key, NVS_KEY_LEN_MAX)] = '\0';
+            strncpy(entry_buf->key, key, sizeof(entry_buf->key) - 1);
+            entry_buf->key[strnlen(key, NVS_KEY_LEN_MAX - 1)] = '\0';
             memset(entry_buf->value, 0, NVS_VALUE_LEN_MAX);
             memcpy(entry_buf->value, value, len);
 

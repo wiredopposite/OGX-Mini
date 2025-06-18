@@ -205,7 +205,7 @@ static usbd_handle_t* webapp_init(const usb_device_driver_cfg_t* cfg) {
     return handle;
 }
 
-static void webapp_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad, uint32_t flags) {
+static void webapp_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad) {
     webapp_state_t* webapp = webapp_state[handle->port];
     if (!usbd_ep_ready(handle, WEBAPP_EPADDR_IN)) {
         return;

@@ -4,14 +4,15 @@
 #include <pico/stdlib.h>
 #include <pico/multicore.h>
 #include <hardware/clocks.h>
-#include "led/led.h"
 #include "usb/device/device.h"
 #include "usb/host/host.h"
 #include "settings/settings.h"
 #include "log/log.h"
+#include "led/led.h"
 #include "shared.h"
 
 static void host_connect_cb(uint8_t index, usbh_type_t type, bool connected) {
+    (void)type;
     ogxm_logi("USB host %s at index %d\n", 
         connected ? "connected" : "disconnected", index);
     led_set_on(connected);
@@ -43,7 +44,8 @@ int main(void) {
     ogxm_log_init(true);
     settings_init();
     
-    usbd_type_t device_type = settings_get_device_type();
+    // usbd_type_t device_type = settings_get_device_type();
+    usbd_type_t device_type = USBD_TYPE_XINPUT; // Default to XInput for standard board
     usb_device_config_t usbd_config = {
         .multithread = true,
         .count = 1,
@@ -57,21 +59,18 @@ int main(void) {
         .audio_cb = usb_host_set_audio,
     };
 
+    multicore_reset_core1();
+    multicore_launch_core1(core1_entry);
+
     usb_device_configure(&usbd_config);
     usb_device_connect();
 
-    ogxm_logi("Device inited\n");
-
-    multicore_reset_core1();
-    multicore_launch_core1(core1_entry);
+    ogxm_logd("USB device configured and connected\n");
     
-    ogxm_logi("USB host launched on core 1\n");
-
     check_pad_timer_set_enabled(true);
 
     while (true) {
         usb_device_task();
-        sleep_ms(1);
 
         if (check_pad_time()) {
             check_pad_for_driver_change(0, device_type);

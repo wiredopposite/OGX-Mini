@@ -5,22 +5,22 @@
 
 static const hid_usage_map_t HID_USAGE_MAP_PSCLASSIC = {
     .buttons = {
-        [HID_USAGE_BUTTON_01] = GAMEPAD_BTN_BIT_Y,
-        [HID_USAGE_BUTTON_02] = GAMEPAD_BTN_BIT_B,
-        [HID_USAGE_BUTTON_03] = GAMEPAD_BTN_BIT_A,
-        [HID_USAGE_BUTTON_04] = GAMEPAD_BTN_BIT_X,
-        [HID_USAGE_BUTTON_05] = GAMEPAD_BTN_BIT_LT,
-        [HID_USAGE_BUTTON_06] = GAMEPAD_BTN_BIT_RT,
-        [HID_USAGE_BUTTON_07] = GAMEPAD_BTN_BIT_LB,
-        [HID_USAGE_BUTTON_08] = GAMEPAD_BTN_BIT_RB,
-        [HID_USAGE_BUTTON_09] = GAMEPAD_BTN_BIT_BACK,
-        [HID_USAGE_BUTTON_10] = GAMEPAD_BTN_BIT_START,
-        [HID_USAGE_BUTTON_11] = GAMEPAD_BTN_BIT_NONE,
-        [HID_USAGE_BUTTON_12] = GAMEPAD_BTN_BIT_NONE,
-        [HID_USAGE_BUTTON_13] = GAMEPAD_BTN_BIT_NONE,
-        [HID_USAGE_BUTTON_14] = GAMEPAD_BTN_BIT_NONE,
-        [HID_USAGE_BUTTON_15] = GAMEPAD_BTN_BIT_NONE,
-        [HID_USAGE_BUTTON_16] = GAMEPAD_BTN_BIT_NONE,
+        [HID_USAGE_BUTTON_01] = GAMEPAD_BIT_Y,
+        [HID_USAGE_BUTTON_02] = GAMEPAD_BIT_B,
+        [HID_USAGE_BUTTON_03] = GAMEPAD_BIT_A,
+        [HID_USAGE_BUTTON_04] = GAMEPAD_BIT_X,
+        [HID_USAGE_BUTTON_05] = GAMEPAD_BIT_LT,
+        [HID_USAGE_BUTTON_06] = GAMEPAD_BIT_RT,
+        [HID_USAGE_BUTTON_07] = GAMEPAD_BIT_LB,
+        [HID_USAGE_BUTTON_08] = GAMEPAD_BIT_RB,
+        [HID_USAGE_BUTTON_09] = GAMEPAD_BIT_BACK,
+        [HID_USAGE_BUTTON_10] = GAMEPAD_BIT_START,
+        [HID_USAGE_BUTTON_11] = GAMEPAD_BIT_NONE,
+        [HID_USAGE_BUTTON_12] = GAMEPAD_BIT_NONE,
+        [HID_USAGE_BUTTON_13] = GAMEPAD_BIT_NONE,
+        [HID_USAGE_BUTTON_14] = GAMEPAD_BIT_NONE,
+        [HID_USAGE_BUTTON_15] = GAMEPAD_BIT_NONE,
+        [HID_USAGE_BUTTON_16] = GAMEPAD_BIT_NONE,
     }
 };
 
@@ -30,20 +30,20 @@ static bool psc_desktop_quirk_cb(uint8_t usage, uint32_t value, gamepad_pad_t* p
     case HID_DESKTOP_USAGE_X:
         switch (value) {
         case 0:
-            pad->dpad |= GP_BIT8(profile->d_left);
+            pad->buttons |= GP_BIT(profile->btn_left);
             break;
         case 2:
-            pad->dpad |= GP_BIT8(profile->d_right);
+            pad->buttons |= GP_BIT(profile->btn_right);
             break;
         }
         break;
     case HID_DESKTOP_USAGE_Y:
         switch (value) {
         case 0:
-            pad->dpad |= GP_BIT8(profile->d_up);
+            pad->buttons |= GP_BIT(profile->btn_up);
             break;
         case 2:
-            pad->dpad |= GP_BIT8(profile->d_down);
+            pad->buttons |= GP_BIT(profile->btn_down);
             break;
         }
         break;

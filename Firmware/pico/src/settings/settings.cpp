@@ -5,16 +5,16 @@
 #include "settings/nvs.h"
 #include "settings/settings.h"
 
-#define INIT_FLAG           ((uint16_t)0xFFA3)
+#define INIT_FLAG           ((uint16_t)0xFACE)
 
 typedef struct __attribute__((aligned(4))) {
-    volatile uint16_t    init_flag;
-    volatile usbd_type_t device_type;
-    volatile uint32_t    addons;
-    volatile uint8_t     active_profile_id[GAMEPADS_MAX];
+    volatile uint16_t    init_flag{0};
+    volatile usbd_type_t device_type{USBD_TYPE_XBOXOG_GP};
+    volatile uint32_t    addons{0};
+    volatile uint8_t     active_profile_id[GAMEPADS_MAX]{1};
 } settings_t;
 
-static settings_t settings = {0};
+static settings_t settings;
 
 static inline const std::string SETTINGS_KEY() {
     return std::string("settings");
@@ -56,12 +56,12 @@ void settings_init(void) {
     }
     nvs_erase_all();
     
-    user_profile_t profile = {0};
+    user_profile_t profile = {};
     settings_get_default_profile(&profile); 
 
     for (uint8_t i = 0; i < USER_PROFILES_MAX; i++) {
         profile.id = i + 1;
-        nvs_write(PROFILE_KEY(i + 1).c_str(), &profile, sizeof(profile));
+        nvs_write(PROFILE_KEY(profile.id).c_str(), &profile, sizeof(profile));
     }
 
     nvs_write(SETTINGS_KEY().c_str(), &settings, sizeof(settings));
@@ -185,11 +185,8 @@ void settings_get_default_profile(user_profile_t* profile) {
     settings_get_default_trigger(&profile->trigger_l);
     memcpy(&profile->trigger_r, &profile->trigger_l, sizeof(trigger_settings_t));
 
-    for (uint8_t i = 0; i < GAMEPAD_BTN_BIT_COUNT; i++) {
+    for (uint8_t i = 0; i < GAMEPAD_BIT_COUNT; i++) {
         profile->btns[i] = i;
-    }
-    for (uint8_t i = 0; i < GAMEPAD_DPAD_BIT_COUNT; i++) {
-        profile->dpad[i] = i;
     }
     for (uint8_t i = 0; i < GAMEPAD_ANALOG_COUNT; i++) {
         profile->analog[i] = i;
@@ -202,7 +199,7 @@ bool settings_is_default_joystick(const joystick_settings_t* joy_set) {
     if (joy_set == NULL) {
         return false;
     }
-    joystick_settings_t default_joy = {0};
+    joystick_settings_t default_joy = {};
     settings_get_default_joystick(&default_joy);
     return (memcmp(joy_set, &default_joy, sizeof(joystick_settings_t)) == 0);
 }
@@ -211,7 +208,7 @@ bool settings_is_default_trigger(const trigger_settings_t* trig_set) {
     if (trig_set == NULL) {
         return false;
     }
-    trigger_settings_t default_trig = {0};
+    trigger_settings_t default_trig = {};
     settings_get_default_trigger(&default_trig);
     return (memcmp(trig_set, &default_trig, sizeof(trigger_settings_t)) == 0);
 }

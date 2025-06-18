@@ -127,8 +127,8 @@ static const uint8_t GIP_RUMBLE[]       = { GIP_CMD_RUMBLE, 0x00, 0x00, GIP_PL_L
 typedef struct __attribute__((packed)) {
     union {
         struct {
-            uint8_t number  : 5;
-            uint8_t class   : 3; // Command/Low Latency/Standard Latency/Audio
+            uint8_t number      : 5;
+            uint8_t type_class  : 3; // Command/Low Latency/Standard Latency/Audio
         };
         uint8_t raw;
     } type;

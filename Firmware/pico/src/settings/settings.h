@@ -56,16 +56,10 @@ typedef struct __attribute__((packed, aligned(4))) {
 
     union {
         struct {
-            uint8_t d_up; /* Uint8 bit offset */
-            uint8_t d_down; /* Uint8 bit offset */
-            uint8_t d_left; /* Uint8 bit offset */
-            uint8_t d_right; /* Uint8 bit offset */
-        };
-        uint8_t dpad[GAMEPAD_DPAD_BIT_COUNT]; /* Raw array of uint8 bit offsets */
-    };
-
-    union {
-        struct {
+            uint8_t btn_up; /* Uint16 bit offset */
+            uint8_t btn_down; /* Uint16 bit offset */
+            uint8_t btn_left; /* Uint16 bit offset */
+            uint8_t btn_right; /* Uint16 bit offset */
             uint8_t btn_a; /* Uint16 bit offset */
             uint8_t btn_b; /* Uint16 bit offset */
             uint8_t btn_x; /* Uint16 bit offset */
@@ -81,7 +75,7 @@ typedef struct __attribute__((packed, aligned(4))) {
             uint8_t btn_sys; /* Uint16 bit offset */
             uint8_t btn_misc; /* Uint16 bit offset */
         };
-        uint8_t btns[GAMEPAD_BTN_BIT_COUNT]; /* Raw array of uint16 bit offsets */
+        uint8_t btns[GAMEPAD_BIT_COUNT]; /* Raw array of uint16 bit offsets */
     };
 
     uint8_t analog_en; /* Analog buttons enabled */
@@ -127,10 +121,14 @@ bool settings_is_default_joystick(const joystick_settings_t* joy_set);
 bool settings_is_default_trigger(const trigger_settings_t* trig_set);
 
 static inline void settings_scale_trigger(const trigger_settings_t* set, uint8_t* trigger) {
-
+    (void)set;
+    (void)trigger;
 }
 
 static inline void settings_scale_joysticks(const joystick_settings_t* set, int16_t* joy_x, int16_t* joy_y) {
+    (void)set;
+    (void)joy_x;
+    (void)joy_y;
     // #define fix16_i(x) fix16_from_int(x)
     // #define fix16_f(x) fix16_from_float(x)
 

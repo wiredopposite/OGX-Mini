@@ -1,5 +1,4 @@
 #include <string.h>
-#include "class/hid/hid.h"
 #include "common/usb_def.h"
 #include "gamepad/gamepad.h"
 #include "gamepad/range.h"
@@ -64,49 +63,51 @@ static void ps5_report_received(uint8_t index, usbh_periph_t subtype, uint8_t da
 
     memset(gp_report, 0, sizeof(gamepad_pad_t));
 
+    gp_report->flags = GAMEPAD_FLAG_PAD;
+
     switch (report_in->hat) {
     case HID_HAT_UP:
-        gp_report->dpad |= GP_BIT8(ps5->profile.d_up);
+        gp_report->buttons |= GP_BIT(ps5->profile.btn_up);
         break;
     case HID_HAT_UP_RIGHT:
-        gp_report->dpad |= GP_BIT8(ps5->profile.d_up) | GP_BIT8(ps5->profile.d_right);
+        gp_report->buttons |= GP_BIT(ps5->profile.btn_up) | GP_BIT(ps5->profile.btn_right);
         break;
     case HID_HAT_RIGHT:
-        gp_report->dpad |= GP_BIT8(ps5->profile.d_right);
+        gp_report->buttons |= GP_BIT(ps5->profile.btn_right);
         break;
     case HID_HAT_DOWN_RIGHT:
-        gp_report->dpad |= GP_BIT8(ps5->profile.d_down) | GP_BIT8(ps5->profile.d_right);
+        gp_report->buttons |= GP_BIT(ps5->profile.btn_down) | GP_BIT(ps5->profile.btn_right);
         break;
     case HID_HAT_DOWN:
-        gp_report->dpad |= GP_BIT8(ps5->profile.d_down);
+        gp_report->buttons |= GP_BIT(ps5->profile.btn_down);
         break;
     case HID_HAT_DOWN_LEFT:
-        gp_report->dpad |= GP_BIT8(ps5->profile.d_down) | GP_BIT8(ps5->profile.d_left);
+        gp_report->buttons |= GP_BIT(ps5->profile.btn_down) | GP_BIT(ps5->profile.btn_left);
         break;
     case HID_HAT_LEFT:
-        gp_report->dpad |= GP_BIT8(ps5->profile.d_left);
+        gp_report->buttons |= GP_BIT(ps5->profile.btn_left);
         break;
     case HID_HAT_UP_LEFT:
-        gp_report->dpad |= GP_BIT8(ps5->profile.d_up) | GP_BIT8(ps5->profile.d_left);
+        gp_report->buttons |= GP_BIT(ps5->profile.btn_up) | GP_BIT(ps5->profile.btn_left);
         break;
     default:
         break;
     }
 
-    if (report_in->buttons0 & PS5_BUTTON0_SQUARE)       { gp_report->buttons |= GP_BIT16(ps5->profile.btn_x); }
-    if (report_in->buttons0 & PS5_BUTTON0_CIRCLE)       { gp_report->buttons |= GP_BIT16(ps5->profile.btn_b); }
-    if (report_in->buttons0 & PS5_BUTTON0_CROSS)        { gp_report->buttons |= GP_BIT16(ps5->profile.btn_a); }
-    if (report_in->buttons0 & PS5_BUTTON0_TRIANGLE)     { gp_report->buttons |= GP_BIT16(ps5->profile.btn_y); }
-    if (report_in->buttons1 & PS5_BUTTON1_L1)           { gp_report->buttons |= GP_BIT16(ps5->profile.btn_lb); }
-    if (report_in->buttons1 & PS5_BUTTON1_R1)           { gp_report->buttons |= GP_BIT16(ps5->profile.btn_rb); }
-    if (report_in->buttons1 & PS5_BUTTON1_L2)           { gp_report->buttons |= GP_BIT16(ps5->profile.btn_lt); }
-    if (report_in->buttons1 & PS5_BUTTON1_R2)           { gp_report->buttons |= GP_BIT16(ps5->profile.btn_rt); }
-    if (report_in->buttons1 & PS5_BUTTON1_SHARE)        { gp_report->buttons |= GP_BIT16(ps5->profile.btn_back); }
-    if (report_in->buttons1 & PS5_BUTTON1_OPTIONS)      { gp_report->buttons |= GP_BIT16(ps5->profile.btn_start); }
-    if (report_in->buttons1 & PS5_BUTTON1_L3)           { gp_report->buttons |= GP_BIT16(ps5->profile.btn_l3); }
-    if (report_in->buttons1 & PS5_BUTTON1_R3)           { gp_report->buttons |= GP_BIT16(ps5->profile.btn_r3); }
-    if (report_in->buttons2 & PS5_BUTTON2_SYS)          { gp_report->buttons |= GP_BIT16(ps5->profile.btn_sys); }
-    if (report_in->buttons2 & PS5_BUTTON2_TP)           { gp_report->buttons |= GP_BIT16(ps5->profile.btn_misc); }
+    if (report_in->buttons0 & PS5_BUTTON0_SQUARE)       { gp_report->buttons |= GP_BIT(ps5->profile.btn_x); }
+    if (report_in->buttons0 & PS5_BUTTON0_CIRCLE)       { gp_report->buttons |= GP_BIT(ps5->profile.btn_b); }
+    if (report_in->buttons0 & PS5_BUTTON0_CROSS)        { gp_report->buttons |= GP_BIT(ps5->profile.btn_a); }
+    if (report_in->buttons0 & PS5_BUTTON0_TRIANGLE)     { gp_report->buttons |= GP_BIT(ps5->profile.btn_y); }
+    if (report_in->buttons1 & PS5_BUTTON1_L1)           { gp_report->buttons |= GP_BIT(ps5->profile.btn_lb); }
+    if (report_in->buttons1 & PS5_BUTTON1_R1)           { gp_report->buttons |= GP_BIT(ps5->profile.btn_rb); }
+    if (report_in->buttons1 & PS5_BUTTON1_L2)           { gp_report->buttons |= GP_BIT(ps5->profile.btn_lt); }
+    if (report_in->buttons1 & PS5_BUTTON1_R2)           { gp_report->buttons |= GP_BIT(ps5->profile.btn_rt); }
+    if (report_in->buttons1 & PS5_BUTTON1_SHARE)        { gp_report->buttons |= GP_BIT(ps5->profile.btn_back); }
+    if (report_in->buttons1 & PS5_BUTTON1_OPTIONS)      { gp_report->buttons |= GP_BIT(ps5->profile.btn_start); }
+    if (report_in->buttons1 & PS5_BUTTON1_L3)           { gp_report->buttons |= GP_BIT(ps5->profile.btn_l3); }
+    if (report_in->buttons1 & PS5_BUTTON1_R3)           { gp_report->buttons |= GP_BIT(ps5->profile.btn_r3); }
+    if (report_in->buttons2 & PS5_BUTTON2_SYS)          { gp_report->buttons |= GP_BIT(ps5->profile.btn_sys); }
+    if (report_in->buttons2 & PS5_BUTTON2_TP)           { gp_report->buttons |= GP_BIT(ps5->profile.btn_misc); }
 
     gp_report->trigger_l = report_in->trigger_l;
     gp_report->trigger_r = report_in->trigger_r;
@@ -115,6 +116,12 @@ static void ps5_report_received(uint8_t index, usbh_periph_t subtype, uint8_t da
     gp_report->joystick_ly = range_invert_int16(range_uint8_to_int16(report_in->joystick_ly));
     gp_report->joystick_rx = range_uint8_to_int16(report_in->joystick_rx);
     gp_report->joystick_ry = range_invert_int16(range_uint8_to_int16(report_in->joystick_ry));
+
+    if (memcmp(&ps5->prev_gp_report, gp_report, sizeof(gamepad_pad_t)) == 0) {
+        tuh_hxx_receive_report(daddr, itf_num);
+        return;
+    }
+    memcpy(&ps5->prev_gp_report, gp_report, sizeof(gamepad_pad_t));
 
     if (ps5->map.joy_l) {
         settings_scale_joysticks(&ps5->profile.joystick_l, &gp_report->joystick_lx, &gp_report->joystick_ly);
@@ -128,15 +135,14 @@ static void ps5_report_received(uint8_t index, usbh_periph_t subtype, uint8_t da
     if (ps5->map.trig_r) {
         settings_scale_trigger(&ps5->profile.trigger_r, &gp_report->trigger_r);
     }
-    if (memcmp(&ps5->prev_gp_report, gp_report, sizeof(gamepad_pad_t)) != 0) {
-        usb_host_driver_pad_cb(index, gp_report, GAMEPAD_FLAG_IN_PAD);
-        memcpy(&ps5->prev_gp_report, gp_report, sizeof(gamepad_pad_t));
-    }
+
+    usb_host_driver_pad_cb(index, gp_report);
     tuh_hxx_receive_report(daddr, itf_num);
 }
 
 static void ps5_send_rumble(uint8_t index, uint8_t daddr, uint8_t itf_num, const gamepad_rumble_t* rumble) {
     ps5_state_t* ps5 = ps5_state[index];
+    ps5->report_out.report_id = PS5_REPORT_ID_OUT_RUMBLE;
     ps5->report_out.motor_left  = rumble->l;
     ps5->report_out.motor_right = rumble->r;
     tuh_hxx_send_report(daddr, itf_num, (const uint8_t*)&ps5->report_out, sizeof(ps5_report_out_t));

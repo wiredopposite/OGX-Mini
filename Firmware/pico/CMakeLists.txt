@@ -3,17 +3,11 @@ cmake_minimum_required(VERSION 3.13)
 set(FW_NAME "OGX-Mini")
 set(FW_VERSION "1.0.0a4")
 
-# set(CMAKE_C_COMPILER arm-none-eabi-gcc)
-# set(CMAKE_CXX_COMPILER arm-none-eabi-g++)
-
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 20)
 
 set(SRC ${CMAKE_CURRENT_LIST_DIR}/src)
 set(EXTERNAL_DIR ${CMAKE_CURRENT_LIST_DIR}/external)
-
-# set(OGXMINI_BOARD "PI_PICO_W")
-# set(MAX_GAMEPADS 1)
 
 if(NOT EXISTS ${CMAKE_CURRENT_LIST_DIR}/boards/${OGXMINI_BOARD}.cmake)
     message(FATAL_ERROR "Board configuration file for '${OGXMINI_BOARD}' not found.")
@@ -45,6 +39,8 @@ add_subdirectory(${EXTERNAL_DIR}/libfixmath libfixmath)
 add_executable(${FW_NAME}
     ${SRC}/main_standard.c
     ${SRC}/main_bluetooth.c
+    ${SRC}/main_bluetooth_usbh.c
+    ${SRC}/main_four_channel.c
     ${SRC}/main_devkit.c
     ${SRC}/main_devkit_esp32.c
     ${SRC}/shared.c
@@ -53,7 +49,6 @@ add_executable(${FW_NAME}
 
     ${SRC}/settings/nvs.c
     ${SRC}/settings/settings.cpp
-    ${SRC}/settings/button_combo.c
 
     ${SRC}/sdcard/sdcard.c
 
@@ -75,7 +70,7 @@ add_executable(${FW_NAME}
     ${SRC}/usb/device/drivers/uart_bridge.c
     ${SRC}/usb/device/drivers/webapp.c
 
-    ${SRC}/usb/host/host.cpp
+    ${SRC}/usb/host/host.c
     ${SRC}/usb/host/drivers/xboxog_gp.c
     ${SRC}/usb/host/drivers/xinput_wl.c
     ${SRC}/usb/host/drivers/xinput.c
@@ -90,13 +85,16 @@ add_executable(${FW_NAME}
     ${SRC}/usb/host/drivers/hid/switch.c
     ${SRC}/usb/host/drivers/hid/n64.c
     ${SRC}/usb/host/drivers/hid/generic.c
-    ${SRC}/usb/host/tusb_host/tuh_hxx.c
+    ${SRC}/usb/host/tusb_host/tuh_hxx.cpp
     ${SRC}/usb/host/tusb_host/tuh_xaudio.c
 
     ${SRC}/bluetooth/picow/picow.c
     ${SRC}/bluetooth/picow/ble_server.c
     ${SRC}/bluetooth/esp32/esp32_i2c.c
     ${SRC}/bluetooth/esp32/esp32_spi.c
+
+    ${SRC}/four_channel/master.c
+    ${SRC}/four_channel/slave.c
 )
 
 target_include_directories(${FW_NAME} 
@@ -133,16 +131,21 @@ target_compile_definitions(${FW_NAME}
         PICO_DEFAULT_UART_TX_PIN=${PICO_DEFAULT_UART_TX_PIN}
         PICO_DEFAULT_UART_RX_PIN=${PICO_DEFAULT_UART_RX_PIN}
         PICO_FLASH_SIZE_BYTES=${PICO_FLASH_SIZE_BYTES}
+        # PICO_HEAP_SIZE=4096
+        # PICO_STACK_SIZE=4096
 )
 
 target_compile_options(${FW_NAME} 
     PUBLIC
-        $<$<CONFIG:Release>:-O3 -g0 -DNDEBUG -ffunction-sections -fdata-sections>
+        $<$<CONFIG:Debug>:-O2 -g3 -Wuninitialized -Wall -Wno-unused -Werror>
+        $<$<CONFIG:Release>:-O3 -g0 -DNDEBUG -mthumb -ffunction-sections -fdata-sections -fomit-frame-pointer -finline-functions>
 )
+
+# pico_enable_stdio_uart(${FW_NAME} 0)
 
 target_link_options(${FW_NAME}
     PUBLIC
-        $<$<CONFIG:Release>:-Wl,--gc-sections>
+        $<$<CONFIG:Release>:-Wl,--gc-sections -flto>
 )
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -157,6 +160,10 @@ configure_file(
 )
 
 if(PICO_BOARD STREQUAL pico_w OR PICO_BOARD STREQUAL pico2_w)
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+        message(FATAL_ERROR "Pico W does not support Debug build type due to CYW43 driver limitations.")
+    endif()
+
     execute_process(
         COMMAND git apply --ignore-whitespace ${BLUEPAD32_PATH}/../btstack_l2cap.diff
         WORKING_DIRECTORY ${PICO_BTSTACK_PATH}
@@ -189,9 +196,6 @@ if(PICO_BOARD STREQUAL pico_w OR PICO_BOARD STREQUAL pico2_w)
         PUBLIC
             ${SRC}/bluetooth/picow
     )
-# else()
-#     add_compile_definitions(PICO_BOOT_STAGE2_CHOOSE_GENERIC_03H=1)
-#     add_compile_definitions(PICO_XOSC_STARTUP_DELAY_MULTIPLIER=64)
 endif()
 
 if(GAMEPADS_MAX LESS 1 OR GAMEPADS_MAX GREATER 4)

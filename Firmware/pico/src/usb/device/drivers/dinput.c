@@ -137,36 +137,36 @@ static usbd_handle_t* dinput_init(const usb_device_driver_cfg_t* cfg) {
     return handle;
 }
 
-static void dinput_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad, uint32_t flags) {
-    if (!usbd_ep_ready(handle, DINPUT_EPADDR_IN) || !(flags & GAMEPAD_FLAG_IN_PAD)) {
+static void dinput_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad) {
+    if (!usbd_ep_ready(handle, DINPUT_EPADDR_IN) || !(pad->flags & GAMEPAD_FLAG_PAD)) {
         return;
     }
     dinput_state_t* dinput = dinput_state[handle->port];
     memset(&dinput->report_in.buttons, 0, sizeof(dinput->report_in.buttons));
 
     switch (pad->dpad) {
-    case GAMEPAD_D_UP:      
+    case GAMEPAD_BUTTON_UP:      
         dinput->report_in.dpad = DINPUT_DPAD_UP;     
         break;
-    case GAMEPAD_D_DOWN:    
+    case GAMEPAD_BUTTON_DOWN:    
         dinput->report_in.dpad = DINPUT_DPAD_DOWN;   
         break;
-    case GAMEPAD_D_LEFT:    
+    case GAMEPAD_BUTTON_LEFT:    
         dinput->report_in.dpad = DINPUT_DPAD_LEFT;   
         break;
-    case GAMEPAD_D_RIGHT:   
+    case GAMEPAD_BUTTON_RIGHT:   
         dinput->report_in.dpad = DINPUT_DPAD_RIGHT;  
         break;
-    case GAMEPAD_D_UP | GAMEPAD_D_LEFT:    
+    case GAMEPAD_BUTTON_UP | GAMEPAD_BUTTON_LEFT:    
         dinput->report_in.dpad = DINPUT_DPAD_UP_LEFT; 
         break;
-    case GAMEPAD_D_UP | GAMEPAD_D_RIGHT:   
+    case GAMEPAD_BUTTON_UP | GAMEPAD_BUTTON_RIGHT:   
         dinput->report_in.dpad = DINPUT_DPAD_UP_RIGHT; 
         break;
-    case GAMEPAD_D_DOWN | GAMEPAD_D_LEFT:    
+    case GAMEPAD_BUTTON_DOWN | GAMEPAD_BUTTON_LEFT:    
         dinput->report_in.dpad = DINPUT_DPAD_DOWN_LEFT; 
         break;
-    case GAMEPAD_D_DOWN | GAMEPAD_D_RIGHT:   
+    case GAMEPAD_BUTTON_DOWN | GAMEPAD_BUTTON_RIGHT:   
         dinput->report_in.dpad = DINPUT_DPAD_DOWN_RIGHT; 
         break;
     default:    
@@ -174,19 +174,19 @@ static void dinput_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad, uint
         break;
     }
 
-    if (pad->buttons & GAMEPAD_BTN_A)      { dinput->report_in.buttons[0] |= DINPUT_BUTTONS0_CROSS; }
-    if (pad->buttons & GAMEPAD_BTN_B)      { dinput->report_in.buttons[0] |= DINPUT_BUTTONS0_CIRCLE; }
-    if (pad->buttons & GAMEPAD_BTN_X)      { dinput->report_in.buttons[0] |= DINPUT_BUTTONS0_SQUARE; }
-    if (pad->buttons & GAMEPAD_BTN_Y)      { dinput->report_in.buttons[0] |= DINPUT_BUTTONS0_TRIANGLE; }
-    if (pad->buttons & GAMEPAD_BTN_LB)     { dinput->report_in.buttons[0] |= DINPUT_BUTTONS0_L1; }
-    if (pad->buttons & GAMEPAD_BTN_RB)     { dinput->report_in.buttons[0] |= DINPUT_BUTTONS0_R1; }
+    if (pad->buttons & GAMEPAD_BUTTON_A)      { dinput->report_in.buttons[0] |= DINPUT_BUTTONS0_CROSS; }
+    if (pad->buttons & GAMEPAD_BUTTON_B)      { dinput->report_in.buttons[0] |= DINPUT_BUTTONS0_CIRCLE; }
+    if (pad->buttons & GAMEPAD_BUTTON_X)      { dinput->report_in.buttons[0] |= DINPUT_BUTTONS0_SQUARE; }
+    if (pad->buttons & GAMEPAD_BUTTON_Y)      { dinput->report_in.buttons[0] |= DINPUT_BUTTONS0_TRIANGLE; }
+    if (pad->buttons & GAMEPAD_BUTTON_LB)     { dinput->report_in.buttons[0] |= DINPUT_BUTTONS0_L1; }
+    if (pad->buttons & GAMEPAD_BUTTON_RB)     { dinput->report_in.buttons[0] |= DINPUT_BUTTONS0_R1; }
     
-    if (pad->buttons & GAMEPAD_BTN_START)  { dinput->report_in.buttons[1] |= DINPUT_BUTTONS1_START; }
-    if (pad->buttons & GAMEPAD_BTN_BACK)   { dinput->report_in.buttons[1] |= DINPUT_BUTTONS1_SELECT; }
-    if (pad->buttons & GAMEPAD_BTN_L3)     { dinput->report_in.buttons[1] |= DINPUT_BUTTONS1_L3; }
-    if (pad->buttons & GAMEPAD_BTN_R3)     { dinput->report_in.buttons[1] |= DINPUT_BUTTONS1_R3; }
-    if (pad->buttons & GAMEPAD_BTN_SYS)    { dinput->report_in.buttons[1] |= DINPUT_BUTTONS1_SYS; }
-    if (pad->buttons & GAMEPAD_BTN_MISC)   { dinput->report_in.buttons[1] |= DINPUT_BUTTONS1_MISC; }
+    if (pad->buttons & GAMEPAD_BUTTON_START)  { dinput->report_in.buttons[1] |= DINPUT_BUTTONS1_START; }
+    if (pad->buttons & GAMEPAD_BUTTON_BACK)   { dinput->report_in.buttons[1] |= DINPUT_BUTTONS1_SELECT; }
+    if (pad->buttons & GAMEPAD_BUTTON_L3)     { dinput->report_in.buttons[1] |= DINPUT_BUTTONS1_L3; }
+    if (pad->buttons & GAMEPAD_BUTTON_R3)     { dinput->report_in.buttons[1] |= DINPUT_BUTTONS1_R3; }
+    if (pad->buttons & GAMEPAD_BUTTON_SYS)    { dinput->report_in.buttons[1] |= DINPUT_BUTTONS1_SYS; }
+    if (pad->buttons & GAMEPAD_BUTTON_MISC)   { dinput->report_in.buttons[1] |= DINPUT_BUTTONS1_MISC; }
     
     if (pad->trigger_l) { dinput->report_in.buttons[0] |= DINPUT_BUTTONS0_L2; }
     if (pad->trigger_r) { dinput->report_in.buttons[0] |= DINPUT_BUTTONS0_R2; }
@@ -196,7 +196,7 @@ static void dinput_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad, uint
     dinput->report_in.joystick_rx = range_int16_to_uint8(pad->joystick_rx);
     dinput->report_in.joystick_ry = range_int16_to_uint8(pad->joystick_ry);
 
-    if (flags & GAMEPAD_FLAG_IN_PAD_ANALOG) {
+    if (pad->flags & GAMEPAD_FLAG_ANALOG) {
         dinput->report_in.up_axis       = pad->analog[GAMEPAD_ANALOG_UP];
         dinput->report_in.right_axis    = pad->analog[GAMEPAD_ANALOG_RIGHT];
         dinput->report_in.down_axis     = pad->analog[GAMEPAD_ANALOG_DOWN];
@@ -208,16 +208,16 @@ static void dinput_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad, uint
         dinput->report_in.cross_axis    = pad->analog[GAMEPAD_ANALOG_A];
         dinput->report_in.square_axis   = pad->analog[GAMEPAD_ANALOG_X];
     } else {
-        dinput->report_in.up_axis       = (pad->dpad & GAMEPAD_D_UP)    ? 0xFF : 0x00;
-        dinput->report_in.right_axis    = (pad->dpad & GAMEPAD_D_RIGHT) ? 0xFF : 0x00;
-        dinput->report_in.down_axis     = (pad->dpad & GAMEPAD_D_DOWN)  ? 0xFF : 0x00;
-        dinput->report_in.left_axis     = (pad->dpad & GAMEPAD_D_LEFT)  ? 0xFF : 0x00;
-        dinput->report_in.l1_axis       = (pad->buttons & GAMEPAD_BTN_LB)  ? 0xFF : 0x00;
-        dinput->report_in.r1_axis       = (pad->buttons & GAMEPAD_BTN_RB)  ? 0xFF : 0x00;
-        dinput->report_in.triangle_axis = (pad->buttons & GAMEPAD_BTN_Y)   ? 0xFF : 0x00;
-        dinput->report_in.circle_axis   = (pad->buttons & GAMEPAD_BTN_B)   ? 0xFF : 0x00;
-        dinput->report_in.cross_axis    = (pad->buttons & GAMEPAD_BTN_A)   ? 0xFF : 0x00;
-        dinput->report_in.square_axis   = (pad->buttons & GAMEPAD_BTN_X)   ? 0xFF : 0x00;
+        dinput->report_in.up_axis       = (pad->dpad & GAMEPAD_BUTTON_UP)    ? 0xFF : 0x00;
+        dinput->report_in.right_axis    = (pad->dpad & GAMEPAD_BUTTON_RIGHT) ? 0xFF : 0x00;
+        dinput->report_in.down_axis     = (pad->dpad & GAMEPAD_BUTTON_DOWN)  ? 0xFF : 0x00;
+        dinput->report_in.left_axis     = (pad->dpad & GAMEPAD_BUTTON_LEFT)  ? 0xFF : 0x00;
+        dinput->report_in.l1_axis       = (pad->buttons & GAMEPAD_BUTTON_LB)  ? 0xFF : 0x00;
+        dinput->report_in.r1_axis       = (pad->buttons & GAMEPAD_BUTTON_RB)  ? 0xFF : 0x00;
+        dinput->report_in.triangle_axis = (pad->buttons & GAMEPAD_BUTTON_Y)   ? 0xFF : 0x00;
+        dinput->report_in.circle_axis   = (pad->buttons & GAMEPAD_BUTTON_B)   ? 0xFF : 0x00;
+        dinput->report_in.cross_axis    = (pad->buttons & GAMEPAD_BUTTON_A)   ? 0xFF : 0x00;
+        dinput->report_in.square_axis   = (pad->buttons & GAMEPAD_BUTTON_X)   ? 0xFF : 0x00;
     }
     usbd_ep_write(handle, DINPUT_EPADDR_IN, &dinput->report_in, sizeof(dinput->report_in));
 }

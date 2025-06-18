@@ -459,11 +459,11 @@ typedef struct __attribute__((packed, aligned(4))) {
 } xinput_report_out_t;
 _Static_assert(sizeof(xinput_report_out_t) == 8, "xinput_report_out_t size mismatch");
 
-typedef struct __attribute__((packed)) {
-    uint8_t unk[2];
-    xinput_report_out_t report;
-} xinput_wl_rumble_t;
-_Static_assert(sizeof(xinput_wl_rumble_t) == 10, "xinput_wl_rumble_t size mismatch");
+// typedef struct __attribute__((packed)) {
+//     uint8_t unk[2];
+//     xinput_report_out_t report;
+// } xinput_wl_rumble_t;
+// _Static_assert(sizeof(xinput_wl_rumble_t) == 10, "xinput_wl_rumble_t size mismatch");
 
 typedef struct __attribute__((packed, aligned(4))) {
 	uint8_t report_id;

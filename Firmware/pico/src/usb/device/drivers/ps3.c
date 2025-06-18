@@ -302,6 +302,7 @@ static bool ps3_handle_set_report(usbd_handle_t* handle, const usb_ctrl_req_t* r
                 break;
             }
             }
+            break;
         case PS3_REQ_FEATURE_REPORT_ID_BT_PAIRING:
             {
             const ps3_bt_pairing_t* pairing = (const ps3_bt_pairing_t*)req->data;
@@ -489,29 +490,28 @@ static usbd_handle_t* ps3_init(const usb_device_driver_cfg_t* cfg) {
     return handle;
 }
 
-static void ps3_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad, uint32_t flags) {
+static void ps3_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad) {
     ps3_state_t* ps3 = ps3_state[handle->port];
-    if (!ps3->reports_enabled || !(flags & GAMEPAD_FLAG_IN_PAD)) {
+    if (!ps3->reports_enabled || !(pad->flags & GAMEPAD_FLAG_PAD)) {
         return;
     }
     memset(&ps3->report_in.buttons, 0, sizeof(ps3->report_in.buttons));
 
-    if (pad->dpad & GAMEPAD_D_UP)      { ps3->report_in.buttons[0] |= PS3_BTN0_DPAD_UP; }
-    if (pad->dpad & GAMEPAD_D_DOWN)    { ps3->report_in.buttons[0] |= PS3_BTN0_DPAD_DOWN; }
-    if (pad->dpad & GAMEPAD_D_LEFT)    { ps3->report_in.buttons[0] |= PS3_BTN0_DPAD_LEFT; }
-    if (pad->dpad & GAMEPAD_D_RIGHT)   { ps3->report_in.buttons[0] |= PS3_BTN0_DPAD_RIGHT; }
-
-    if (pad->buttons & GAMEPAD_BTN_START)  { ps3->report_in.buttons[0] |= PS3_BTN0_START; }
-    if (pad->buttons & GAMEPAD_BTN_BACK)   { ps3->report_in.buttons[0] |= PS3_BTN0_SELECT; }
-    if (pad->buttons & GAMEPAD_BTN_L3)     { ps3->report_in.buttons[0] |= PS3_BTN0_L3; }
-    if (pad->buttons & GAMEPAD_BTN_R3)     { ps3->report_in.buttons[0] |= PS3_BTN0_R3; }
-    if (pad->buttons & GAMEPAD_BTN_LB)     { ps3->report_in.buttons[1] |= PS3_BTN1_L1; }
-    if (pad->buttons & GAMEPAD_BTN_RB)     { ps3->report_in.buttons[1] |= PS3_BTN1_R1; }
-    if (pad->buttons & GAMEPAD_BTN_A)      { ps3->report_in.buttons[1] |= PS3_BTN1_CROSS; }
-    if (pad->buttons & GAMEPAD_BTN_B)      { ps3->report_in.buttons[1] |= PS3_BTN1_CIRCLE; }
-    if (pad->buttons & GAMEPAD_BTN_X)      { ps3->report_in.buttons[1] |= PS3_BTN1_SQUARE; }
-    if (pad->buttons & GAMEPAD_BTN_Y)      { ps3->report_in.buttons[1] |= PS3_BTN1_TRIANGLE; }
-    if (pad->buttons & GAMEPAD_BTN_SYS)    { ps3->report_in.buttons[2] |= PS3_BTN2_SYS; }
+    if (pad->buttons & GAMEPAD_BUTTON_UP)       { ps3->report_in.buttons[0] |= PS3_BTN0_DPAD_UP; }
+    if (pad->buttons & GAMEPAD_BUTTON_DOWN)     { ps3->report_in.buttons[0] |= PS3_BTN0_DPAD_DOWN; }
+    if (pad->buttons & GAMEPAD_BUTTON_LEFT)     { ps3->report_in.buttons[0] |= PS3_BTN0_DPAD_LEFT; }
+    if (pad->buttons & GAMEPAD_BUTTON_RIGHT)    { ps3->report_in.buttons[0] |= PS3_BTN0_DPAD_RIGHT; }
+    if (pad->buttons & GAMEPAD_BUTTON_START)    { ps3->report_in.buttons[0] |= PS3_BTN0_START; }
+    if (pad->buttons & GAMEPAD_BUTTON_BACK)     { ps3->report_in.buttons[0] |= PS3_BTN0_SELECT; }
+    if (pad->buttons & GAMEPAD_BUTTON_L3)       { ps3->report_in.buttons[0] |= PS3_BTN0_L3; }
+    if (pad->buttons & GAMEPAD_BUTTON_R3)       { ps3->report_in.buttons[0] |= PS3_BTN0_R3; }
+    if (pad->buttons & GAMEPAD_BUTTON_LB)       { ps3->report_in.buttons[1] |= PS3_BTN1_L1; }
+    if (pad->buttons & GAMEPAD_BUTTON_RB)       { ps3->report_in.buttons[1] |= PS3_BTN1_R1; }
+    if (pad->buttons & GAMEPAD_BUTTON_A)        { ps3->report_in.buttons[1] |= PS3_BTN1_CROSS; }
+    if (pad->buttons & GAMEPAD_BUTTON_B)        { ps3->report_in.buttons[1] |= PS3_BTN1_CIRCLE; }
+    if (pad->buttons & GAMEPAD_BUTTON_X)        { ps3->report_in.buttons[1] |= PS3_BTN1_SQUARE; }
+    if (pad->buttons & GAMEPAD_BUTTON_Y)        { ps3->report_in.buttons[1] |= PS3_BTN1_TRIANGLE; }
+    if (pad->buttons & GAMEPAD_BUTTON_SYS)      { ps3->report_in.buttons[2] |= PS3_BTN2_SYS; }
 
     if (pad->trigger_l) { ps3->report_in.buttons[1] |= PS3_BTN1_L2; }
     if (pad->trigger_r) { ps3->report_in.buttons[1] |= PS3_BTN1_R2; }
@@ -524,7 +524,7 @@ static void ps3_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad, uint32_
     ps3->report_in.a_l2 = pad->trigger_l;
     ps3->report_in.a_r2 = pad->trigger_r;
 
-    if (flags & GAMEPAD_FLAG_IN_PAD_ANALOG) {
+    if (pad->flags & GAMEPAD_FLAG_ANALOG) {
         ps3->report_in.a_up          = pad->analog[GAMEPAD_ANALOG_UP];
         ps3->report_in.a_right       = pad->analog[GAMEPAD_ANALOG_RIGHT];
         ps3->report_in.a_down        = pad->analog[GAMEPAD_ANALOG_DOWN];
@@ -536,16 +536,16 @@ static void ps3_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad, uint32_
         ps3->report_in.a_cross       = pad->analog[GAMEPAD_ANALOG_A];
         ps3->report_in.a_square      = pad->analog[GAMEPAD_ANALOG_X];
     } else {
-        ps3->report_in.a_up          = (pad->dpad & GAMEPAD_D_UP)    ? 0xFF : 0x00;
-        ps3->report_in.a_right       = (pad->dpad & GAMEPAD_D_RIGHT) ? 0xFF : 0x00;
-        ps3->report_in.a_down        = (pad->dpad & GAMEPAD_D_DOWN)  ? 0xFF : 0x00;
-        ps3->report_in.a_left        = (pad->dpad & GAMEPAD_D_LEFT)  ? 0xFF : 0x00;
-        ps3->report_in.a_l1          = (pad->buttons & GAMEPAD_BTN_LB)  ? 0xFF : 0x00;
-        ps3->report_in.a_r1          = (pad->buttons & GAMEPAD_BTN_RB)  ? 0xFF : 0x00;
-        ps3->report_in.a_triangle    = (pad->buttons & GAMEPAD_BTN_Y)   ? 0xFF : 0x00;
-        ps3->report_in.a_circle      = (pad->buttons & GAMEPAD_BTN_B)   ? 0xFF : 0x00;
-        ps3->report_in.a_cross       = (pad->buttons & GAMEPAD_BTN_A)   ? 0xFF : 0x00;
-        ps3->report_in.a_square      = (pad->buttons & GAMEPAD_BTN_X)   ? 0xFF : 0x00;
+        ps3->report_in.a_up          = (pad->dpad & GAMEPAD_BUTTON_UP)    ? 0xFF : 0x00;
+        ps3->report_in.a_right       = (pad->dpad & GAMEPAD_BUTTON_RIGHT) ? 0xFF : 0x00;
+        ps3->report_in.a_down        = (pad->dpad & GAMEPAD_BUTTON_DOWN)  ? 0xFF : 0x00;
+        ps3->report_in.a_left        = (pad->dpad & GAMEPAD_BUTTON_LEFT)  ? 0xFF : 0x00;
+        ps3->report_in.a_l1          = (pad->buttons & GAMEPAD_BUTTON_LB)  ? 0xFF : 0x00;
+        ps3->report_in.a_r1          = (pad->buttons & GAMEPAD_BUTTON_RB)  ? 0xFF : 0x00;
+        ps3->report_in.a_triangle    = (pad->buttons & GAMEPAD_BUTTON_Y)   ? 0xFF : 0x00;
+        ps3->report_in.a_circle      = (pad->buttons & GAMEPAD_BUTTON_B)   ? 0xFF : 0x00;
+        ps3->report_in.a_cross       = (pad->buttons & GAMEPAD_BUTTON_A)   ? 0xFF : 0x00;
+        ps3->report_in.a_square      = (pad->buttons & GAMEPAD_BUTTON_X)   ? 0xFF : 0x00;
     }
     if (usbd_ep_ready(handle, PS3_EPADDR_IN)) {
         usbd_ep_write(handle, PS3_EPADDR_IN, &ps3->report_in, PS3_REPORT_IN_SIZE);
@@ -557,7 +557,7 @@ static void ps3_task(usbd_handle_t* handle) {
     if (!ps3->reports_enabled || !usbd_ep_ready(handle, PS3_EPADDR_IN)) {
         return;
     }
-    /* PS3 expects constant reports */
+    /* PS3 expects constant reports every frame */
     usbd_ep_write(handle, PS3_EPADDR_IN, &ps3->report_in, PS3_REPORT_IN_SIZE);
 }
 

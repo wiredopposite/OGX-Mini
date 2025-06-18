@@ -6,7 +6,7 @@
     "cortex-debug.objdumpPath": "/usr/bin/arm-none-eabi-objdump",
     "cortex-debug.nmPath": "/usr/bin/arm-none-eabi-nm",
     "cmake.configureArgs": [
-        "-DOGXMINI_BOARD=WAVESHARE_RP2350_USBH",
+        "-DOGXMINI_BOARD=PI_PICO_W",
     ],
     "files.associations": {
         "device_private.h": "c",
@@ -88,7 +88,14 @@
         "i2c.h": "c",
         "ring.h": "c",
         "stdint.h": "c",
-        "device.h": "c"
+        "device.h": "c",
+        "string.h": "c",
+        "watchdog.h": "c",
+        "settings.h": "c",
+        "master.h": "c",
+        "i2c_slave.h": "c",
+        "callbacks.h": "c",
+        "gpio.h": "c"
     },
     "idf.port": "/dev/ttyUSB0",
 }

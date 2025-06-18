@@ -46,7 +46,7 @@ static void xid_gp_report_received(uint8_t index, usbh_periph_t subtype, uint8_t
     (void)subtype;  
 
     xid_gp_state_t* state = xid_gp_state[index];
-    xboxog_gp_report_in_t* report = (xboxog_gp_report_in_t*)data;
+    const xboxog_gp_report_in_t* report = (const xboxog_gp_report_in_t*)data;
 
     if ((len < sizeof(xboxog_gp_report_in_t)) || 
         (memcmp(report, &state->prev_report_in, sizeof(xboxog_gp_report_in_t)) == 0)) {
@@ -55,22 +55,23 @@ static void xid_gp_report_received(uint8_t index, usbh_periph_t subtype, uint8_t
     }
     memset(&state->gp_report, 0, sizeof(gamepad_pad_t));
 
-    if (report->buttons & XBOXOG_GP_BUTTON_UP)      { state->gp_report.dpad |= GP_BIT8(state->profile.d_up); }
-    if (report->buttons & XBOXOG_GP_BUTTON_DOWN)    { state->gp_report.dpad |= GP_BIT8(state->profile.d_down); }
-    if (report->buttons & XBOXOG_GP_BUTTON_LEFT)    { state->gp_report.dpad |= GP_BIT8(state->profile.d_left); }
-    if (report->buttons & XBOXOG_GP_BUTTON_RIGHT)   { state->gp_report.dpad |= GP_BIT8(state->profile.d_right); }
+    state->gp_report.flags = GAMEPAD_FLAG_PAD | GAMEPAD_FLAG_ANALOG;
 
-    if (report->buttons & XBOXOG_GP_BUTTON_START)   { state->gp_report.buttons |= GP_BIT16(state->profile.btn_start); }
-    if (report->buttons & XBOXOG_GP_BUTTON_BACK)    { state->gp_report.buttons |= GP_BIT16(state->profile.btn_back); }
-    if (report->buttons & XBOXOG_GP_BUTTON_L3)      { state->gp_report.buttons |= GP_BIT16(state->profile.btn_l3); }
-    if (report->buttons & XBOXOG_GP_BUTTON_R3)      { state->gp_report.buttons |= GP_BIT16(state->profile.btn_r3); }
+    if (report->buttons & XBOXOG_GP_BUTTON_UP)      { state->gp_report.buttons |= GP_BIT(state->profile.btn_up); }
+    if (report->buttons & XBOXOG_GP_BUTTON_DOWN)    { state->gp_report.buttons |= GP_BIT(state->profile.btn_down); }
+    if (report->buttons & XBOXOG_GP_BUTTON_LEFT)    { state->gp_report.buttons |= GP_BIT(state->profile.btn_left); }
+    if (report->buttons & XBOXOG_GP_BUTTON_RIGHT)   { state->gp_report.buttons |= GP_BIT(state->profile.btn_right); }
+    if (report->buttons & XBOXOG_GP_BUTTON_START)   { state->gp_report.buttons |= GP_BIT(state->profile.btn_start); }
+    if (report->buttons & XBOXOG_GP_BUTTON_BACK)    { state->gp_report.buttons |= GP_BIT(state->profile.btn_back); }
+    if (report->buttons & XBOXOG_GP_BUTTON_L3)      { state->gp_report.buttons |= GP_BIT(state->profile.btn_l3); }
+    if (report->buttons & XBOXOG_GP_BUTTON_R3)      { state->gp_report.buttons |= GP_BIT(state->profile.btn_r3); }
 
-    state->gp_report.buttons |= (report->a ? GP_BIT16(state->profile.btn_a) : 0);
-    state->gp_report.buttons |= (report->b ? GP_BIT16(state->profile.btn_b) : 0);
-    state->gp_report.buttons |= (report->x ? GP_BIT16(state->profile.btn_x) : 0);
-    state->gp_report.buttons |= (report->y ? GP_BIT16(state->profile.btn_y) : 0);
-    state->gp_report.buttons |= (report->white ? GP_BIT16(state->profile.btn_lb) : 0);
-    state->gp_report.buttons |= (report->black ? GP_BIT16(state->profile.btn_rb) : 0);
+    state->gp_report.buttons |= (report->a ? GP_BIT(state->profile.btn_a) : 0U);
+    state->gp_report.buttons |= (report->b ? GP_BIT(state->profile.btn_b) : 0U);
+    state->gp_report.buttons |= (report->x ? GP_BIT(state->profile.btn_x) : 0U);
+    state->gp_report.buttons |= (report->y ? GP_BIT(state->profile.btn_y) : 0U);
+    state->gp_report.buttons |= (report->white ? GP_BIT(state->profile.btn_lb) : 0U);
+    state->gp_report.buttons |= (report->black ? GP_BIT(state->profile.btn_rb) : 0U);
 
     state->gp_report.analog[state->profile.a_a]     = report->a;
     state->gp_report.analog[state->profile.a_b]     = report->b;
@@ -85,19 +86,18 @@ static void xid_gp_report_received(uint8_t index, usbh_periph_t subtype, uint8_t
 
     state->gp_report.trigger_l = report->trigger_l;
     state->gp_report.trigger_r = report->trigger_r;
-    
-    if (state->map.trig_l) {
-        settings_scale_trigger(&state->profile.trigger_l, &state->gp_report.trigger_l);
-    }
-    if (state->map.trig_r) {
-        settings_scale_trigger(&state->profile.trigger_r, &state->gp_report.trigger_r);
-    }
 
     state->gp_report.joystick_lx = report->joystick_lx;
     state->gp_report.joystick_ly = report->joystick_ly;
     state->gp_report.joystick_rx = report->joystick_rx;
     state->gp_report.joystick_ry = report->joystick_ry;
 
+    if (state->map.trig_l) {
+        settings_scale_trigger(&state->profile.trigger_l, &state->gp_report.trigger_l);
+    }
+    if (state->map.trig_r) {
+        settings_scale_trigger(&state->profile.trigger_r, &state->gp_report.trigger_r);
+    }
     if (state->map.joy_l) {
         settings_scale_joysticks(&state->profile.joystick_l, &state->gp_report.joystick_lx, 
                                  &state->gp_report.joystick_ly);
@@ -107,8 +107,7 @@ static void xid_gp_report_received(uint8_t index, usbh_periph_t subtype, uint8_t
                                  &state->gp_report.joystick_ry);
     }
 
-    usb_host_driver_pad_cb(index, &state->gp_report, GAMEPAD_FLAG_IN_PAD | GAMEPAD_FLAG_IN_PAD_ANALOG);
-
+    usb_host_driver_pad_cb(index, &state->gp_report);
     memcpy(&state->prev_report_in, report, sizeof(xboxog_gp_report_in_t));
     tuh_hxx_receive_report(daddr, itf_num);
 }

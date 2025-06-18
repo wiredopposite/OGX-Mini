@@ -153,6 +153,7 @@ static bool hub_ctrl_xfer_cb(usbd_handle_t* handle, const usb_ctrl_req_t* req) {
         default:
             break;
         }
+        break;
     case USB_REQ_TYPE_CLASS:
         switch (req->bRequest) {
         case USB_REQ_STD_SET_FEATURE:

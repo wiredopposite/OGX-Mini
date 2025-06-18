@@ -261,6 +261,46 @@ static const usb_desc_xid_t XBSB_DESC_XID = {
     .wAlternateProductIds[3] = 0xFFFF
 };
 
+static const xbsb_report_in_t XBOXOG_SB_CAPABILITIES_IN = {
+    .zero          = 0,
+    .bLength       = sizeof(xbsb_report_in_t),
+    .dButtons      = { 0xFF, 0XFF, 0xFF },
+    .aimingX       = 0xFF,
+    .aimingY       = 0xFF,
+    .rotationLever = 0xFF,
+    .sightChangeX  = 0xFF,
+    .sightChangeY  = 0xFF,
+    .leftPedal     = 0xFF,
+    .middlePedal   = 0xFF,
+    .rightPedal    = 0xFF,
+    .tunerDial     = 0xFF,
+    .gearLever     = 0xFF
+};
+
+static const xbsb_report_out_t XBOXOG_SB_CAPABILITIES_OUT = {\
+    .zero                                 = 0,
+    .bLength                              = sizeof(xbsb_report_out_t),
+    .CockpitHatch_EmergencyEject          = 0xFF,
+    .Start_Ignition                       = 0xFF,
+    .MapZoomInOut_OpenClose               = 0xFF,
+    .SubMonitorModeSelect_ModeSelect      = 0xFF,
+    .MainMonitorZoomOut_MainMonitorZoomIn = 0xFF,
+    .Manipulator_ForecastShootingSystem   = 0xFF,
+    .Washing_LineColorChange              = 0xFF,
+    .Chaff_Extinguisher                   = 0xFF,
+    .Override_TankDetach                  = 0xFF,
+    .F1_NightScope                        = 0xFF,
+    .F3_F2                                = 0xFF,
+    .SubWeaponControl_MainWeaponControl   = 0xFF,
+    .Comm1_MagazineChange                 = 0xFF,
+    .Comm3_Comm2                          = 0xFF,
+    .Comm5_Comm4                          = 0xFF,
+    .GearR_                               = 0xFF,
+    .Gear1_GearN                          = 0xFF,
+    .Gear3_Gear2                          = 0xFF,
+    .Gear5_Gear4                          = 0xFF
+};
+
 #ifdef __cplusplus
 }
 #endif

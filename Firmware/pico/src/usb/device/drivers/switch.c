@@ -123,36 +123,36 @@ static usbd_handle_t* switch_init(const usb_device_driver_cfg_t* cfg) {
     return handle;
 }
 
-static void switch_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad, uint32_t flags) {
-    if (!usbd_ep_ready(handle, SWITCH_EPADDR_IN) || !(flags & GAMEPAD_FLAG_IN_PAD)) {
+static void switch_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad) {
+    if (!usbd_ep_ready(handle, SWITCH_EPADDR_IN) || !(pad->flags & GAMEPAD_FLAG_PAD)) {
         return;
     }
     switch_state_t* sw = switch_state[handle->port];
     memset(&sw->report_in.buttons, 0, sizeof(sw->report_in.buttons));
 
     switch (pad->dpad) {
-    case GAMEPAD_D_UP:      
+    case GAMEPAD_DPAD_UP:      
         sw->report_in.dpad = SWITCH_DPAD_UP;     
         break;
-    case GAMEPAD_D_DOWN:    
+    case GAMEPAD_DPAD_DOWN:    
         sw->report_in.dpad = SWITCH_DPAD_DOWN;   
         break;
-    case GAMEPAD_D_LEFT:    
+    case GAMEPAD_DPAD_LEFT:    
         sw->report_in.dpad = SWITCH_DPAD_LEFT;   
         break;
-    case GAMEPAD_D_RIGHT:   
+    case GAMEPAD_DPAD_RIGHT:   
         sw->report_in.dpad = SWITCH_DPAD_RIGHT;  
         break;
-    case GAMEPAD_D_UP | GAMEPAD_D_LEFT:    
+    case GAMEPAD_DPAD_UP | GAMEPAD_DPAD_LEFT:    
         sw->report_in.dpad = SWITCH_DPAD_UP_LEFT; 
         break;
-    case GAMEPAD_D_UP | GAMEPAD_D_RIGHT:   
+    case GAMEPAD_DPAD_UP | GAMEPAD_DPAD_RIGHT:   
         sw->report_in.dpad = SWITCH_DPAD_UP_RIGHT; 
         break;
-    case GAMEPAD_D_DOWN | GAMEPAD_D_LEFT:    
+    case GAMEPAD_DPAD_DOWN | GAMEPAD_DPAD_LEFT:    
         sw->report_in.dpad = SWITCH_DPAD_DOWN_LEFT; 
         break;
-    case GAMEPAD_D_DOWN | GAMEPAD_D_RIGHT:   
+    case GAMEPAD_DPAD_DOWN | GAMEPAD_DPAD_RIGHT:   
         sw->report_in.dpad = SWITCH_DPAD_DOWN_RIGHT; 
         break;
     default:    
@@ -160,18 +160,18 @@ static void switch_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad, uint
         break;
     }
 
-    if (pad->buttons & GAMEPAD_BTN_START)  { sw->report_in.buttons |= SWITCH_BUTTON_PLUS; }
-    if (pad->buttons & GAMEPAD_BTN_BACK)   { sw->report_in.buttons |= SWITCH_BUTTON_MINUS; }
-    if (pad->buttons & GAMEPAD_BTN_L3)     { sw->report_in.buttons |= SWITCH_BUTTON_L3; }
-    if (pad->buttons & GAMEPAD_BTN_R3)     { sw->report_in.buttons |= SWITCH_BUTTON_R3; }
-    if (pad->buttons & GAMEPAD_BTN_LB)     { sw->report_in.buttons |= SWITCH_BUTTON_L; }
-    if (pad->buttons & GAMEPAD_BTN_RB)     { sw->report_in.buttons |= SWITCH_BUTTON_R; }
-    if (pad->buttons & GAMEPAD_BTN_A)      { sw->report_in.buttons |= SWITCH_BUTTON_B; }
-    if (pad->buttons & GAMEPAD_BTN_B)      { sw->report_in.buttons |= SWITCH_BUTTON_A; }
-    if (pad->buttons & GAMEPAD_BTN_X)      { sw->report_in.buttons |= SWITCH_BUTTON_Y; }
-    if (pad->buttons & GAMEPAD_BTN_Y)      { sw->report_in.buttons |= SWITCH_BUTTON_X; }
-    if (pad->buttons & GAMEPAD_BTN_SYS)    { sw->report_in.buttons |= SWITCH_BUTTON_HOME; }
-    if (pad->buttons & GAMEPAD_BTN_MISC)   { sw->report_in.buttons |= SWITCH_BUTTON_CAPTURE; }
+    if (pad->buttons & GAMEPAD_BUTTON_START)  { sw->report_in.buttons |= SWITCH_BUTTON_PLUS; }
+    if (pad->buttons & GAMEPAD_BUTTON_BACK)   { sw->report_in.buttons |= SWITCH_BUTTON_MINUS; }
+    if (pad->buttons & GAMEPAD_BUTTON_L3)     { sw->report_in.buttons |= SWITCH_BUTTON_L3; }
+    if (pad->buttons & GAMEPAD_BUTTON_R3)     { sw->report_in.buttons |= SWITCH_BUTTON_R3; }
+    if (pad->buttons & GAMEPAD_BUTTON_LB)     { sw->report_in.buttons |= SWITCH_BUTTON_L; }
+    if (pad->buttons & GAMEPAD_BUTTON_RB)     { sw->report_in.buttons |= SWITCH_BUTTON_R; }
+    if (pad->buttons & GAMEPAD_BUTTON_A)      { sw->report_in.buttons |= SWITCH_BUTTON_B; }
+    if (pad->buttons & GAMEPAD_BUTTON_B)      { sw->report_in.buttons |= SWITCH_BUTTON_A; }
+    if (pad->buttons & GAMEPAD_BUTTON_X)      { sw->report_in.buttons |= SWITCH_BUTTON_Y; }
+    if (pad->buttons & GAMEPAD_BUTTON_Y)      { sw->report_in.buttons |= SWITCH_BUTTON_X; }
+    if (pad->buttons & GAMEPAD_BUTTON_SYS)    { sw->report_in.buttons |= SWITCH_BUTTON_HOME; }
+    if (pad->buttons & GAMEPAD_BUTTON_MISC)   { sw->report_in.buttons |= SWITCH_BUTTON_CAPTURE; }
 
     if (pad->trigger_l) { sw->report_in.buttons |= SWITCH_BUTTON_ZL; }
     if (pad->trigger_r) { sw->report_in.buttons |= SWITCH_BUTTON_ZR; }

@@ -70,6 +70,8 @@ uint32_t WS2812::convertData(uint32_t rgbw) {
             case WHITE:
                 result |= (rgbw & 0xFF000000) >> 24;
                 break;
+            default:
+                break;
         }
         result <<= 8;
     }

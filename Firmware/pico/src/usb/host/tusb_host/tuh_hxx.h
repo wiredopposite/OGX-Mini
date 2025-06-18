@@ -2,8 +2,9 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include "common/tusb_types.h"
-#include "usb/host/host.h"
+#include "usb/host/host_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -72,6 +73,16 @@ bool tuh_hxx_ctrl_xfer(uint8_t daddr, const tusb_control_request_t* request, uin
  * @return true if the request was queued successfully, false otherwise.
  */
 bool tuh_hxx_receive_report(uint8_t daddr, uint8_t itf_num);
+
+/**
+ * @brief Check if the USB device is ready to send a report.
+ * 
+ * @param daddr The device address.
+ * @param itf_num The interface number.
+ * 
+ * @return true if the device is ready to send a report, false otherwise.
+ */
+bool tuh_hxx_send_report_ready(uint8_t daddr, uint8_t itf_num);
 
 /**
  * @brief Send a report to the USB device with a callback.

@@ -54,7 +54,7 @@ extern const usb_host_driver_t USBH_DRIVER_PS5;
 extern const usb_host_driver_t USBH_DRIVER_HID;
 
 void usb_host_driver_connect_cb(uint8_t index, usbh_type_t type, bool connected);
-void usb_host_driver_pad_cb(uint8_t index, const gamepad_pad_t* pad, uint32_t flags);
+void usb_host_driver_pad_cb(uint8_t index, const gamepad_pad_t* pad);
 void usb_host_driver_audio_cb(uint8_t index, const gamepad_pcm_out_t* pcm);
 
 #ifdef __cplusplus

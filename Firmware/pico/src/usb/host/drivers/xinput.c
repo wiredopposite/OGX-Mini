@@ -1,8 +1,9 @@
 #include <string.h>
 #include <pico/time.h>
-#include "tusb.h"
-#include "class/hid/hid.h"
+// #include "tusb.h"
+// #include "class/hid/hid.h"
 
+#include "log/log.h"
 #include "gamepad/gamepad.h"
 #include "gamepad/range.h"
 #include "settings/settings.h"
@@ -32,7 +33,7 @@ typedef struct {
     uint8_t             buf_out[32U] __attribute__((aligned(4)));
     user_profile_t      profile;
     gamepad_pad_t       gp_report;
-    gamepad_pad_t       prev_gp_report;
+    xinput_report_in_t  prev_report_in;
     // volatile uint8_t    chat_keepalive_count;
     // volatile bool       chat_keepalive_pending;
     // repeating_timer_t   chatpad_timer;
@@ -74,29 +75,34 @@ static void xinput_mounted(usbh_type_t type, uint8_t index, uint8_t daddr, uint8
 
 static void xinput_report_received(uint8_t index, usbh_periph_t subtype, uint8_t daddr, 
                                    uint8_t itf_num, const uint8_t* data, uint16_t len) {
-    (void)subtype;
-
+    if (subtype != PERIPH_GAMEPAD) { // Add chatpad support later
+        tuh_hxx_receive_report(daddr, itf_num);
+        return;
+    }
     xinput_state_t* xin = xin_state[index];
-    gamepad_pad_t* gp_report = &xin->gp_report;
     const xinput_report_in_t* report_in = (const xinput_report_in_t*)data;
+    if (memcmp(report_in, &xin->prev_report_in, sizeof(xinput_report_in_t)) == 0) {
+        tuh_hxx_receive_report(daddr, itf_num);
+        return;
+    }
+    gamepad_pad_t* gp_report = &xin->gp_report;
     memset(gp_report, 0, sizeof(gamepad_pad_t));
 
-    if (report_in->buttons & XINPUT_BUTTON_UP)    { gp_report->dpad |= GP_BIT8(xin->profile.d_up); }
-    if (report_in->buttons & XINPUT_BUTTON_DOWN)  { gp_report->dpad |= GP_BIT8(xin->profile.d_down); }
-    if (report_in->buttons & XINPUT_BUTTON_LEFT)  { gp_report->dpad |= GP_BIT8(xin->profile.d_left); }
-    if (report_in->buttons & XINPUT_BUTTON_RIGHT) { gp_report->dpad |= GP_BIT8(xin->profile.d_right); }
-
-    if (report_in->buttons & XINPUT_BUTTON_START)  { gp_report->buttons |= GP_BIT16(xin->profile.btn_start); }
-    if (report_in->buttons & XINPUT_BUTTON_BACK)   { gp_report->buttons |= GP_BIT16(xin->profile.btn_back); }
-    if (report_in->buttons & XINPUT_BUTTON_L3)     { gp_report->buttons |= GP_BIT16(xin->profile.btn_l3); }
-    if (report_in->buttons & XINPUT_BUTTON_R3)     { gp_report->buttons |= GP_BIT16(xin->profile.btn_r3); }
-    if (report_in->buttons & XINPUT_BUTTON_LB)     { gp_report->buttons |= GP_BIT16(xin->profile.btn_lb); }
-    if (report_in->buttons & XINPUT_BUTTON_RB)     { gp_report->buttons |= GP_BIT16(xin->profile.btn_rb); }
-    if (report_in->buttons & XINPUT_BUTTON_HOME)   { gp_report->buttons |= GP_BIT16(xin->profile.btn_sys); }
-    if (report_in->buttons & XINPUT_BUTTON_A)      { gp_report->buttons |= GP_BIT16(xin->profile.btn_a); }
-    if (report_in->buttons & XINPUT_BUTTON_B)      { gp_report->buttons |= GP_BIT16(xin->profile.btn_b); }
-    if (report_in->buttons & XINPUT_BUTTON_X)      { gp_report->buttons |= GP_BIT16(xin->profile.btn_x); }
-    if (report_in->buttons & XINPUT_BUTTON_Y)      { gp_report->buttons |= GP_BIT16(xin->profile.btn_y); }
+    if (report_in->buttons & XINPUT_BUTTON_UP)    { gp_report->dpad |= GP_BIT(xin->profile.btn_up); }
+    if (report_in->buttons & XINPUT_BUTTON_DOWN)  { gp_report->dpad |= GP_BIT(xin->profile.btn_down); }
+    if (report_in->buttons & XINPUT_BUTTON_LEFT)  { gp_report->dpad |= GP_BIT(xin->profile.btn_left); }
+    if (report_in->buttons & XINPUT_BUTTON_RIGHT) { gp_report->dpad |= GP_BIT(xin->profile.btn_right); }
+    if (report_in->buttons & XINPUT_BUTTON_START)  { gp_report->buttons |= GP_BIT(xin->profile.btn_start); }
+    if (report_in->buttons & XINPUT_BUTTON_BACK)   { gp_report->buttons |= GP_BIT(xin->profile.btn_back); }
+    if (report_in->buttons & XINPUT_BUTTON_L3)     { gp_report->buttons |= GP_BIT(xin->profile.btn_l3); }
+    if (report_in->buttons & XINPUT_BUTTON_R3)     { gp_report->buttons |= GP_BIT(xin->profile.btn_r3); }
+    if (report_in->buttons & XINPUT_BUTTON_LB)     { gp_report->buttons |= GP_BIT(xin->profile.btn_lb); }
+    if (report_in->buttons & XINPUT_BUTTON_RB)     { gp_report->buttons |= GP_BIT(xin->profile.btn_rb); }
+    if (report_in->buttons & XINPUT_BUTTON_HOME)   { gp_report->buttons |= GP_BIT(xin->profile.btn_sys); }
+    if (report_in->buttons & XINPUT_BUTTON_A)      { gp_report->buttons |= GP_BIT(xin->profile.btn_a); }
+    if (report_in->buttons & XINPUT_BUTTON_B)      { gp_report->buttons |= GP_BIT(xin->profile.btn_b); }
+    if (report_in->buttons & XINPUT_BUTTON_X)      { gp_report->buttons |= GP_BIT(xin->profile.btn_x); }
+    if (report_in->buttons & XINPUT_BUTTON_Y)      { gp_report->buttons |= GP_BIT(xin->profile.btn_y); }
 
     gp_report->trigger_l = report_in->trigger_l;
     gp_report->trigger_r = report_in->trigger_r;
@@ -120,10 +126,11 @@ static void xinput_report_received(uint8_t index, usbh_periph_t subtype, uint8_t
     if (xin->map.trig_r) {
         settings_scale_trigger(&xin->profile.trigger_r, &gp_report->trigger_r);
     }
-    if (memcmp(&xin->prev_gp_report, gp_report, sizeof(gamepad_pad_t)) != 0) {
-        usb_host_driver_pad_cb(index, gp_report, 0);
-        memcpy(&xin->prev_gp_report, gp_report, sizeof(gamepad_pad_t));
-    }
+
+    gp_report->flags = GAMEPAD_FLAG_PAD;
+
+    usb_host_driver_pad_cb(index, gp_report);
+    memcpy(&xin->prev_report_in, report_in, sizeof(xinput_report_in_t));
     tuh_hxx_receive_report(daddr, itf_num);
 }
 
@@ -133,8 +140,8 @@ static void xinput_send_rumble(uint8_t index, uint8_t daddr, uint8_t itf_num, co
     memset(report_out, 0, sizeof(xinput_report_out_t));
     report_out->report_id = XINPUT_REPORT_ID_OUT_RUMBLE;
     report_out->length = sizeof(xinput_report_out_t);
-    report_out->rumble_l = (rumble->l / 255U) * 100U;
-    report_out->rumble_r = (rumble->r / 255U) * 100U;
+    report_out->rumble_l = rumble->l;
+    report_out->rumble_r = rumble->r;
     tuh_hxx_send_report(daddr, itf_num, xin->buf_out, sizeof(xinput_report_out_t));
 }
 

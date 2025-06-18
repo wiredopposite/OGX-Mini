@@ -159,6 +159,7 @@ static bool xb_hub_ctrl_xfer_cb(usbd_handle_t* handle, const usb_ctrl_req_t* req
         default:
             break;
         }
+        break;
     case USB_REQ_TYPE_CLASS:
         switch (req->bRequest) {
         case USB_REQ_STD_SET_FEATURE:
@@ -282,18 +283,19 @@ static usbd_handle_t* xboxog_hub_init(const usb_device_driver_cfg_t* config) {
     return hub_handle;
 }
 
-static void xboxog_hub_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad, uint32_t flags) {
+static void xboxog_hub_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad) {
+    (void)handle;
     if ((HUB_PORT_GP < USBD_DEVICES_MAX) &&
         (xb_hub_state->devices[HUB_PORT_GP].handle != NULL)) {
         xb_hub_state->devices[HUB_PORT_GP].driver->set_pad(
             xb_hub_state->devices[HUB_PORT_GP].handle,
-            pad,
-            flags
+            pad
         );
     }
 }
 
 static void xboxog_hub_set_audio(usbd_handle_t* handle, const gamepad_pcm_out_t* pcm_out) {
+    (void)handle;
     if ((HUB_PORT_XBLC < USBD_DEVICES_MAX) &&
         (xb_hub_state->devices[HUB_PORT_XBLC].handle != NULL)) {
         xb_hub_state->devices[HUB_PORT_XBLC].driver->set_audio(

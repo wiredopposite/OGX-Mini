@@ -11,62 +11,22 @@
 #define DEFAULT_SENSITIVITY ((uint16_t)400)
 #define DEFAULT_DEADZONE    ((int16_t)7500)
 
-#define XBSB_REPORT_IN_CAPABILITIES {               \
-    .zero          = 0,                             \
-    .bLength       = sizeof(xbsb_report_in_t),      \
-    .dButtons      = { 0xFF, 0XFF, 0xFF },          \
-    .aimingX       = 0xFF,                          \
-    .aimingY       = 0xFF,                          \
-    .rotationLever = 0xFF,                          \
-    .sightChangeX  = 0xFF,                          \
-    .sightChangeY  = 0xFF,                          \
-    .leftPedal     = 0xFF,                          \
-    .middlePedal   = 0xFF,                          \
-    .rightPedal    = 0xFF,                          \
-    .tunerDial     = 0xFF,                          \
-    .gearLever     = 0xFF                           \
-}
-
-#define XBSB_REPORT_OUT_CAPABILITIES {                                  \
-    .zero                                 = 0,                          \
-    .bLength                              = sizeof(xbsb_report_out_t),  \
-    .CockpitHatch_EmergencyEject          = 0xFF,                       \
-    .Start_Ignition                       = 0xFF,                       \
-    .MapZoomInOut_OpenClose               = 0xFF,                       \
-    .SubMonitorModeSelect_ModeSelect      = 0xFF,                       \
-    .MainMonitorZoomOut_MainMonitorZoomIn = 0xFF,                       \
-    .Manipulator_ForecastShootingSystem   = 0xFF,                       \
-    .Washing_LineColorChange              = 0xFF,                       \
-    .Chaff_Extinguisher                   = 0xFF,                       \
-    .Override_TankDetach                  = 0xFF,                       \
-    .F1_NightScope                        = 0xFF,                       \
-    .F3_F2                                = 0xFF,                       \
-    .SubWeaponControl_MainWeaponControl   = 0xFF,                       \
-    .Comm1_MagazineChange                 = 0xFF,                       \
-    .Comm3_Comm2                          = 0xFF,                       \
-    .Comm5_Comm4                          = 0xFF,                       \
-    .GearR_                               = 0xFF,                       \
-    .Gear1_GearN                          = 0xFF,                       \
-    .Gear3_Gear2                          = 0xFF,                       \
-    .Gear5_Gear4                          = 0xFF                        \
-}
-
 typedef struct {
-    uint16_t gp_btn;
+    uint32_t gp_btn;
     uint16_t sb_btn;
     uint8_t  sb_btn_off;
 } xbsb_button_map_t;
 
 static const xbsb_button_map_t GP_MAP[] = {
-    { GAMEPAD_BTN_START, XBSB_BTN0_START,              0 },
-    { GAMEPAD_BTN_LB,    XBSB_BTN0_RIGHTJOYFIRE,       0 },
-    { GAMEPAD_BTN_R3,    XBSB_BTN0_RIGHTJOYLOCKON,     0 },
-    { GAMEPAD_BTN_B,     XBSB_BTN0_RIGHTJOYLOCKON,     0 },
-    { GAMEPAD_BTN_RB,    XBSB_BTN0_RIGHTJOYMAINWEAPON, 0 },
-    { GAMEPAD_BTN_A,     XBSB_BTN0_RIGHTJOYMAINWEAPON, 0 },
-    { GAMEPAD_BTN_SYS,   XBSB_BTN0_EJECT,              0 },
-    { GAMEPAD_BTN_L3,    XBSB_BTN2_LEFTJOYSIGHTCHANGE, 2 },
-    { GAMEPAD_BTN_Y,     XBSB_BTN1_CHAFF,              1 }
+    { GAMEPAD_BUTTON_START, XBSB_BTN0_START,              0 },
+    { GAMEPAD_BUTTON_LB,    XBSB_BTN0_RIGHTJOYFIRE,       0 },
+    { GAMEPAD_BUTTON_R3,    XBSB_BTN0_RIGHTJOYLOCKON,     0 },
+    { GAMEPAD_BUTTON_B,     XBSB_BTN0_RIGHTJOYLOCKON,     0 },
+    { GAMEPAD_BUTTON_RB,    XBSB_BTN0_RIGHTJOYMAINWEAPON, 0 },
+    { GAMEPAD_BUTTON_A,     XBSB_BTN0_RIGHTJOYMAINWEAPON, 0 },
+    { GAMEPAD_BUTTON_SYS,   XBSB_BTN0_EJECT,              0 },
+    { GAMEPAD_BUTTON_L3,    XBSB_BTN2_LEFTJOYSIGHTCHANGE, 2 },
+    { GAMEPAD_BUTTON_Y,     XBSB_BTN1_CHAFF,              1 }
 };
 
 static const xbsb_button_map_t CHATPAD_MAP[] = {
@@ -158,7 +118,7 @@ static void xbsb_deinit_cb(usbd_handle_t *handle) { (void)handle; }
 
 static bool xbsb_get_desc_cb(usbd_handle_t *handle, const usb_ctrl_req_t *req) {
     const uint8_t type  = req->wValue & 0xFF;
-    const uint8_t index = req->wValue >> 8;
+    // const uint8_t index = req->wValue >> 8;
     switch (type) {
     case USB_DTYPE_DEVICE:
         return usbd_send_ctrl_resp(handle, &XBSB_DESC_DEVICE,
@@ -180,9 +140,9 @@ static bool xbsb_ctrl_xfer_cb(usbd_handle_t *handle,
     xbsb_state_t *xbsb = xbsb_state[handle->port];
     switch (req->bmRequestType & (USB_REQ_TYPE_Msk | USB_REQ_RECIP_Msk)) {
     case (USB_REQ_TYPE_CLASS | USB_REQ_RECIP_INTERFACE): {
-        const uint8_t itf_num     = req->wIndex & 0xFF;
-        const uint8_t report_id   = req->wValue >> 8;
-        const uint8_t report_type = req->wValue & 0xFF;
+        // const uint8_t itf_num     = req->wIndex & 0xFF;
+        // const uint8_t report_id   = req->wValue >> 8;
+        // const uint8_t report_type = req->wValue & 0xFF;
         switch (req->bRequest) {
         case USB_REQ_HID_GET_REPORT:
             return usbd_send_ctrl_resp(handle, &xbsb->report_in,
@@ -197,16 +157,12 @@ static bool xbsb_ctrl_xfer_cb(usbd_handle_t *handle,
         if (req->bRequest == USB_REQ_XID_GET_CAPABILITIES) {
             const uint8_t report_id = req->wValue >> 8;
             switch (report_id) {
-            case USB_XID_REPORT_CAPABILITIES_IN: {
-                xbsb_report_in_t report_in = XBSB_REPORT_IN_CAPABILITIES;
-                return usbd_send_ctrl_resp(handle, &report_in,
-                                           sizeof(report_in), NULL);
-            }
-            case USB_XID_REPORT_CAPABILITIES_OUT: {
-                xbsb_report_out_t report_out = XBSB_REPORT_OUT_CAPABILITIES;
-                return usbd_send_ctrl_resp(handle, &report_out,
-                                           sizeof(report_out), NULL);
-            }
+            case USB_XID_REPORT_CAPABILITIES_IN: 
+                return usbd_send_ctrl_resp(handle, &XBOXOG_SB_CAPABILITIES_IN,
+                                           sizeof(XBOXOG_SB_CAPABILITIES_IN), NULL);
+            case USB_XID_REPORT_CAPABILITIES_OUT: 
+                return usbd_send_ctrl_resp(handle, &XBOXOG_SB_CAPABILITIES_OUT,
+                                           sizeof(XBOXOG_SB_CAPABILITIES_OUT), NULL);
             default:
                 break;
             }
@@ -275,7 +231,7 @@ static usbd_handle_t *xboxog_sb_init(const usb_device_driver_cfg_t *cfg) {
     return handle;
 }
 
-static void xboxog_sb_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad, uint32_t flags) {
+static void xboxog_sb_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad) {
     if (!usbd_ep_ready(handle, XBSB_EPADDR_IN)) {
         return;
     }
@@ -322,7 +278,7 @@ static void xboxog_sb_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad, u
         xbsb->shift_pressed = false;
     }
 
-    if (pad->buttons & GAMEPAD_BTN_X) {
+    if (pad->buttons & GAMEPAD_BUTTON_X) {
         if (xbsb->report_out.Chaff_Extinguisher & 0x0F) {
             xbsb->report_in.dButtons[1] |= XBSB_BTN1_EXTINGUISHER;
         }
@@ -336,21 +292,21 @@ static void xboxog_sb_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad, u
     }
 
     if (chatpad_pressed(pad->chatpad, XINPUT_KEYCODE_MESSENGER) ||
-        pad->buttons & GAMEPAD_BTN_BACK) {
+        pad->buttons & GAMEPAD_BUTTON_BACK) {
         for (uint8_t i = 0; i < ARRAY_SIZE(CHATPAD_MAP_ALT1); i++) {
             if (chatpad_pressed(pad->chatpad, CHATPAD_MAP_ALT1[i].gp_btn)) {
                 xbsb->report_in.dButtons[CHATPAD_MAP_ALT1[i].sb_btn_off] |= CHATPAD_MAP_ALT1[i].sb_btn;
             }
         }
 
-        if (pad->dpad & GAMEPAD_D_UP && xbsb->dpad_reset) {
+        if (pad->dpad & GAMEPAD_DPAD_UP && xbsb->dpad_reset) {
             xbsb->report_in.tunerDial = (xbsb->report_in.tunerDial + 1) % 16;
             xbsb->dpad_reset = false;
-        } else if (pad->dpad & GAMEPAD_D_DOWN && xbsb->dpad_reset) {
+        } else if (pad->dpad & GAMEPAD_DPAD_DOWN && xbsb->dpad_reset) {
             xbsb->report_in.tunerDial = (xbsb->report_in.tunerDial + 15) % 16;
             xbsb->dpad_reset = false;
-        } else if (!(pad->dpad & GAMEPAD_D_DOWN) &&
-                   !(pad->dpad & GAMEPAD_D_UP)) {
+        } else if (!(pad->dpad & GAMEPAD_DPAD_DOWN) &&
+                   !(pad->dpad & GAMEPAD_DPAD_UP)) {
             xbsb->dpad_reset = true;
         }
     } else if (chatpad_pressed(pad->chatpad, XINPUT_KEYCODE_ORANGE)) {
@@ -360,21 +316,21 @@ static void xboxog_sb_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad, u
             }
         }
 
-        // if (!(gp->dpad & GAMEPAD_D_LEFT) && !(gp->dpad &
-        // GAMEPAD_D_RIGHT))
+        // if (!(gp->dpad & GAMEPAD_DPAD_LEFT) && !(gp->dpad &
+        // GAMEPAD_DPAD_RIGHT))
         // {
-        if (pad->dpad & GAMEPAD_D_UP && xbsb->dpad_reset) {
+        if (pad->dpad & GAMEPAD_DPAD_UP && xbsb->dpad_reset) {
             if (xbsb->report_in.gearLever < XBSB_GEAR_5) {
                 xbsb->report_in.gearLever++;
             }
             xbsb->dpad_reset = false;
-        } else if (pad->dpad & GAMEPAD_D_DOWN && xbsb->dpad_reset) {
+        } else if (pad->dpad & GAMEPAD_DPAD_DOWN && xbsb->dpad_reset) {
             if (xbsb->report_in.gearLever > XBSB_GEAR_R) {
                 xbsb->report_in.gearLever--;
             }
             xbsb->dpad_reset = false;
-        } else if (!(pad->dpad & GAMEPAD_D_DOWN) &&
-                   !(pad->dpad & GAMEPAD_D_UP)) {
+        } else if (!(pad->dpad & GAMEPAD_DPAD_DOWN) &&
+                   !(pad->dpad & GAMEPAD_DPAD_UP)) {
             xbsb->dpad_reset = true;
         }
         // }
@@ -388,9 +344,9 @@ static void xboxog_sb_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad, u
         chatpad_pressed(pad->chatpad, XINPUT_KEYCODE_BACK) ? 0xFF00 : 0x0000;
     xbsb->report_in.rotationLever =
         chatpad_pressed(pad->chatpad, XINPUT_KEYCODE_MESSENGER) 
-        ? 0 : (pad->buttons & GAMEPAD_BTN_BACK)                   
-            ? 0 : (pad->dpad & GAMEPAD_D_LEFT)  
-                ? R_INT16_MIN : (pad->dpad & GAMEPAD_D_RIGHT) 
+        ? 0 : (pad->buttons & GAMEPAD_BUTTON_BACK)                   
+            ? 0 : (pad->dpad & GAMEPAD_DPAD_LEFT)  
+                ? R_INT16_MIN : (pad->dpad & GAMEPAD_DPAD_RIGHT) 
                     ? R_INT16_MAX : 0;
 
     xbsb->report_in.sightChangeX = pad->joystick_lx;
@@ -419,7 +375,7 @@ static void xboxog_sb_set_pad(usbd_handle_t* handle, const gamepad_pad_t* pad, u
         xbsb->vmouse_y = 0;
     }
 
-    if (pad->buttons & GAMEPAD_BTN_L3) {
+    if (pad->buttons & GAMEPAD_BUTTON_L3) {
         if ((time_us_32() / 1000) - xbsb->aim_reset_timer > 500) {
             xbsb->vmouse_x = XBSB_AIMING_MID;
             xbsb->vmouse_y = XBSB_AIMING_MID;

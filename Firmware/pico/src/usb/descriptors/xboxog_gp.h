@@ -96,8 +96,8 @@ typedef struct __attribute__((packed)) {
     uint8_t b;
     uint8_t x;
     uint8_t y;
-    uint8_t white;
     uint8_t black;
+    uint8_t white;
     uint8_t trigger_l;
     uint8_t trigger_r;
     int16_t joystick_lx;
@@ -124,6 +124,32 @@ static const usb_desc_xid_t XBOXOG_GP_DESC_XID = {
     .bMaxInputReportSize = sizeof(xboxog_gp_report_in_t),
     .bMaxOutputReportSize = sizeof(xboxog_gp_report_out_t),
     .wAlternateProductIds = {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF}
+};
+
+static const xboxog_gp_report_in_t XBOXOG_GP_CAPABILITIES_IN = {
+    .report_id = 0x00,
+    .length = sizeof(xboxog_gp_report_in_t),
+    .buttons = 0xFF,
+    .reserved0 = 0x00,
+    .a = 0xFF,
+    .b = 0xFF,
+    .x = 0xFF,
+    .y = 0xFF,
+    .black = 0xFF,
+    .white = 0xFF,
+    .trigger_l = 0xFF,
+    .trigger_r = 0xFF,
+    .joystick_lx = 0xFF,
+    .joystick_ly = 0xFF,
+    .joystick_rx = 0xFF,
+    .joystick_ry = 0xFF
+};
+
+static const xboxog_gp_report_out_t XBOXOG_GP_CAPABILITIES_OUT = {            
+    .report_id = 0x00,
+    .length = sizeof(xboxog_gp_report_out_t),
+    .rumble_l = 0xFFFF,
+    .rumble_r = 0xFFFF,
 };
 
 #ifdef __cplusplus

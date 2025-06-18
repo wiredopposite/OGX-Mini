@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-#define USBD_STATUS_BUF_SIZE 0x400U
+#define USBD_STATUS_BUF_SIZE 0x280U
 
 typedef union {
     struct {
@@ -26,7 +26,7 @@ typedef union {
 
 typedef usbd_handle_t* (*driver_init_t)(const usb_device_driver_cfg_t* config);
 typedef void (*driver_deinit_t)(usbd_handle_t* handle);
-typedef void (*driver_set_pad_t)(usbd_handle_t* handle, const gamepad_pad_t* pad, uint32_t flags);
+typedef void (*driver_set_pad_t)(usbd_handle_t* handle, const gamepad_pad_t* pad);
 typedef void (*driver_set_audio_t)(usbd_handle_t* handle, const gamepad_pcm_out_t* pcm_out);
 typedef void (*driver_task_t)(usbd_handle_t* handle);
 

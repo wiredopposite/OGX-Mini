@@ -1,0 +1,33 @@
+#pragma once
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef enum {
+    USBH_TYPE_NONE = 0,
+    USBH_TYPE_XID,
+    USBH_TYPE_XBLC,  
+    USBH_TYPE_XGIP,
+    USBH_TYPE_XGIP_AUDIO,
+    USBH_TYPE_XGIP_CHATPAD,
+    USBH_TYPE_XINPUT,
+    USBH_TYPE_XINPUT_AUDIO,
+    USBH_TYPE_XINPUT_CHATPAD,
+    USBH_TYPE_XINPUT_WL,
+    USBH_TYPE_XINPUT_WL_AUDIO,
+    USBH_TYPE_HID_GENERIC,
+    USBH_TYPE_HID_SWITCH_PRO,
+    USBH_TYPE_HID_SWITCH,
+    USBH_TYPE_HID_PSCLASSIC,
+    USBH_TYPE_HID_DINPUT,
+    USBH_TYPE_HID_PS3,
+    USBH_TYPE_HID_PS4,
+    USBH_TYPE_HID_PS5,
+    USBH_TYPE_HID_N64,
+    USBH_TYPE_COUNT
+} usbh_type_t;
+
+#ifdef __cplusplus
+}
+#endif

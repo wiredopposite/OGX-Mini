@@ -15,14 +15,14 @@
 #define SPI_FIFO_DEPTH ((size_t)8U)
 
 typedef struct {
-    volatile bool       connected[GAMEPADS_MAX];
-    uint8_t             rx[WIRED_MAX_SIZE] __attribute__((aligned(4)));
-    uint8_t             tx[WIRED_MAX_SIZE] __attribute__((aligned(4)));
-    uint8_t             mt_tx[WIRED_MAX_SIZE] __attribute__((aligned(4)));
-    ring_wired_t        ring_wired;
-    bt_connect_cb_t     connect_cb;
-    bt_gamepad_cb_t     gamepad_cb;
-    bt_audio_cb_t       audio_cb;
+    volatile bool           connected[GAMEPADS_MAX];
+    uint8_t                 rx[WIRED_MAX_SIZE] __attribute__((aligned(4)));
+    uint8_t                 tx[WIRED_MAX_SIZE] __attribute__((aligned(4)));
+    uint8_t                 mt_tx[WIRED_MAX_SIZE] __attribute__((aligned(4)));
+    ring_wired_t            ring_wired;
+    gamepad_connect_cb_t    connect_cb;
+    gamepad_pad_cb_t        gamepad_cb;
+    gamepad_pcm_cb_t        audio_cb;
 } spi_state_t;
 
 static spi_state_t spi_state = {0};
@@ -94,7 +94,7 @@ void bluetooth_task(void) {
     }
 }
 
-bool bluetooth_init(bt_connect_cb_t connect_cb, bt_gamepad_cb_t gamepad_cb, bt_audio_cb_t audio_cb) {
+bool bluetooth_init(gamepad_connect_cb_t connect_cb, gamepad_pad_cb_t gamepad_cb, gamepad_pcm_cb_t pcm_cb) {
     led_init();
     
     memset(&spi_state, 0, sizeof(spi_state_t));

@@ -38,5 +38,9 @@ set(OGXM_BOARD_BLUETOOTH_USBH       6)
 
 set(GAMEPADS_MAX                    1)
 
+set(PICO_DEFAULT_UART               1)
+set(PICO_DEFAULT_UART_TX_PIN        4)
+set(PICO_DEFAULT_UART_RX_PIN        5)
+
 set(PICO_FLASH_SIZE_BYTES           2*1024*1024)
 set(PICO_PLATFORM                   rp2040)
