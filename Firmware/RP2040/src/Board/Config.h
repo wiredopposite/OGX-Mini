@@ -9,7 +9,8 @@
 #define ESP32_BLUERETRO_I2C 5
 #define EXTERNAL_4CH_I2C    6
 #define INTERNAL_4CH_I2C    7
-#define BOARDS_COUNT        8
+#define RP2350_ZERO         8
+#define BOARDS_COUNT        9
 
 #define SYSCLOCK_KHZ 240000
 
@@ -83,6 +84,11 @@
     #define MODE_SEL_PIN        21
     #define ESP_PROG_PIN        20 // ESP32 IO0
     #define ESP_RST_PIN         8  // ESP32 EN
+
+    #elif defined(CONFIG_OGXM_BOARD_RP2350_ZERO)
+    #define OGXM_BOARD          RP2350_ZERO
+    #define PIO_USB_DP_PIN      10 // DM = 11
+    #define RGB_PXL_PIN         16
 
     #if MAX_GAMEPADS > 1
         #undef MAX_GAMEPADS
