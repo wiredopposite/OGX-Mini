@@ -2,6 +2,7 @@
 #include "usbd/usbd.h"
 #include "usb/device/device_private.h"
 #if SD_CARD_ENABLED
+// #if 0
 
 #include <string.h>
 #include "common/usb_util.h"
@@ -12,7 +13,7 @@
 #include "usb/device/device.h"
 #include "log/log.h"
 
-#define MSC_BLOCK_SIZE 512U
+#define MSC_BLOCK_SIZE SD_BLOCK_SIZE
 
 #define TO_UINT32(p) ((uint32_t)((((uint8_t*)(p))[0] << 24) | (((uint8_t*)(p))[1] << 16) | (((uint8_t*)(p))[2] << 8) | ((uint8_t*)(p))[3]))
 #define TO_UINT16(p) ((uint16_t)((((uint8_t*)(p))[0] << 8) | ((uint8_t*)(p))[1]))
@@ -20,6 +21,7 @@
 #define SWAP32(x)   ((uint32_t)(((x) >> 24) | (((x) & 0x00FF0000) >> 8) | (((x) & 0x0000FF00) << 8) | ((x) << 24)))
 
 typedef struct {
+    usbd_handle_t* handle;
     bool ready;
     uint32_t block_count;
     usb_msc_csw_t csw;
@@ -35,7 +37,7 @@ typedef struct {
     uint8_t block_in[MSC_BLOCK_SIZE] __attribute__((aligned(4)));
     uint8_t ep_out[MSC_EPSIZE_OUT] __attribute__((aligned(4)));
 } msc_state_t;
-_Static_assert(sizeof(msc_state_t) <= USBD_STATUS_BUF_SIZE, "XBOXOG GP state size exceeds buffer size");
+// _Static_assert(sizeof(msc_state_t) <= USBD_STATUS_BUF_SIZE, "XBOXOG GP state size exceeds buffer size");
 
 typedef struct __attribute__((packed)) {
     uint8_t  opcode;         // 0x28 for READ(10), 0x2A for WRITE(10)
@@ -75,7 +77,7 @@ static const usb_msc_scsi_inquiry_data_t MSC_SCSI_INQUIRY_DATA = {
     .product_rev = "1.00"
 };
 
-static msc_state_t* msc_state[USBD_DEVICES_MAX] = { NULL };
+static msc_state_t msc_state = {0};
 
 static void msc_init_cb(usbd_handle_t* handle) {
     (void)handle;
@@ -111,7 +113,7 @@ static bool msc_get_desc_cb(usbd_handle_t* handle, const usb_ctrl_req_t* req) {
 }
 
 static bool msc_ctrl_xfer_cb(usbd_handle_t* handle, const usb_ctrl_req_t* req) {
-    msc_state_t* msc = msc_state[handle->port];
+    msc_state_t* msc = &msc_state;
     switch (req->bmRequestType & (USB_REQ_TYPE_Msk | USB_REQ_RECIP_Msk)) {
     case (USB_REQ_TYPE_CLASS | USB_REQ_RECIP_INTERFACE):
         switch (req->bRequest) {
@@ -153,12 +155,12 @@ static bool msc_set_config_cb(usbd_handle_t* handle, uint8_t config) {
 
 static void msc_configured_cb(usbd_handle_t* handle, uint8_t config) {
     (void)config;
-    msc_state_t* msc = msc_state[handle->port];
+    msc_state_t* msc = &msc_state;
     memset(msc, 0, sizeof(msc_state_t));
 }
 
 static bool msc_write_bulk_blocking(usbd_handle_t* handle, const uint8_t* data, uint16_t len) {
-    msc_state_t* msc = msc_state[handle->port];
+    msc_state_t* msc = &msc_state;
     uint32_t remaining = len;
     while (remaining > 0) {
         uint16_t to_write = MIN(remaining, MSC_EPSIZE_IN);
@@ -176,18 +178,24 @@ static bool msc_write_bulk_blocking(usbd_handle_t* handle, const uint8_t* data, 
 }
 
 static void handle_cbw_command(usbd_handle_t* handle, const usb_msc_cbw_t* cbw) {
-    msc_state_t* msc = msc_state[handle->port];
+    msc_state_t* msc = &msc_state;
     bool error = false;
     switch (cbw->command[0]) {
     case USB_MSC_SCSI_CMD_INQUIRY:
         error = !msc_write_bulk_blocking(handle, (const uint8_t*)&MSC_SCSI_INQUIRY_DATA, 
-                                    sizeof(MSC_SCSI_INQUIRY_DATA));
+                                         sizeof(MSC_SCSI_INQUIRY_DATA));
         break;
     case USB_MSC_SCSI_CMD_TEST_UNIT_READY:
         break;
     case USB_MSC_SCSI_CMD_READ_CAPACITY_10:
         {
-        uint32_t last_block = sd_msc_get_block_count() - 1;
+        uint32_t last_block = 0;
+        if (!sdcard_get_block_count(SD_PART_MSC, &last_block)) {
+            ogxm_loge("Failed to get block count for MSC partition\n");
+            error = true;
+            break;
+        } 
+        last_block--; // Convert to last block index
         uint8_t cap[8] __attribute__((aligned(4))) = {
             (last_block >> 24) & 0xFF, (last_block >> 16) & 0xFF,
             (last_block >> 8) & 0xFF, last_block & 0xFF,
@@ -202,7 +210,11 @@ static void handle_cbw_command(usbd_handle_t* handle, const usb_msc_cbw_t* cbw) 
         uint32_t lba = TO_UINT32(&cbw->command[2]);
         uint16_t count = TO_UINT16(&cbw->command[7]);
         for (uint16_t i = 0; i < count; i++) {
-            sd_msc_read_blocks(msc->block_in, lba + i, 1);
+            if (!sdcard_read_blocks(SD_PART_MSC, lba + i, msc->block_in, 1)) {
+                ogxm_loge("Failed to read block %u from MSC partition\n", lba + i);
+                error = true;
+                break;
+            }
             if (!msc_write_bulk_blocking(handle, msc->block_in, MSC_BLOCK_SIZE)) {
                 error = true;
                 break;
@@ -239,7 +251,7 @@ static void handle_cbw_command(usbd_handle_t* handle, const usb_msc_cbw_t* cbw) 
 }
 
 static void msc_ep_xfer_cb(usbd_handle_t* handle, uint8_t epaddr) {
-    msc_state_t* msc = msc_state[handle->port];
+    msc_state_t* msc = &msc_state;
     if (epaddr == MSC_EPADDR_OUT) {
         int32_t len = usbd_ep_read(handle, MSC_EPADDR_OUT, 
                                    msc->ep_out, MSC_EPSIZE_OUT);
@@ -257,7 +269,8 @@ static void msc_ep_xfer_cb(usbd_handle_t* handle, uint8_t epaddr) {
 
             if (msc->out_idx >= MSC_BLOCK_SIZE) {
                 // We have a full block, process it
-                sd_msc_write_blocks(msc->block_out, msc->out_lba + msc->out_current_count, 1);
+                sdcard_write_blocks(SD_PART_MSC, msc->out_lba + msc->out_current_count, 
+                                    msc->block_out, 1);
                 msc->out_current_count++;
                 msc->out_idx -= MSC_BLOCK_SIZE;
 
@@ -279,8 +292,16 @@ static void msc_ep_xfer_cb(usbd_handle_t* handle, uint8_t epaddr) {
 }
 
 static usbd_handle_t* msc_init(const usb_device_driver_cfg_t* cfg) {
-    if ((cfg == NULL) || (cfg->usb.status_buffer == NULL)) {
+    if (cfg == NULL) {
         return NULL;
+    }
+    if (!sdcard_init()) {
+        ogxm_loge("Failed to initialize SD card for MSC driver\n");
+        return NULL;
+    }
+    if ((msc_state.handle != NULL) && (msc_state.handle->state != USBD_STATE_DISABLED)) {
+        ogxm_logd("MSC driver already initialized\n");
+        return msc_state.handle;
     }
     usbd_driver_t driver = {
         .init_cb = msc_init_cb,
@@ -291,17 +312,15 @@ static usbd_handle_t* msc_init(const usb_device_driver_cfg_t* cfg) {
         .ctrl_xfer_cb = msc_ctrl_xfer_cb,
         .ep_xfer_cb = msc_ep_xfer_cb,
     };
-    usbd_handle_t* handle = usbd_init(cfg->usb.hw_type, &driver, MSC_EPSIZE_CTRL);
-    if (handle != NULL) {
-        msc_state[handle->port] = (msc_state_t*)cfg->usb.status_buffer;
-    }
-    return handle;
+    msc_state.handle = usbd_init(cfg->usb.hw_type, &driver, MSC_EPSIZE_CTRL);
+    return msc_state.handle;
 }
 
 #else // SD_CARD_ENABLED
 
 static usbd_handle_t* msc_init(const usb_device_driver_cfg_t* cfg) {
     (void)cfg;
+    ogxm_loge("MSC driver is disabled because SD_CARD_ENABLED is not set\n");
     return NULL;
 }
 

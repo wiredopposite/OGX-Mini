@@ -2,6 +2,10 @@
 
 #include "ring/ring_usb.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum {
     RING_BT_TYPE_NONE = 0,
     RING_BT_TYPE_PAD,
@@ -18,3 +22,7 @@ typedef ring_usb_packet_t ring_bluetooth_packet_t;
 #define ring_bluetooth_push   ring_usb_push
 #define ring_bluetooth_pop    ring_usb_pop
 #define ring_bluetooth_empty  ring_usb_empty
+
+#ifdef __cplusplus
+}
+#endif

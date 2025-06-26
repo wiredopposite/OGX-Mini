@@ -93,7 +93,7 @@ typedef struct __attribute__((packed, aligned(4))) {
             uint8_t a_lb; /* Analog button array byte offset */
             uint8_t a_rb; /* Analog button array byte offset */
         };
-        uint8_t analog[GAMEPAD_ANALOG_COUNT]; /* Raw array of analog button array byte offsets */
+        uint8_t analog[GAMEPAD_ANALOG_COUNT]; /* Raw analog button array byte offsets */
     };
 
     uint8_t reserved[2];

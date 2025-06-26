@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>OGX-Mini Settings</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>OGX-Mini</h1>
+            </div>
+            <div id="subheader" class="subheader">
+                <h3></h3>
+            </div>
+        </div>
+        <div class="separator"></div>
+
+        <div id="errorTxt" class="error hidden">
+            ⚠️ An error occurred
+            <br>
+        </div>
+
+        <div class="connectPanel show" id="connectPanel">
+            <h3>Settings</h3>
+            <button class="connectButton" id="connectUsb">Connect via USB</button>
+            <button class="connectButton" id="connectBt">Connect via Bluetooth</button><br><br>
+            <label><b>Minimum firmware required:</b> OGX-Mini v1.0.0-alpha3</label><br><br>
+            <label><b>Note:</b> To ensure your OGX-Mini (wired) adapter is in WebApp mode, hold Start + Left Bumper + Right Bumper for 3 seconds.</label>
+            <div class="separator"></div>
+            <h3>Update Firmware</h3>
+            <button class="" id="connectOgxmW">OGX-Mini Wireless</button>
+        </div>
+
+        <div class="programPanel hidden" id="programPanel">
+            <label>
+                <img src="images/OGXMW_Boot.jpg" alt="OGX-Mini Boot Button" width="300" height="300">
+                <div class="separator"></div>
+                <b>Step 1:</b> Hold down the <b>BOOT</b> button on your OGX-Mini Wireless while plugging it into your computer.<br>
+                <b>Step 2:</b> Click <b>Update Part 1</b> and select the <b>RPI-RP2</b> drive from your file explorer.<br>
+                <b>Step 3:</b> Click <b>Update Part 2</b> and select <b>OGX-Mini</b> from the dropdown menu.<br><br>
+                <b>Note:</b> Do not remove your adapter while it is being updated. If the update fails, remove the adapter and plug it back in while holding the BOOT button, then reload this page to restart the process.<br>
+            </label>
+            <div class="separator"></div>
+            <button id="button-programPico">Update Part 1</button>
+            <button id="button-programEsp32">Update Part 2</button>
+
+            <div class="programLogPanel">
+                <textarea id="programLog" rows="16" cols="80" readonly></textarea>
+            </div>
+        </div>
+
+        <div class="settingsPanel hidden" id="settingsPanel">
+            <div class="triPanel">
+                <div class="section">
+                    <div class="header">
+                        <h3>Device Mode</h3>
+                    </div>
+                    <div class="dropDown">
+                        <select id="dropdown-deviceMode"></select>
+                    </div>
+                </div>
+                <div class="section">
+                    <div class="header">
+                        <h3>Gamepads</h3>
+                    </div>
+                    <div class="dropDown">
+                        <select id="dropdown-playerIdx"></select>
+                    </div>
+                </div>
+                <div class="section">
+                    <h3>Profile</h3>
+                    <select id="dropdown-profileId"></select>
+                </div>
+            </div>
+
+            <div class="togglePanelControl">
+                <div class="header">
+                    <h3>Axis Settings</h3>
+                </div>
+                <div class="buttonPanel">
+                    <button id="button-toggleAxisSettings">Hide</button>
+                </div>
+            </div>
+
+            <div class="axisSettingsPanel" id="axisSettingsPanel">
+                <div class="joystickPanel">
+                    <div class="leftPanel">
+                        <div class="headerButtonPair">
+                            <div class="header">
+                                <h4>Left Joystick</h4>
+                            </div>
+                            <div class="button">
+                                <label for="checkbox-previewJoy-left">Preview</label>
+                                <input type="checkbox" id="checkbox-previewJoy-left" class="invertCheckbox">
+                            </div>
+                        </div>
+                        <div class="canvasContainer">
+                            <canvas id="canvasJoystickBackground-left" width="260" height="260"></canvas>
+                            <canvas id="canvasJoystickSettings-left" width="260" height="260"></canvas>
+                            <canvas id="canvasJoystickCursor-left" width="260" height="260"></canvas>
+                        </div>
+                        <div class="joystickSettings">
+                            <div id="joystickInput-left" class="joystickInput"></div>
+                        </div>
+                    </div>
+                    <div class="rightPanel">
+                        <div class="headerButtonPair">
+                            <div class="header">
+                                <h4>Right Joystick</h4>
+                            </div>
+                            <div class="button">
+                                <label for="checkbox-previewJoy-right">Preview</label>
+                                <input type="checkbox" id="checkbox-previewJoy-right" class="invertCheckbox">
+                            </div>
+                        </div>
+                        <div class="canvasContainer">
+                            <canvas id="canvasJoystickBackground-right" width="260" height="260"></canvas>
+                            <canvas id="canvasJoystickSettings-right" width="260" height="260"></canvas>
+                            <canvas id="canvasJoystickCursor-right" width="260" height="260"></canvas>
+                        </div>
+                        <div class="joystickSettings">
+                            <div id="joystickInput-right" class="joystickInput"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="triggersPanel">
+                    <div class="leftPanel">
+                        <div class="headerButtonPair">
+                            <div class="header">
+                                <h4>Left Trigger</h4>
+                            </div>
+                            <div class="button">
+                                <label for="checkbox-previewTrigger-left">Preview</label>
+                                <input type="checkbox" id="checkbox-previewTrigger-left" class="invertCheckbox">
+                            </div>
+                        </div>
+                        <div class="canvasContainer">
+                            <canvas id="canvasTriggerBackground-left" width="300" height="50"></canvas>
+                            <canvas id="canvasTriggerSettings-left" width="300" height="50"></canvas>
+                            <canvas id="canvasTriggerCursor-left" width="300" height="50"></canvas>
+                        </div>
+                        <div class="triggerSettings">
+                            <div id="triggerInput-left" class="triggerInput"></div>
+                        </div>
+                    </div>
+                    <div class="rightPanel">
+                        <div class="headerButtonPair">
+                            <div class="header">
+                                <h4>Right Trigger</h4>
+                            </div>
+                            <div class="button">
+                                <label for="checkbox-previewTrigger-right">Preview</label>
+                                <input type="checkbox" id="checkbox-previewTrigger-right" class="invertCheckbox">
+                            </div>
+                        </div>
+                        <div class="canvasContainer">
+                            <canvas id="canvasTriggerBackground-right" width="300" height="50"></canvas>
+                            <canvas id="canvasTriggerSettings-right" width="300" height="50"></canvas>
+                            <canvas id="canvasTriggerCursor-right" width="300" height="50"></canvas>
+                        </div>
+                        <div class="triggerSettings">
+                            <div id="triggerInput-right" class="triggerInput"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="togglePanelControl">
+                <div class="header">
+                    <h3>Digital Mappings</h3>
+                </div>
+                <div class="buttonPanel">
+                    <button id="button-toggleDigitalButtons">Hide</button>
+                </div>
+            </div>
+
+            <div id="digitalButtonsPanel" class="digitalButtonsPanel">
+                <h4>D-Pad</h4>
+                <div class="dropdownGrid">
+                    <div id="digitalDpadInput-left" class="digitalDpadInput"></div>
+                    <div id="digitalDpadInput-right" class="digitalDpadInput"></div>
+                </div>
+
+                <h4>Buttons</h4>
+                <div class="dropdownGrid">
+                    <div id="digitalButtonInput-left" class="digitalButtonInput"></div>
+                    <div id="digitalButtonInput-right" class="digitalButtonInput"></div>
+                </div>
+            </div>
+
+            <div class="togglePanelControl">
+                <div class="header">
+                    <h3>Analog Mappings</h3>
+                </div>
+                <div class="buttonPanel">
+                    <button id="button-toggleAnalogButtons">Hide</button>
+                </div>
+            </div>
+
+            <div id="analogButtonsPanel" class="analogButtonsPanel">
+                <div class="analogEnabled">
+                    <label for="checkbox-analogEnabled">Enable Analog Buttons</label>
+                    <input type="checkbox" id="checkbox-analogEnabled" class="invertCheckbox">
+                </div> 
+                <div class="dropdownGrid">
+                    <div id="analogButtonsInput-left" class="analogButtonsInput"></div>
+                    <div id="analogButtonsInput-right" class="analogButtonsInput"></div>
+                </div>
+            </div>
+
+            <div class="controlsPanel">
+                <button class="controlsButton" id="button-saveProfile">Save Profile</button>
+                <button class="controlsButton" id="button-reloadProfile">Reload Profile</button>
+                <button class="controlsButton" id="button-loadDefaults">Load Defaults</button>
+                <button class="controlsButton" id="button-disconnect">Disconnect</button>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.1.1/crypto-js.js"></script>
+</body>

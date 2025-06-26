@@ -6,7 +6,7 @@
     "cortex-debug.objdumpPath": "/usr/bin/arm-none-eabi-objdump",
     "cortex-debug.nmPath": "/usr/bin/arm-none-eabi-nm",
     "cmake.configureArgs": [
-        "-DOGXMINI_BOARD=PI_PICO_W",
+        "-DOGXMINI_BOARD=DEVKIT",
     ],
     "files.associations": {
         "device_private.h": "c",
@@ -95,7 +95,18 @@
         "master.h": "c",
         "i2c_slave.h": "c",
         "callbacks.h": "c",
-        "gpio.h": "c"
+        "gpio.h": "c",
+        "sync.h": "c",
+        "lwip_nosys.h": "c",
+        "lwip_freertos.h": "c",
+        "dhserver.h": "c",
+        "debug.h": "c",
+        "httpd.h": "c",
+        "etharp.h": "c",
+        "unique_id.h": "c",
+        "net_device.h": "c",
+        "ethernet.h": "c",
+        "rndis_def.h": "c"
     },
     "idf.port": "/dev/ttyUSB0",
 }

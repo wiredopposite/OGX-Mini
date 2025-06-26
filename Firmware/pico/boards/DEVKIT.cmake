@@ -26,6 +26,13 @@ set(ESP32_SPI_PIN_MISO          12)
 set(ESP32_SPI_PIN_CS            13) 
 set(ESP32_SPI_PIN_IRQ           7) 
 
+set(SD_CARD_ENABLED             1)
+set(SD_CARD_SPI_NUM             0)
+set(SD_CARD_SPI_PIN_SCK         2)
+set(SD_CARD_SPI_PIN_MOSI        3)
+set(SD_CARD_SPI_PIN_MISO        4)
+set(SD_CARD_SPI_PIN_CS          5)
+
 set(OGXM_BOARD                  OGXM_BOARD_DEVKIT)
 
 set(PICO_DEFAULT_UART           0)

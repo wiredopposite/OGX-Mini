@@ -1,0 +1,267 @@
+:root {
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --primary-color: #007bff;
+    --background-color: #f8f9fa;
+    --text-color: #212529;
+}
+
+h1 {
+    margin-top: 0px;
+    margin-bottom: 6px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+body {
+    font-family: var(--font);
+    background-color: var(--background-color);
+    color: var(--text-color);
+    padding: 20px;
+}
+
+button:hover {
+    opacity: 0.5;
+}
+
+.connectPanel button:disabled {
+    background-color: #e9ecef;
+    color: #6c757d;
+    cursor: not-allowed;
+}
+
+.error {
+    color: rgb(255, 0, 0);
+    margin-top: 10px;
+}
+
+.hidden {
+    display: none;
+}
+
+select {
+    width: 100%;
+    padding: 4px;
+	margin-bottom: 4px;
+}
+
+select:disabled {
+	background-color: #e9ecef;
+	color: #6c757d; 
+	cursor: not-allowed; 
+	border: 1px solid #ced4da;
+}
+
+.container {
+    max-width: 740px;
+    margin: auto;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.separator {
+    display: flex;
+    align-items: center;
+    margin-top: 15px;
+    margin-bottom: 15px;
+    border-bottom: #000000 1px solid;
+}
+
+.programPanel button:disabled {
+    background-color: #e9ecef;
+    color: #6c757d;
+    cursor: not-allowed;
+}
+
+.programLogPanel {
+    margin-top: 20px;
+}
+
+.connectPanel {
+    margin-bottom: 20px;
+}
+
+.connectPanel .separator {
+    display: flex;
+    align-items: center;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    border-bottom: #000000 1px solid;
+}
+
+.connectPanel button,
+.programPanel button {
+    background-color: var(--primary-color);
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-right: 15px;
+}
+
+.controlsPanel {
+    display: flex;
+    justify-content: left;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 20px;
+    border-top: #000000 1px solid;
+}
+
+.controlsPanel button {
+    background-color: var(--primary-color);
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-top: 20px;
+	margin-right: 20px;
+}
+
+.settingsPanel .triPanel {
+	display: grid;
+	grid-template-columns: 1fr 1fr 1fr;
+	gap: 20px;
+	align-items: left;
+}
+
+.settingsPanel .triPanel .section {
+	width: 100%;
+}
+
+.settingsPanel .togglePanelControl {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	border-bottom: 1px solid #13508d;
+	margin-top: 10px;
+}
+
+.settingsPanel .togglePanelControl button,
+.settingsPanel .joystickSettings button,
+.settingsPanel .triggerSettings button {
+    background-color: var(--primary-color);
+    color: #fff;
+    border: none;
+    padding: 5px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.settingsPanel .joystickPanel,
+.settingsPanel .triggersPanel {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 20px;
+	align-items: center;
+}
+
+.settingsPanel .leftPanel,
+.settingsPanel .rightPanel  {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 10px;
+}
+
+.settingsPanel .headerButtonPair {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	width: 100%;
+}
+
+.settingsPanel .headerButtonPair .header {
+	text-align: left;
+}
+
+.settingsPanel .headerButtonPair .button {
+	text-align: right;
+}
+
+.settingsPanel .triggersPanel .headerButtonPair {
+	margin-top: 15px;
+	border-top: 1px solid #000000;
+}
+
+.settingsPanel .joystickPanel .canvasContainer {
+	position: relative;
+	width: 260px;
+	height: 260px;
+}
+
+.settingsPanel .triggersPanel .canvasContainer {
+	position: relative;
+	width: 300px;
+	height: 50px;
+}
+
+.settingsPanel .joystickPanel .canvasContainer canvas,
+.settingsPanel .triggersPanel .canvasContainer canvas {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+}
+
+.joystickInput,
+.triggerInput {
+	display: grid;
+	grid-template-columns: max-content 2fr 1fr;
+	gap: 5px;
+	align-items: center;
+	width: 100%;
+}
+
+.settingsSubPair {
+	display: contents;
+}
+
+.settingsSubPair label {
+	text-align: left;
+	/* font-size: 14px; */
+}
+
+.settingsSubPair .controlGroup {
+	display: flex;
+	align-items: left;
+	gap: 5px;
+}
+
+.dropdownGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 30px;
+	margin-top: 10px;
+}
+
+.dropdownSubPair {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    align-items: center;
+    gap: 10px;
+}
+
+.dropdownSubPair label {
+    text-align: left;
+    white-space: nowrap;
+}
+
+.analogEnabled {
+    display: flex;
+    align-items: left;
+    gap: 10px;
+    margin-top: 10px;
+    margin-bottom: 15px;
+}

@@ -37,3 +37,6 @@
 [submodule "Firmware/ESP32/components/libfixmath/libfixmath"]
 	path = Firmware/ESP32/components/libfixmath/libfixmath
 	url = https://github.com/PetteriAimonen/libfixmath.git
+[submodule "Firmware/pico/external/lwip"]
+	path = Firmware/pico/external/lwip
+	url = https://github.com/lwip-tcpip/lwip.git

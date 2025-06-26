@@ -1,6 +1,7 @@
 #include <string.h>
 #include "common/usb_util.h"
 #include "common/class/hid_def.h"
+#include "log/log.h"
 #include "usbd/usbd.h"
 #include "gamepad/range.h"
 #include "usb/descriptors/xboxog_gp.h"
@@ -45,6 +46,8 @@ static bool xboxog_gp_get_desc_cb(usbd_handle_t* handle, const usb_ctrl_req_t* r
 
 static bool xboxog_gp_ctrl_xfer_cb(usbd_handle_t* handle, const usb_ctrl_req_t* req) {
     xboxog_gp_state_t* xboxog = xboxog_gp_state[handle->port];
+    ogxm_logv("XBOXOG GP CTRL XFER: %02X %02X %04X %04X %04X\n",
+             req->bmRequestType, req->bRequest, req->wValue, req->wIndex, req->wLength);
     switch (req->bmRequestType & (USB_REQ_TYPE_Msk | USB_REQ_RECIP_Msk)) {
     case (USB_REQ_TYPE_CLASS | USB_REQ_RECIP_INTERFACE):
         {
@@ -56,6 +59,7 @@ static bool xboxog_gp_ctrl_xfer_cb(usbd_handle_t* handle, const usb_ctrl_req_t* 
             return usbd_send_ctrl_resp(handle, &xboxog->report_in,
                                        sizeof(xboxog->report_in), NULL);
         case USB_REQ_HID_SET_REPORT:
+            ogxm_logv_hex(req->data, req->wLength, "XBOXOG GP SET REPORT DATA: ");
             if (req->wLength >= 4) {
                 const xboxog_gp_report_out_t* report_out = 
                     (const xboxog_gp_report_out_t*)req->data;
@@ -117,12 +121,13 @@ static void xboxog_gp_configured_cb(usbd_handle_t* handle, uint8_t config) {
 
 static void xboxog_gp_ep_xfer_cb(usbd_handle_t* handle, uint8_t epaddr) {
     if (epaddr == XBOXOG_GP_EPADDR_OUT) {
+        ogxm_logv("XBOXOG GP OUT EP transfer complete\n");
         xboxog_gp_state_t* xboxog = xboxog_gp_state[handle->port];
         int32_t len = usbd_ep_read(handle, epaddr, &xboxog->report_out,
                                     sizeof(xboxog->report_out));
         if ((len >= 4) && (xboxog->report_out.report_id == 0)) {
-            xboxog->gp_rumble.l = xboxog->report_out.rumble_l;
-            xboxog->gp_rumble.r = xboxog->report_out.rumble_r;
+            xboxog->gp_rumble.l = range_uint16_to_uint8(xboxog->report_out.rumble_l);
+            xboxog->gp_rumble.r = range_uint16_to_uint8(xboxog->report_out.rumble_r);
             usb_device_rumble_cb(handle, &xboxog->gp_rumble);
         }
     }

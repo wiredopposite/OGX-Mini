@@ -22,10 +22,16 @@ include(${CMAKE_CURRENT_LIST_DIR}/boards/${OGXMINI_BOARD}.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/pico_sdk_import.cmake)
 include($ENV{PICO_SDK_PATH}/pico_sdk_init.cmake)
 
-set(PICO_PIO_USB_PATH ${EXTERNAL_DIR}/Pico-PIO-USB)
-set(PICO_TINYUSB_PATH ${EXTERNAL_DIR}/tinyusb)
-set(BLUEPAD32_PATH ${EXTERNAL_DIR}/bluepad32)
-set(PICO_BTSTACK_PATH ${EXTERNAL_DIR}/bluepad32/external/btstack)
+set(PICO_PIO_USB_PATH   ${EXTERNAL_DIR}/Pico-PIO-USB)
+set(PICO_TINYUSB_PATH   ${EXTERNAL_DIR}/tinyusb)
+set(BLUEPAD32_PATH      ${EXTERNAL_DIR}/bluepad32)
+set(PICO_BTSTACK_PATH   ${EXTERNAL_DIR}/bluepad32/external/btstack)
+set(LWIP_DIR            ${EXTERNAL_DIR}/lwip)
+
+set(LWIP_INCLUDE_DIRS
+    ${LWIP_DIR}/src/include
+    ${SRC}/webserver/lwip
+)
 
 project(${FW_NAME} C CXX ASM)
 
@@ -35,6 +41,8 @@ add_subdirectory(${EXTERNAL_DIR}/pico_usb)
 add_subdirectory(${EXTERNAL_DIR}/libxsm3)
 add_subdirectory(${EXTERNAL_DIR}/g726)
 add_subdirectory(${EXTERNAL_DIR}/libfixmath libfixmath)
+add_subdirectory(${EXTERNAL_DIR}/fatfs)
+include(${LWIP_DIR}/src/Filelists.cmake)
 
 add_executable(${FW_NAME}
     ${SRC}/main_standard.c
@@ -51,6 +59,8 @@ add_executable(${FW_NAME}
     ${SRC}/settings/settings.cpp
 
     ${SRC}/sdcard/sdcard.c
+    ${SRC}/sdcard/sd_spi.c
+    ${SRC}/sdcard/fatfs_io.c
 
     ${SRC}/led/led.cpp
     ${SRC}/led/neopixel/WS2812.cpp
@@ -69,6 +79,8 @@ add_executable(${FW_NAME}
     ${SRC}/usb/device/drivers/psclassic.c
     ${SRC}/usb/device/drivers/uart_bridge.c
     ${SRC}/usb/device/drivers/webapp.c
+    ${SRC}/usb/device/drivers/net.c
+    ${SRC}/usb/device/drivers/rndis/rndis.c
 
     ${SRC}/usb/host/host.c
     ${SRC}/usb/host/drivers/xboxog_gp.c
@@ -95,11 +107,19 @@ add_executable(${FW_NAME}
 
     ${SRC}/four_channel/master.c
     ${SRC}/four_channel/slave.c
+
+    ${SRC}/webserver/webserver.c
+    ${SRC}/webserver/lwip/sys.c
+    ${SRC}/webserver/networking/dhserver.c
+    ${SRC}/webserver/networking/dnserver.c
+    # ${SRC}/webserver/networking/rndis_reports.c
 )
 
 target_include_directories(${FW_NAME} 
     PRIVATE
         ${SRC}
+        ${SRC}/webserver/networking/
+        ${LWIP_INCLUDE_DIRS}
 )
 
 target_link_libraries(${FW_NAME} 
@@ -108,6 +128,8 @@ target_link_libraries(${FW_NAME}
         pico_multicore
         pico_rand
         pico_i2c_slave
+        # pico_lwip
+        # pico_lwip_arch
         hardware_pio
         hardware_sync
         hardware_gpio
@@ -120,9 +142,13 @@ target_link_libraries(${FW_NAME}
         libxsm3
         g726
         libfixmath
+        fatfs
         tinyusb_board
         tinyusb_host
         tinyusb_pico_pio_usb
+
+        lwipcore
+        lwipallapps
 )
 
 target_compile_definitions(${FW_NAME} 

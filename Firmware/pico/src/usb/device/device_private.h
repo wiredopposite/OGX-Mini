@@ -52,6 +52,7 @@ extern const usb_device_driver_t USBD_DRIVER_XBOXOG_HUB;
 extern const usb_device_driver_t USBD_DRIVER_XBOXOG_XMU;
 extern const usb_device_driver_t USBD_DRIVER_XBOXOG_XBLC;
 extern const usb_device_driver_t USBD_DRIVER_WEBAPP;
+extern const usb_device_driver_t USBD_DRIVER_NET;
 
 void usb_device_rumble_cb(usbd_handle_t* handle, const gamepad_rumble_t* rumble);
 void usb_device_audio_cb(usbd_handle_t* handle, const gamepad_pcm_out_t* pcm_out);
