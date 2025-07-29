@@ -119,7 +119,7 @@ The options are:
 - ```PI_PICOW``` 
 - ```PI_PICO2W``` 
 - ```RP_ZERO``` 
-- ```ADA_FEATHER``` 
+- ```ADAFRUIT_FEATHER``` 
 - ```PICO_ESP32``` 
 - ```EXTERNAL_4CH```
 
