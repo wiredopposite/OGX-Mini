@@ -23,6 +23,9 @@ namespace ButtonCombo {
     static constexpr uint32_t XBOXOG_XR = BUTTON_COMBO(Gamepad::BUTTON_START | Gamepad::BUTTON_LB, Gamepad::DPAD_RIGHT);
     static constexpr uint32_t PSCLASSIC = BUTTON_COMBO(Gamepad::BUTTON_START | Gamepad::BUTTON_A);
     static constexpr uint32_t WEBAPP    = BUTTON_COMBO(Gamepad::BUTTON_START | Gamepad::BUTTON_LB | Gamepad::BUTTON_RB);
+    static constexpr uint32_t NEXTPREF  = BUTTON_COMBO(Gamepad::BUTTON_START | Gamepad::BUTTON_RB, Gamepad::DPAD_DOWN);
+    static constexpr uint32_t PREVPREF  = BUTTON_COMBO(Gamepad::BUTTON_START | Gamepad::BUTTON_RB, Gamepad::DPAD_UP);
+    static constexpr uint32_t RESPREF   = BUTTON_COMBO(Gamepad::BUTTON_START | Gamepad::BUTTON_LB, Gamepad::DPAD_DOWN);
 };
 
 static constexpr DeviceDriverType VALID_DRIVER_TYPES[] = {
@@ -113,6 +116,51 @@ bool UserSettings::check_for_driver_change(Gamepad& gamepad)
     static uint8_t call_count = 0;
 
     uint32_t current_button_combo = BUTTON_COMBO(gp_in.buttons, gp_in.dpad);
+
+    if (current_button_combo == ButtonCombo::NEXTPREF)
+    {
+        if (ACTIVE_PROFILE == MAX_PROFILES)
+        {
+            ACTIVE_PROFILE = 1U;
+            board_api::usb::disconnect_all();
+            nvs_tool_.write(ACTIVE_PROFILE_KEY(0U), &ACTIVE_PROFILE, sizeof(uint8_t));
+            board_api::reboot();
+        }
+        else
+        {
+            ACTIVE_PROFILE = ACTIVE_PROFILE + 1U;
+            board_api::usb::disconnect_all();
+            nvs_tool_.write(ACTIVE_PROFILE_KEY(0U), &ACTIVE_PROFILE, sizeof(uint8_t));
+            board_api::reboot();
+        }
+        return true;
+    }
+    if (current_button_combo == ButtonCombo::PREVPREF)
+    {
+        if (ACTIVE_PROFILE == 1U)
+        {
+            ACTIVE_PROFILE = MAX_PROFILES;
+            board_api::usb::disconnect_all();
+            nvs_tool_.write(ACTIVE_PROFILE_KEY(0U), &ACTIVE_PROFILE, sizeof(uint8_t));
+            board_api::reboot();
+        }
+        else
+        {
+            ACTIVE_PROFILE = ACTIVE_PROFILE - 1U;
+            board_api::usb::disconnect_all();
+            nvs_tool_.write(ACTIVE_PROFILE_KEY(0U), &ACTIVE_PROFILE, sizeof(uint8_t));
+            board_api::reboot();
+        }
+        return true;
+    }
+    if (current_button_combo == ButtonCombo::RESPREF)
+    {
+        ACTIVE_PROFILE = 1U;
+        board_api::usb::disconnect_all();
+        nvs_tool_.write(ACTIVE_PROFILE_KEY(0U), &ACTIVE_PROFILE, sizeof(uint8_t));
+        board_api::reboot();
+        return true;
+    }
 
     if (!(current_button_combo & (static_cast<uint32_t>(Gamepad::BUTTON_START) << 16)) || 
         last_button_combo != current_button_combo)
