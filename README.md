@@ -37,7 +37,7 @@ Start = Plus (Switch) = Options (Dualsense/DS4)
 
 After a new mode is stored, the RP2040 will reset itself so you don't need to unplug it.
 
-## Changing platforms
+## Changing profiles
 You can quickly switch between predefined profiles by holding a button combo for 3 seconds. This won't change the selected platform.
 
 - Next Profile
