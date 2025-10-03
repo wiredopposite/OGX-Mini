@@ -37,6 +37,16 @@ Start = Plus (Switch) = Options (Dualsense/DS4)
 
 After a new mode is stored, the RP2040 will reset itself so you don't need to unplug it.
 
+## Changing platforms
+You can quickly switch between predefined profiles by holding a button combo for 3 seconds. This won't change the selected platform.
+
+- Next Profile
+    - Start + Right Bumper + Dpad Down
+- Previous Profile
+    - Start + Right Bumper + Dpad Up
+- Jump to First Profile
+    - Start + Left Bumper + Dpad Down
+
 ## Supported devices
 ### Wired controllers
 - Original Xbox Duke and S
