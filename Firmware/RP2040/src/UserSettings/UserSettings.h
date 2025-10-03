@@ -46,6 +46,8 @@ private:
     UserSettings(const UserSettings&) = delete;
     UserSettings& operator=(const UserSettings&) = delete;
 
+    uint8_t ACTIVE_PROFILE = 1U;
+
     static constexpr uint8_t GP_CHECK_COUNT = 3000 / GP_CHECK_DELAY_MS;
     static constexpr uint8_t FLASH_INIT_FLAG = 0xF8;
     const std::string DATETIME_TAG = BUILD_DATETIME; 

@@ -1,4 +1,5 @@
 #include <cstring>
+#include <tuple>
 
 #include "host/usbh.h"
 

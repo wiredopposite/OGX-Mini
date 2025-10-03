@@ -1,5 +1,6 @@
 #include <cstring>
 #include <array>
+#include <tuple>
 
 #include "host/usbh.h"
 #include "class/hid/hid_host.h"
