@@ -2,7 +2,7 @@
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
 
     "cmake.configureArgs": [
-        "-DOGXM_BOARD=ESP32_BLUERETRO_I2C",
+        "-DOGXM_BOARD=RP2040_ZERO",
         // "-DOGXM_RETAIL=TRUE",
         "-DMAX_GAMEPADS=1"
     ],
