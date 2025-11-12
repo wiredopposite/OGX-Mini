@@ -1,0 +1,87 @@
+name: Build OGX-Mini
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        board:
+          - PI_PICO
+          - PI_PICO2
+          - PI_PICOW
+          - PI_PICO2W
+          - RP2040_ZERO
+          - ADAFRUIT_FEATHER
+          - ESP32_BLUEPAD32_I2C
+          - ESP32_BLUERETRO_I2C
+          #- EXTERNAL_4CH_I2C
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Dependencies
+        run: sudo apt install -y cmake gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
+
+      - name: Get Pico SDK
+        run: git clone --branch 2.1.0 --recurse-submodules https://github.com/raspberrypi/pico-sdk.git
+
+      - name: Create Build and Output Folders
+        run: mkdir -p build output
+
+      - name: Build OGX-Mini - ${{ matrix.board }}
+        run: |
+          cd build
+          rm -rf ./*
+          cmake -DPICO_SDK_PATH=${{ github.workspace }}/pico-sdk \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DOGXM_BOARD=${{ matrix.board }} \
+                -DMAX_GAMEPADS=1 \
+                ../Firmware/RP2040
+          cmake --build .
+
+          # Move the generated .uf2 file to output/ without knowing the exact version
+          FILE=$(find . -maxdepth 1 -name "OGX-Mini-*-${{ matrix.board }}.uf2" | head -n 1)
+          cp "$FILE" ../output/
+
+      - name: Upload UF2 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: uf2-${{ matrix.board }}
+          path: output/*.uf2
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: output
+
+      - name: List Files
+        run: ls -lh output/**
+
+      - name: Create Draft Release
+        uses: softprops/action-gh-release@v2.2.2
+        #if: github.ref == 'refs/heads/main'
+        with:
+          tag_name: latest
+          draft: true
+          files: output/**/*.uf2
+
+      - name: Create Tagged Release
+        uses: softprops/action-gh-release@v2.2.2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: output/**/*.uf2

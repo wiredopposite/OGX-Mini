@@ -25,7 +25,7 @@ set(BTSTACK_ROOT ${BLUEPAD32_ROOT}/external/btstack)
 set(PICO_BTSTACK_PATH ${BTSTACK_ROOT})
 set(LIBFIXMATH_PATH ${EXTERNAL_DIR}/libfixmath)
 
-get_pico_sdk(${EXTERNAL_DIR} ${PICOSDK_VERSION_TAG})
+#get_pico_sdk(${EXTERNAL_DIR} ${PICOSDK_VERSION_TAG})
 init_git_submodules(${EXTERNAL_DIR}
     ${BLUEPAD32_ROOT}
     ${PICO_TINYUSB_PATH}
@@ -299,14 +299,6 @@ if(NOT EN_BLUETOOTH)
 endif()
 
 include(${PICO_SDK_PATH}/pico_sdk_init.cmake)
-
-message("PICO_SDK_VERSION_STRING: ${PICO_SDK_VERSION_STRING}")
-if(PICO_SDK_VERSION_STRING VERSION_LESS "${PICOSDK_VERSION_TAG}")
-    message(FATAL_ERROR 
-        "Raspberry Pi Pico SDK version ${PICOSDK_VERSION_TAG} (or later) required. 
-        Your version is ${PICO_SDK_VERSION_STRING}"
-    )
-endif()
 
 project(${FW_NAME} C CXX ASM)
 

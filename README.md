@@ -118,10 +118,11 @@ The options are:
 - ```PI_PICO2``` 
 - ```PI_PICOW``` 
 - ```PI_PICO2W``` 
-- ```RP_ZERO``` 
-- ```ADA_FEATHER``` 
-- ```PICO_ESP32``` 
-- ```EXTERNAL_4CH```
+- ```RP2040_ZERO``` 
+- ```ADAFRUIT_FEATHER``` 
+- ```ESP32_BLUEPAD32_I2C```
+- ```ESP32_BLUERETRO_I2C``` 
+- ```EXTERNAL_4CH_I2C```
 
 You can also set ```MAX_GAMEPADS``` which, if greater than one, will only support DInput (PS3) and Switch.
 
