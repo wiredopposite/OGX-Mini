@@ -11,7 +11,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(SRC ${CMAKE_CURRENT_LIST_DIR}/src)
 set(EXTERNAL_DIR ${CMAKE_CURRENT_LIST_DIR}/../external)
-set(PICOSDK_VERSION_TAG "2.1.0")
+set(PICOSDK_VERSION_TAG "2.1.1")
 
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/init_submodules.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/patch_libs.cmake)
@@ -166,6 +166,13 @@ elseif(OGXM_BOARD STREQUAL "ESP32_BLUERETRO_I2C")
         message(STATUS "Retail mode enabled.")
         add_compile_definitions(OGXM_RETAIL=1)
     endif()
+
+elseif(OGXM_BOARD STREQUAL "RP2350_USB_A")
+    add_compile_definitions(CONFIG_OGXM_BOARD_RP2350_USB_A=1)
+    set(EN_USB_HOST TRUE)
+    set(PICO_PLATFORM rp2350)
+    set(EN_RGB TRUE)
+    set(FLASH_SIZE_MB 2)
 
 else()
     message(FATAL_ERROR "Invalid OGXM_BOARD value. See options in src/board_config.h")

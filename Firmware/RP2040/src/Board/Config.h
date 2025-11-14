@@ -9,7 +9,8 @@
 #define ESP32_BLUERETRO_I2C 5
 #define EXTERNAL_4CH_I2C    6
 #define INTERNAL_4CH_I2C    7
-#define BOARDS_COUNT        8
+#define RP2350_USB_A        8
+#define BOARDS_COUNT        9
 
 #define SYSCLOCK_KHZ 240000
 
@@ -88,6 +89,11 @@
         #undef MAX_GAMEPADS
         #define MAX_GAMEPADS 1
     #endif
+
+#elif defined(CONFIG_OGXM_BOARD_RP2350_USB_A)
+    #define OGXM_BOARD          RP2350_USB_A
+    #define PIO_USB_DP_PIN      12
+    #define RGB_PXL_PIN         16
 
 #else
     #error "Invalid OGXMini board selected"
