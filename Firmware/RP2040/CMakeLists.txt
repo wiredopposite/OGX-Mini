@@ -298,7 +298,7 @@ if(NOT EN_BLUETOOTH)
     add_compile_definitions(PICO_XOSC_STARTUP_DELAY_MULTIPLIER=64)
 endif()
 
-include(${PICO_SDK_PATH}/pico_sdk_init.cmake)
+include($ENV{PICO_SDK_PATH}/pico_sdk_init.cmake)
 
 project(${FW_NAME} C CXX ASM)
 
