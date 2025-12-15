@@ -134,13 +134,18 @@ static void xboxone_init(Interface *interface, uint8_t dev_addr, uint8_t instanc
 
     send_report(dev_addr, instance, XboxOne::POWER_ON, sizeof(XboxOne::POWER_ON));
     wait_for_tx_complete(dev_addr, interface->ep_out);
-    send_report(dev_addr, instance, XboxOne::S_INIT, sizeof(XboxOne::S_INIT));
-    wait_for_tx_complete(dev_addr, interface->ep_out);
 
-    if (VID == 0x045e && (PID == 0x0b00))
+    // S_INIT only for Microsoft controllers (matches Linux xpad behavior)
+    if (VID == 0x045e)
     {
-        send_report(dev_addr, instance, XboxOne::EXTRA_INPUT_PACKET_INIT, sizeof(XboxOne::EXTRA_INPUT_PACKET_INIT));
+        send_report(dev_addr, instance, XboxOne::S_INIT, sizeof(XboxOne::S_INIT));
         wait_for_tx_complete(dev_addr, interface->ep_out);
+
+        if (PID == 0x0b00)
+        {
+            send_report(dev_addr, instance, XboxOne::EXTRA_INPUT_PACKET_INIT, sizeof(XboxOne::EXTRA_INPUT_PACKET_INIT));
+            wait_for_tx_complete(dev_addr, interface->ep_out);
+        }
     }
 
     //Required for PDP aftermarket controllers
@@ -165,7 +170,8 @@ static bool init()
 static bool open(uint8_t rhport, uint8_t dev_addr, tusb_desc_interface_t const *desc_itf, uint16_t max_len)
 {
     TU_LOG1("XInput Open\r\n");
-    TU_VERIFY(desc_itf->bNumEndpoints > 0);
+    // Require 2 endpoints (IN + OUT) for bidirectional communication (matches Linux xpad)
+    TU_VERIFY(desc_itf->bNumEndpoints == 2);
 
     DevType dev_type = DevType::UNKNOWN;
     ItfType itf_type = ItfType::UNKNOWN;
