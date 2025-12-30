@@ -2,9 +2,9 @@ name: Build OGX-Mini
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "v1.0.0a4" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "v1.0.0a4"]
   workflow_dispatch:
 
 jobs:
@@ -14,14 +14,14 @@ jobs:
     strategy:
       matrix:
         board:
-          - PI_PICO
-          - PI_PICO2
-          - PI_PICOW
+          #- PI_PICO
+          #- PI_PICO2
+          #- PI_PICOW
           - PI_PICO2W
-          - RP2040_ZERO
-          - ADAFRUIT_FEATHER
-          - ESP32_BLUEPAD32_I2C
-          - ESP32_BLUERETRO_I2C
+          #- RP2040_ZERO
+          #- ADAFRUIT_FEATHER
+          #- ESP32_BLUEPAD32_I2C
+          #- ESP32_BLUERETRO_I2C
           #- EXTERNAL_4CH_I2C
 
     steps:
