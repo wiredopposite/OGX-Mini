@@ -19,7 +19,7 @@
 
 #if defined(CONFIG_OGXM_BOARD_PI_PICO) || defined(CONFIG_OGXM_BOARD_PI_PICO2)
     #define OGXM_BOARD          PI_PICO
-    #define PIO_USB_DP_PIN      0 // DM = 1
+    #define PIO_USB_DP_PIN      5// DM = 1
     #define LED_INDICATOR_PIN   25
 
 #elif defined(CONFIG_OGXM_BOARD_PI_PICOW) || defined(CONFIG_OGXM_BOARD_PI_PICO2W)
