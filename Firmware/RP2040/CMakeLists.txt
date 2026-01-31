@@ -136,6 +136,13 @@ elseif(OGXM_BOARD STREQUAL "RP2040_ZERO")
     set(EN_USB_HOST TRUE)
     set(EN_RGB TRUE)
 
+elseif(OGXM_BOARD STREQUAL "RP2350_USB_A")
+    add_compile_definitions(CONFIG_OGXM_BOARD_RP2350_USB_A=1)
+    set(EN_USB_HOST TRUE)
+    set(EN_RGB TRUE)
+    set(PICO_PLATFORM rp2350)
+    set(FLASH_SIZE_MB 2)
+
 # elseif(OGXM_BOARD STREQUAL "INTERNAL_4CH")
 #     set(EN_USB_HOST TRUE)
 #     set(EN_4CH TRUE)

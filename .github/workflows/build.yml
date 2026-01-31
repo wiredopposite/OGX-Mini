@@ -2,7 +2,7 @@ name: Build OGX-Mini
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "dev" ]
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
@@ -19,6 +19,7 @@ jobs:
           - PI_PICOW
           - PI_PICO2W
           - RP2040_ZERO
+          - RP2350_USB_A
           - ADAFRUIT_FEATHER
           - ESP32_BLUEPAD32_I2C
           - ESP32_BLUERETRO_I2C
