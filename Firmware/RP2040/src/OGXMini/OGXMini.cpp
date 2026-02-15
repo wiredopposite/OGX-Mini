@@ -16,6 +16,7 @@ namespace OGXMini {
     static constexpr InitFunc init_func[BOARDS_COUNT] = {
         standard::initialize,       // PI_PICO
         standard::initialize,       // RP2040_ZERO
+        standard::initialize,       // RP2040_XIAO
         standard::initialize,       // ADAFRUIT_FEATHER
         pico_w::initialize,         // PI_PICOW
         esp32_bp32_i2c::initialize, // ESP32_BLUEPAD32_I2C
@@ -27,6 +28,7 @@ namespace OGXMini {
     static constexpr RunFunc run_func[BOARDS_COUNT] = {
         standard::run,          // PI_PICO
         standard::run,          // RP2040_ZERO
+        standard::run,          // RP2040_XIAO
         standard::run,          // ADAFRUIT_FEATHER
         pico_w::run,            // PI_PICOW
         esp32_bp32_i2c::run,    // ESP32_BLUEPAD32_I2C
@@ -38,6 +40,7 @@ namespace OGXMini {
     static constexpr HostMountedFunc host_mount_func[BOARDS_COUNT] = {
         standard::host_mounted,     // PI_PICO
         standard::host_mounted,     // RP2040_ZERO
+        standard::host_mounted,     // RP2040_XIAO
         standard::host_mounted,     // ADAFRUIT_FEATHER
         nullptr,                    // PI_PICOW
         nullptr,                    // ESP32_BLUEPAD32_I2C
@@ -49,6 +52,7 @@ namespace OGXMini {
     static constexpr HostMountedWTypeFunc host_mount_w_type_func[BOARDS_COUNT] = {
         nullptr,                            // PI_PICO
         nullptr,                            // RP2040_ZERO
+        nullptr,                            // RP2040_XIAO
         nullptr,                            // ADAFRUIT_FEATHER
         nullptr,                            // PI_PICOW
         nullptr,                            // ESP32_BLUEPAD32_I2C
@@ -60,6 +64,7 @@ namespace OGXMini {
     static constexpr WirelessConnectedFunc wl_conn_func[BOARDS_COUNT] = {
         nullptr,                            // PI_PICO
         nullptr,                            // RP2040_ZERO
+        nullptr,                            // RP2040_XIAO
         nullptr,                            // ADAFRUIT_FEATHER
         nullptr,                            // PI_PICOW
         nullptr,                            // ESP32_BLUEPAD32_I2C

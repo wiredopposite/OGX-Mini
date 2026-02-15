@@ -119,6 +119,7 @@ The options are:
 - ```PI_PICOW``` 
 - ```PI_PICO2W``` 
 - ```RP2040_ZERO``` 
+- ```RP2040_XIAO``` 
 - ```ADAFRUIT_FEATHER``` 
 - ```ESP32_BLUEPAD32_I2C```
 - ```ESP32_BLUERETRO_I2C``` 

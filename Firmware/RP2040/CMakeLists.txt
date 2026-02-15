@@ -136,6 +136,11 @@ elseif(OGXM_BOARD STREQUAL "RP2040_ZERO")
     set(EN_USB_HOST TRUE)
     set(EN_RGB TRUE)
 
+elseif(OGXM_BOARD STREQUAL "RP2040_XIAO")
+    add_compile_definitions(CONFIG_OGXM_BOARD_RP2040_XIAO=1)
+    set(EN_USB_HOST TRUE)
+    set(EN_RGB TRUE)
+
 # elseif(OGXM_BOARD STREQUAL "INTERNAL_4CH")
 #     set(EN_USB_HOST TRUE)
 #     set(EN_4CH TRUE)

@@ -16,4 +16,7 @@ Gerber, BOM, and schematic for an RP2040-Zero interposer board you can make your
 
 The RP2040-Zero board can be found on Amazon and AliExpress.
 
+# RP2040-Xiao
+![OGX-Mini](../images/DiagramRP2040Xiao.png)
+
 ![OGX-Mini Boards](../images/OGX-Mini-rpzero-int.jpg "OGX-Mini Boards")
