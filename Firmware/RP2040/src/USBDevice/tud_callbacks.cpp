@@ -52,3 +52,13 @@ uint8_t const* tud_descriptor_device_qualifier_cb()
 {
 	return DeviceManager::get_instance().get_driver()->get_descriptor_device_qualifier_cb();
 }
+
+void tud_cdc_line_state_cb(uint8_t itf, bool dtr, bool rts)
+{
+	DeviceManager::get_instance().get_driver()->line_state_cb(itf, dtr, rts);
+}
+
+void tud_cdc_line_coding_cb(uint8_t itf, cdc_line_coding_t const* p_line_coding)
+{
+	DeviceManager::get_instance().get_driver()->line_coding_cb(itf, p_line_coding);
+}

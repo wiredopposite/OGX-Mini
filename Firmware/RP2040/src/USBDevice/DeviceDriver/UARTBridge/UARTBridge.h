@@ -19,6 +19,9 @@ public:
     const uint8_t* get_descriptor_configuration_cb(uint8_t index) override;
     const uint8_t* get_descriptor_device_qualifier_cb() override;
 
+    void line_state_cb(uint8_t itf, bool dtr, bool rts) override;
+    void line_coding_cb(uint8_t itf, cdc_line_coding_t const* p_line_coding) override;
+
 private:
     bool task_running_ = false;
 };
