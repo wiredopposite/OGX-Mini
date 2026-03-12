@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 
 set(CMAKE_C_STANDARD 11)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 set(EXTERNAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../external)
 set(EXTERNAL_CMAKE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../cmake)
@@ -38,3 +38,8 @@ set(EXTRA_COMPONENT_DIRS
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project("${FW_NAME}-${FW_VERSION}-ESP32")
+
+idf_build_set_property(COMPILE_OPTIONS 
+    "-w" 
+    "-Wno-error"
+    APPEND)
