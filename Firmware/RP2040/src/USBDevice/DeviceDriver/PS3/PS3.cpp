@@ -71,6 +71,9 @@ void PS3Device::process(const uint8_t idx, Gamepad& gamepad)
         if (gp_in.trigger_l) report_in_.buttons[1] |= PS3::Buttons1::L2;
         if (gp_in.trigger_r) report_in_.buttons[1] |= PS3::Buttons1::R2;
 
+        report_in_.l2_axis = gp_in.trigger_l;
+        report_in_.r2_axis = gp_in.trigger_r;
+
         report_in_.joystick_lx = Scale::int16_to_uint8(gp_in.joystick_lx);
         report_in_.joystick_ly = Scale::int16_to_uint8(gp_in.joystick_ly);
         report_in_.joystick_rx = Scale::int16_to_uint8(gp_in.joystick_rx);
@@ -99,9 +102,9 @@ void PS3Device::process(const uint8_t idx, Gamepad& gamepad)
             report_in_.left_axis     = (gp_in.dpad & Gamepad::DPAD_LEFT)  ? 0xFF : 0;
 
             report_in_.triangle_axis = (gp_in.buttons & Gamepad::BUTTON_Y) ? 0xFF : 0;
-            report_in_.circle_axis   = (gp_in.buttons & Gamepad::BUTTON_X) ? 0xFF : 0;
-            report_in_.cross_axis    = (gp_in.buttons & Gamepad::BUTTON_B) ? 0xFF : 0;
-            report_in_.square_axis   = (gp_in.buttons & Gamepad::BUTTON_A) ? 0xFF : 0;
+            report_in_.circle_axis   = (gp_in.buttons & Gamepad::BUTTON_B) ? 0xFF : 0;
+            report_in_.cross_axis    = (gp_in.buttons & Gamepad::BUTTON_A) ? 0xFF : 0;
+            report_in_.square_axis   = (gp_in.buttons & Gamepad::BUTTON_X) ? 0xFF : 0;
 
             report_in_.r1_axis = (gp_in.buttons & Gamepad::BUTTON_RB) ? 0xFF : 0;
             report_in_.l1_axis = (gp_in.buttons & Gamepad::BUTTON_LB) ? 0xFF : 0;
