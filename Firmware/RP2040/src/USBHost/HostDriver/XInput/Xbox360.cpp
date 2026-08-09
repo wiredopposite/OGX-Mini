@@ -13,7 +13,8 @@ void Xbox360Host::initialize(Gamepad& gamepad, uint8_t address, uint8_t instance
 
     uint16_t vid, pid;
     tuh_vid_pid_get(address, &vid, &pid);
-    bool is_8bitdo = (vid == 0x2DC8) && (pid == 0x3016 || pid == 0x3106);
+    bool is_8bitdo = (vid == 0x2DC8) &&
+        (pid == 0x3016 || pid == 0x3106 || pid == 0x310B || pid == 0x3107 || pid == 0x3109);
 
     if (is_8bitdo)
     {

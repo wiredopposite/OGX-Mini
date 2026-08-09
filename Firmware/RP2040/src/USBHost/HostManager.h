@@ -391,16 +391,21 @@ public:
 			/* Composite "PS4 mode" pads often expose both XInput (GIP) and HID. Sending Xbox rumble +
 			 * PS4 HID output together breaks many third-party firmwares (input dies after a few seconds). */
 			bool ps_style_hid = false;
+			bool has_xinput = false;
 			for (const auto& iface : device_slot.interfaces)
 			{
-				if (!iface.driver || iface.driver_class != DriverClass::HID)
+				if (!iface.driver)
 				{
 					continue;
 				}
-				if (iface.host_driver_type == HostDriverType::PS4 || iface.host_driver_type == HostDriverType::PS5)
+				if (iface.driver_class == DriverClass::XINPUT)
+				{
+					has_xinput = true;
+				}
+				if (iface.driver_class == DriverClass::HID &&
+				    (iface.host_driver_type == HostDriverType::PS4 || iface.host_driver_type == HostDriverType::PS5))
 				{
 					ps_style_hid = true;
-					break;
 				}
 			}
 			for (uint8_t i = 0; i < MAX_INTERFACES; ++i)
@@ -419,11 +424,12 @@ public:
 				{
 					tuh_xinput::service_gip(device_slot.address, iface.usb_instance);
 				}
-				/* PS4-only (no GIP): 200 ms OUT refresh is OK. Composite pads choke if we OUT at 200 ms —
-				 * use rare keepalive + init + console-driven updates only. */
+				/* Pure first-party DS4 (HID only): 200 ms OUT refresh. Was incorrectly gated on
+				 * !ps_style_hid, which is never true for a PS4 iface — so pure DS4 never got periodic
+				 * OUT and relied on rare composite keepalive / rumble only (#47 Pico W). */
 				const bool ps4_hid_periodic =
 					iface.driver_class == DriverClass::HID && iface.host_driver_type == HostDriverType::PS4 &&
-					!ps_style_hid;
+					!has_xinput;
 				/* PS3: invoke send_feedback on timer; driver rate-limits OUT to 1 Hz on PIO USB. */
 				const bool ps3_hid_periodic =
 					iface.driver_class == DriverClass::HID && iface.host_driver_type == HostDriverType::PS3;
@@ -432,8 +438,9 @@ public:
 					iface.driver_class == DriverClass::HID &&
 					(iface.host_driver_type == HostDriverType::SWITCH_PRO ||
 					 iface.host_driver_type == HostDriverType::SWITCH_PRO_2);
+				/* Composite XInput+PS4 HID: rare keepalive only (200 ms OUT chokes many third-party pads). */
 				bool ps4_composite_keepalive = false;
-				if (ps_style_hid && iface.driver_class == DriverClass::HID &&
+				if (has_xinput && ps_style_hid && iface.driver_class == DriverClass::HID &&
 				    iface.host_driver_type == HostDriverType::PS4 && iface.gamepad_idx < MAX_GAMEPADS)
 				{
 					const uint8_t gi = iface.gamepad_idx;

@@ -711,19 +711,58 @@ Some 8BitDo wired XInput controllers (VID 0x2DC8, PID 0x3016 or 0x3106) can disc
 
 ---
 
+## Pico W / Pico 2 W — OG Xbox main-loop timing (#54)
+
+**Problem:** With a **Pico W / Pico 2 W** adapter on **OG Xbox**, some games (**Midnight Club 3**, **Half-Life** / **Half-Life 2**) run extremely slowly whenever the adapter is plugged in — even with **no** Bluetooth controller paired. Unplugging the adapter and using a stock Duke restores normal speed. **1.0.0.6a** was fine; later builds that added Core0 `sleep_ms(1)` for Bluetooth were not.
+
+**Cause:** Core0’s device main loop called **`sleep_ms(1)`** every iteration so Core1 / CYW43 could run. That delayed **`tud_task()`** enough to starve the **Duke USB** interrupt IN path. Timing-sensitive titles stall waiting on USB.
+
+**Fix:** In **`pico_w::run()`** (`src/OGXMini/Board/PicoW.cpp`):
+
+| USB device configured (`tud_mounted()`)? | Bluetooth pad connected? | Yield |
+|---|---|---|
+| Yes | No | `tight_loop_contents()` (no 1 ms sleep) |
+| Yes | Yes | `sleep_us(250)` |
+| No | — | `sleep_ms(1)` (pairing / idle OK) |
+
+Removing sleep entirely while mounted fixed games but increased BT disconnects (**OGXBoxSlownessFix**). Restoring a long Core0 yield (**Issue54Test / Test2**) brought the slowdown back. The **250 µs** path is the middle ground.
+
+**Test:** MC3 / HL speed with adapter plugged in (paired and unpaired); Series 1914 (or other) disconnect rate vs older “slowness fix” builds.
+
+---
+
+## Xbox One / Series — Guide press/release (#27)
+
+**Problem:** On **XInput** (Xbox 360) with a wired **Xbox One / Series** pad (`045e:0b12`), a Guide **tap** opened the **shutdown** menu (long-press). Tapping Guide then another button gave normal short-press Guide. **RP2350-USB-A** / PIO USB host.
+
+**Cause:** Guide is GIP **`0x07` VIRTUAL_KEY**, not a bit that clears in the next `0x20` INPUT. Firmware set **`BUTTON_SYS`** and often never pushed a release into `PadIn` unless another report arrived — 360 saw Home held.
+
+**Issue27Test overcorrection:** Forcing SYS off after **~80 ms** fixed taps but made **holds** look like short presses too.
+
+**Fix:** In **`XboxOneHost`**: keep SYS while `0x07` says pressed; **`set_pad_in` on both press and release**; **5 s** orphan clear only if release never arrives; remove broken INPUT `memcmp` (`&prev + 4` was struct stride). **File:** `XboxOne.cpp` / `XboxOne.h`.
+
+**Test:** Tap Guide alone → guide menu (not shutdown). Hold Guide → long-press / shutdown behavior.
+
+---
+
 ## Pico W / Pico 2 W — PIO USB wired controller unplug detection
 
 **Problem:** On **Pico W / Pico 2 W**, the **USB gamepad** plugs into a **PIO USB** host. While PIO owns **D+ / D−**, reading line state with **`gpio_get()`** (as in **`pio_usb_bus_get_line_state()`** / **`hcd_port_connect_status()`**) often **does not** show a clean **SE0** after you pull the cable — lines can **float** or sit in a state that still looks like full-speed idle. The firmware could keep thinking the port was **connected**, so **TinyUSB** stayed up, **HostManager** still had a slot, and **Bluetooth** stayed blocked (wired takeover) until a power-cycle or “shorting” the port.
 
-**Approach:** In **`pico_w_pio_usb_bt_mux_tick()`** (`src/OGXMini/Board/PicoW.cpp`), treat **unplug** when **`HostManager::any_mounted()`** is still true **and** **any** of these **hints** fires (all share one **debounce**, ~**60 ms** wall time):
+**Approach:** In **`pico_w_pio_usb_bt_mux_tick()`** (`src/OGXMini/Board/PicoW.cpp`), treat **unplug** when **`HostManager::any_mounted()`** is still true **and** **either** of these **hints** fires (share one **debounce**, ~**60 ms** wall time):
 
 1. **`!hcd_port_connect_status(BOARD_TUH_RHPORT)`** — line-based disconnect when the HCD stack *does* see disconnect.
 2. **No configured TinyUSB device** — loop device addresses **`1 … CFG_TUH_DEVICE_MAX + CFG_TUH_HUB`** (matches TinyUSB’s internal **`TOTAL_DEVICES`**) and require **`tuh_mounted(d)`** for at least one address. If the stack has dropped configuration, tear down even if the line hint lied.
-3. **No USB host input for several seconds** — **`HostManager::usb_host_input_idle_ms()`** (default threshold **3000 ms** in `PicoW.cpp`) — after unplug, **IN transfers** and **`process_report()`** usually stop even if (1) and (2) lag. **`record_usb_host_input_activity()`** is called from **`process_report()`** and after successful **`setup_driver()`** (`src/USBHost/HostManager.h`). **`HostManager::initialize()`** seeds **`last_usb_host_input_ms_`** from **`board_api::ms_since_boot()`** so idle time is not huge before the first device.
+
+**[#87](https://github.com/MegaCadeDev/OGX-Mini-2026/issues/87) — idle-input unplug removed:** An earlier third hint (“no `process_report` for N ms”) false-unplugged **report-on-change** pads such as the **8BitDo Ultimate 2** **2.4 GHz** dongle (`2dc8:310B`): quiet for a few seconds looked like a pulled cable, so the mux **`tuh_deinit`**’d the host and input died until the Pico was unplugged from the console. Physical unplug with floating D+/D− may clear more slowly now (stack/HCD only); that is preferable to killing idle dongles.
 
 After debounced confirmation, **`pico_w_usb_host_full_stop()`** runs **`tuh_deinit`**, stops the SOF timer, clears unplug debounce state, and **`board_api_usbh::enable_host_line_irq_monitoring()`** so normal **GPIO unplug/plug** IRQs work again; **Bluetooth** release paths run as before.
 
-**Tuning:** If unplug feels slow, lower **`USB_UNPLUG_NO_INPUT_MS`** in `PicoW.cpp`. If a controller that **rarely sends reports** when idle ever mis-triggers unplug, raise that constant slightly.
+**BT quiet during host-up ([#47](https://github.com/MegaCadeDev/OGX-Mini-2026/issues/47) / [#87](https://github.com/MegaCadeDev/OGX-Mini-2026/issues/87)):** Call **`wired_usb_takeover_disconnect_bt()`** when the D+/D− line has been stable long enough to **`tuh_init`**, and keep pairing scans off for the **entire** `s_pio_usb_tuh_inited` window (enumeration + mounted). Previously scans were re-enabled whenever **`!wired_mounted`**, which put **CYW43 BR/LE inquiry** back on during DualShock 4 / **PowerA GIP** enumeration and broke wired pads on Pico W (same hardware OK on non-W UF2s). Release pairing only from **`pico_w_usb_host_full_stop()`** (unplug) or BT-priority teardown.
+
+**Pure DS4 HID OUT keepalive ([#47](https://github.com/MegaCadeDev/OGX-Mini-2026/issues/47)):** **`HostManager::send_feedback()`** treats first-party DS4 as **`ps4_hid_periodic`** when the device has **no XInput** interface (`!has_xinput`). The old `!ps_style_hid` gate never fired for PS4 HID, so pure DS4 never got the **200 ms** LED/rumble OUT refresh.
+
+**8BitDo XInput LED keepalive ([#87](https://github.com/MegaCadeDev/OGX-Mini-2026/issues/87)):** **`Xbox360Host`** schedules periodic LED-off for VID **`0x2DC8`** PIDs **`3016` / `3106` / `310B` / `3107` / `3109`** (Ultimate 2 / Adapter idle & mode IDs).
 
 ---
 

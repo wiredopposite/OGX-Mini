@@ -103,12 +103,12 @@ static void pico_w_usb_sof_timer_stop() {
     s_pico_w_usb_sof_hw_timer = false;
 }
 
-/** Debounce any unplug hint (line / stack / idle) past USB bus reset glitches (10–50 ms). */
+/** Debounce any unplug hint (line / stack) past USB bus reset glitches (10–50 ms). */
 constexpr int32_t USB_UNPLUG_DEBOUNCE_US = 60 * 1000;
-/** If D+/D− never read as SE0 under PIO, IN reports stop when the cable is pulled — detect unplug this way.
- *  Keep high enough that HID pads that only report on change are not mistaken for unplug.
- *  360 wireless receiver sends status even with no controller paired. */
-constexpr uint32_t USB_UNPLUG_NO_INPUT_MS = 10000;
+/** Idle-input unplug was removed for [#87](https://github.com/MegaCadeDev/OGX-Mini-2026/issues/87):
+ *  report-on-change pads (8BitDo Ultimate 2 2.4 GHz dongle) stop IN while still connected;
+ *  treating that as unplug tore the host down after a few quiet seconds. Physical unplug is
+ *  detected via HCD disconnect and/or TinyUSB dropping the configured device. */
 static bool s_usb_unplug_debounce_armed = false;
 static absolute_time_t s_usb_unplug_debounce_since;
 
@@ -136,7 +136,9 @@ static void pico_w_usb_host_full_stop() {
 /**
  * Runs every ~1 ms from Core0 (normal Pico W modes) or from Core1 (GPIO modes that block Core0 in run_task).
  * - If any BT gamepad is connected: PIO USB host is not initialized (wired ignored until BT disconnects).
- * - If a wired device enumerates on the PIO port: disconnect BT pads and block new BT connections until unplugged.
+ * - If the PIO USB host is up (cable line stable / enumerating / mounted): disconnect BT pads and block
+ *   new BT connections until the host is torn down on unplug. Do not re-enable scans between tuh_init
+ *   and first mount — that window is when DualShock 4 enumeration fails under CYW43 load (#47).
  */
 static void pico_w_pio_usb_bt_mux_tick() {
     HostManager& hm = HostManager::get_instance();
@@ -150,22 +152,25 @@ static void pico_w_pio_usb_bt_mux_tick() {
     if (bt_active && !wired_mounted) {
         if (s_pio_usb_tuh_inited) {
             pico_w_usb_host_full_stop();
+            if (s_bt_new_conn_off_for_usb) {
+                s_bt_new_conn_off_for_usb = false;
+                bluepad32::wired_usb_release_enable_bt_pairing();
+            }
         }
         return;
     }
 
     /* Unplug: pio_usb_bus_get_line_state() uses gpio_get on D+/D− while PIO owns them — often never
-     * reads SE0 when the cable is removed (floating FS-idle), so HCD "connect" stays true. Use any of:
-     * HCD line, TinyUSB configured device gone, or no process_report() for USB_UNPLUG_NO_INPUT_MS. */
+     * reads SE0 when the cable is removed (floating FS-idle), so HCD "connect" can stay true. Prefer
+     * TinyUSB configured-device loss; also honor HCD disconnect when it does fire.
+     * Do NOT use "no process_report for N ms" — silent-but-connected pads (#87 Ultimate 2 dongle)
+     * look identical to a pulled cable on that metric and were false-unplugged. */
     if (s_pio_usb_tuh_inited) {
         const bool hcd_line_connected = hcd_port_connect_status(BOARD_TUH_RHPORT);
         board_api_usbh::store_host_line_connected(hcd_line_connected);
 
         const bool tuh_still_has_device = pico_w_tuh_any_device_configured();
-        const uint32_t input_idle_ms = hm.usb_host_input_idle_ms();
-
-        const bool unplug_hint = wired_mounted &&
-            (!hcd_line_connected || !tuh_still_has_device || (input_idle_ms >= USB_UNPLUG_NO_INPUT_MS));
+        const bool unplug_hint = wired_mounted && (!hcd_line_connected || !tuh_still_has_device);
 
         if (unplug_hint) {
             if (!s_usb_unplug_debounce_armed) {
@@ -198,6 +203,13 @@ static void pico_w_pio_usb_bt_mux_tick() {
         if (absolute_time_diff_us(s_usb_line_high_since, get_absolute_time()) < PIO_LINE_STABLE_US) {
             return;
         }
+        /* Quiet CYW43 BT *before* tuh_init. BR/LE inquiry during DS4/XBO enumeration starves PIO SOF
+         * on Pico W / 2 W (#47). Keep quiet for the whole host-up window, not only after mount —
+         * the old !wired_mounted branch re-enabled scans mid-enumeration and broke first-party DS4. */
+        if (!s_bt_new_conn_off_for_usb) {
+            bluepad32::wired_usb_takeover_disconnect_bt();
+            s_bt_new_conn_off_for_usb = true;
+        }
         // main() already called flash_safe_execute_core_init() on Core0; do not call from Core1 BT timer (deadlock risk).
         hm.initialize(_gamepads);
         // PIO USB takes over D+/D−; GPIO edge IRQs on those pins must be off or IO_IRQ floods and BT stalls.
@@ -209,6 +221,8 @@ static void pico_w_pio_usb_bt_mux_tick() {
         tuh_configure(BOARD_TUH_RHPORT, TUH_CFGID_RPI_PIO_USB_CONFIGURATION, &pio_cfg);
         if (!tuh_init(BOARD_TUH_RHPORT)) {
             s_usb_line_debounce_armed = false;
+            s_bt_new_conn_off_for_usb = false;
+            bluepad32::wired_usb_release_enable_bt_pairing();
             return;
         }
         s_pio_usb_tuh_inited = true;
@@ -232,16 +246,11 @@ static void pico_w_pio_usb_bt_mux_tick() {
         }
     }
 
-    if (wired_mounted) {
-        if (!s_bt_new_conn_off_for_usb) {
-            bluepad32::wired_usb_takeover_disconnect_bt();
-            s_bt_new_conn_off_for_usb = true;
-        }
-    } else {
-        if (s_bt_new_conn_off_for_usb) {
-            bluepad32::wired_usb_release_enable_bt_pairing();
-            s_bt_new_conn_off_for_usb = false;
-        }
+    /* While PIO USB host is up (enumerating or mounted), keep BT scans off. Release only in
+     * pico_w_usb_host_full_stop() after unplug / BT-priority teardown. */
+    if (s_pio_usb_tuh_inited && !s_bt_new_conn_off_for_usb) {
+        bluepad32::wired_usb_takeover_disconnect_bt();
+        s_bt_new_conn_off_for_usb = true;
     }
 }
 
@@ -585,15 +594,25 @@ void pico_w::run() {
             pico_w::poll_usb_host_mux_from_core0();
         }
 #endif
-        /* With hardware SOF timer, Core0 can sleep briefly; wired USB still needs tuh_task often.
-         * sleep_ms(1) alone starved TinyUSB vs Wii Core1's tight loop. */
+        /* Main-loop yield (#54 / wired host):
+         * - sleep_ms(1) while tud_mounted() starves OG Xbox Duke USB → MC3 / Half-Life slowdown.
+         * - While USB device configured: never sleep_ms(1). BT pad connected → sleep_us(250) so
+         *   Core1/CYW43 still run; unpaired → tight_loop_contents().
+         * - Wired PIO host pad mounted: short sleep_us so tuh_task keeps up under BT load.
+         * - USB not configured: sleep_ms(1) OK (pairing / idle). */
         if (!ps2_poll_mode) {
 #if defined(CONFIG_EN_USB_HOST)
             if (!wii_mode && s_pio_usb_tuh_inited && HostManager::get_instance().any_mounted()) {
                 sleep_us(400);
             } else
 #endif
-            {
+            if (!wii_mode && tud_mounted()) {
+                if (bluepad32::any_connected()) {
+                    sleep_us(250);
+                } else {
+                    tight_loop_contents();
+                }
+            } else {
                 sleep_ms(1);
             }
         }

@@ -8,7 +8,14 @@
 #include "USBHost/HostDriver/XInput/XboxOne.h"
 #include "USBHost/HostDriver/XInput/XboxArcadeStick.h"
 
+/** While INPUT reports keep arriving, drop latched Guide if 0x07 went quiet. */
 static constexpr uint32_t GUIDE_STALE_MS = 400u;
+/**
+ * #27: Series/One Guide is GIP VIRTUAL_KEY (0x07). Hold BUTTON_SYS while pressed; clear on
+ * real release. Issue27Test forced an ~80 ms pulse which made taps OK but broke long-hold
+ * (shutdown menu). Only orphan-clear after a long timeout if release never arrives.
+ */
+static constexpr uint32_t GUIDE_ORPHAN_MS = 5000u;
 
 void XboxOneHost::initialize(Gamepad& gamepad, uint8_t address, uint8_t instance, const uint8_t* report_desc, uint16_t desc_len)
 {
@@ -18,14 +25,25 @@ void XboxOneHost::initialize(Gamepad& gamepad, uint8_t address, uint8_t instance
     gip_arcade_stick_ = XboxArcadeStick::is_xbox_one_gip(vid, pid);
     prev_arcade_len_ = 0;
     std::memset(&prev_in_report_, 0, sizeof(prev_in_report_));
+    guide_pressed_ = 0;
+    last_guide_07_ms_ = 0;
+    cancel_guide_orphan();
     (void)gamepad;
     (void)report_desc;
     (void)desc_len;
-    const uint8_t addr = address;
-    const uint8_t inst = instance;
-    TaskQueue::Core1::queue_delayed_task(
-        TaskQueue::Core1::get_new_task_id(), 50, false,
-        [addr, inst]() { tuh_xinput::start_xboxone(addr, inst); });
+
+    if (gip_arcade_stick_)
+    {
+        const uint8_t addr = address;
+        const uint8_t inst = instance;
+        TaskQueue::Core1::queue_delayed_task(
+            TaskQueue::Core1::get_new_task_id(), 50, false,
+            [addr, inst]() { tuh_xinput::start_xboxone(addr, inst); });
+    }
+    else
+    {
+        tuh_xinput::receive_report(address, instance);
+    }
 }
 
 static void map_gip_buttons(Gamepad& gamepad, const XboxOne::InReport* in_report, Gamepad::PadIn& gp_in,
@@ -44,6 +62,8 @@ static void map_gip_buttons(Gamepad& gamepad, const XboxOne::InReport* in_report
     if (b & XboxOne::GipWireButtons::BACK)  gp_in.buttons |= gamepad.MAP_BUTTON_BACK;
     if (b & XboxOne::GipWireButtons::START) gp_in.buttons |= gamepad.MAP_BUTTON_START;
     if (b & XboxOne::GipWireButtons::SYNC)  gp_in.buttons |= gamepad.MAP_BUTTON_MISC;
+    /* Some GIP reports set Guide in bit1 of the button word (WiredOpposite Buttons0::GUIDE). */
+    if (b & XboxOne::Buttons0::GUIDE) gp_in.buttons |= gamepad.MAP_BUTTON_SYS;
     if (guide_pressed) gp_in.buttons |= gamepad.MAP_BUTTON_SYS;
     if (b & XboxOne::GipWireButtons::A)     gp_in.buttons |= gamepad.MAP_BUTTON_A;
     if (b & XboxOne::GipWireButtons::B)     gp_in.buttons |= gamepad.MAP_BUTTON_B;
@@ -57,32 +77,78 @@ static void map_gip_buttons(Gamepad& gamepad, const XboxOne::InReport* in_report
     std::tie(gp_in.joystick_rx, gp_in.joystick_ry) = gamepad.scale_joystick_r(in_report->joystick_rx, in_report->joystick_ry, true);
 }
 
+void XboxOneHost::emit_pad_in(Gamepad& gamepad, uint8_t guide_pressed)
+{
+    Gamepad::PadIn gp_in;
+    if (gip_arcade_stick_ && prev_arcade_len_ >= 23)
+    {
+        XboxArcadeStick::map_gip_arcade_report(prev_arcade_report_.data(), prev_arcade_len_, gamepad, gp_in);
+        if (guide_pressed)
+        {
+            gp_in.buttons |= gamepad.MAP_BUTTON_SYS;
+        }
+    }
+    else
+    {
+        map_gip_buttons(gamepad, &prev_in_report_, gp_in, guide_pressed);
+    }
+    gamepad.set_pad_in(gp_in);
+}
+
+void XboxOneHost::cancel_guide_orphan()
+{
+    if (guide_orphan_task_id_ != 0)
+    {
+        TaskQueue::Core1::cancel_delayed_task(guide_orphan_task_id_);
+        guide_orphan_task_id_ = 0;
+    }
+    ++guide_orphan_gen_;
+}
+
+void XboxOneHost::schedule_guide_orphan_clear(Gamepad& gamepad)
+{
+    cancel_guide_orphan();
+    const uint8_t gen = guide_orphan_gen_;
+    Gamepad* gp = &gamepad;
+    guide_orphan_task_id_ = TaskQueue::Core1::get_new_task_id();
+    TaskQueue::Core1::queue_delayed_task(
+        guide_orphan_task_id_, GUIDE_ORPHAN_MS, false,
+        [this, gp, gen]() {
+            guide_orphan_task_id_ = 0;
+            if (gen != guide_orphan_gen_ || !guide_pressed_)
+            {
+                return;
+            }
+            guide_pressed_ = 0;
+            emit_pad_in(*gp, 0);
+        });
+}
+
 void XboxOneHost::process_report(Gamepad& gamepad, uint8_t address, uint8_t instance, const uint8_t* report, uint16_t len)
 {
     const uint8_t cmd = report[0];
     if (cmd == XboxOne::GIP_CMD_VIRTUAL_KEY)
     {
         last_guide_07_ms_ = board_api::ms_since_boot();
+        uint8_t pressed = 0;
         if (len >= 5) {
             if (report[4] == 0x5B && len >= 6)
-                guide_pressed_ = (report[5] & 0x01) ? 1 : 0;
+                pressed = (report[5] & 0x01) ? 1 : 0;
             else
-                guide_pressed_ = (report[4] & 0x01) ? 1 : 0;
+                pressed = (report[4] & 0x01) ? 1 : 0;
         }
-        Gamepad::PadIn gp_in;
-        if (gip_arcade_stick_ && prev_arcade_len_ >= 23)
+        guide_pressed_ = pressed;
+        /* Always push PadIn on both edges so XInput sees press and release without waiting
+         * for another 0x20 INPUT report (#27). */
+        emit_pad_in(gamepad, guide_pressed_);
+        if (pressed)
         {
-            XboxArcadeStick::map_gip_arcade_report(prev_arcade_report_.data(), prev_arcade_len_, gamepad, gp_in);
+            schedule_guide_orphan_clear(gamepad);
         }
         else
         {
-            map_gip_buttons(gamepad, &prev_in_report_, gp_in, guide_pressed_);
+            cancel_guide_orphan();
         }
-        if (guide_pressed_)
-        {
-            gp_in.buttons |= gamepad.MAP_BUTTON_SYS;
-        }
-        gamepad.set_pad_in(gp_in);
         tuh_xinput::receive_report(address, instance);
         return;
     }
@@ -95,17 +161,10 @@ void XboxOneHost::process_report(Gamepad& gamepad, uint8_t address, uint8_t inst
 
     if (gip_arcade_stick_)
     {
-        bool guide_cleared = false;
         if (guide_pressed_ && (board_api::ms_since_boot() - last_guide_07_ms_) > GUIDE_STALE_MS)
         {
             guide_pressed_ = 0;
-            guide_cleared = true;
-        }
-        if (!guide_cleared &&
-            !XboxArcadeStick::gip_arcade_report_changed(report, len, prev_arcade_report_.data(), prev_arcade_len_))
-        {
-            tuh_xinput::receive_report(address, instance);
-            return;
+            cancel_guide_orphan();
         }
 
         Gamepad::PadIn gp_in;
@@ -131,17 +190,12 @@ void XboxOneHost::process_report(Gamepad& gamepad, uint8_t address, uint8_t inst
     }
 
     const XboxOne::InReport* in_report = reinterpret_cast<const XboxOne::InReport*>(report);
-    bool guide_cleared = false;
     if (guide_pressed_ && (board_api::ms_since_boot() - last_guide_07_ms_) > GUIDE_STALE_MS) {
         guide_pressed_ = 0;
-        guide_cleared = true;
-    }
-    if (std::memcmp(&prev_in_report_ + 4, in_report + 4, 14) == 0 && !guide_cleared)
-    {
-        tuh_xinput::receive_report(address, instance);
-        return;
+        cancel_guide_orphan();
     }
 
+    /* Always map + set_pad_in. Older memcmp used &prev_in_report_+4 (struct stride), not bytes. */
     Gamepad::PadIn gp_in;
     map_gip_buttons(gamepad, in_report, gp_in, guide_pressed_);
     gamepad.set_pad_in(gp_in);
