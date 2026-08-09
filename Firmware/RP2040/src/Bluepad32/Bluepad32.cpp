@@ -383,16 +383,17 @@ static void init(int argc, const char** arg_V) {
 }
 
 static void init_complete_cb(void) {
-    // Faster pairing: more aggressive GAP inquiry/periodic (units: 1.28s).
-    // Defaults are inquiry=3, max=5, min=4; slightly tighter so we discover and reconnect sooner.
-    uni_bt_set_gap_inquiry_length(2);
-    uni_bt_set_gap_max_peridic_length(4);
-    uni_bt_set_gap_min_peridic_length(3);
+    // Keep Bluepad32 defaults (inquiry=3, max=5, min=4 in 1.28s units).
+    // Shorter inquiry (2) breaks discovery for 8BitDo SN30 Pro / Pro 2 in D-input /
+    // Android modes — see uni_bt_defines.h. (#86)
+    uni_bt_set_gap_inquiry_length(UNI_BT_INQUIRY_LENGTH);
+    uni_bt_set_gap_max_peridic_length(UNI_BT_MAX_PERIODIC_LENGTH);
+    uni_bt_set_gap_min_peridic_length(UNI_BT_MIN_PERIODIC_LENGTH);
 
     uni_bt_enable_new_connections_unsafe(true);
     // uni_bt_del_keys_unsafe();
     uni_property_dump_all();
-    OGXM_LOG("BT: stack ready — BR/EDR inquiry + BLE scan (hold Pro 2 SYNC to pair)\n");
+    OGXM_LOG("BT: stack ready — BR/EDR inquiry + BLE scan (8BitDo: use Switch or Android mode)\n");
 }
 
 static uni_error_t device_discovered_cb(bd_addr_t addr, const char* name, uint16_t cod, uint8_t rssi) {
@@ -508,8 +509,34 @@ static bool s_bt_disconnect_reboot_pending = false;
 static void bt_disconnect_reboot_cb(btstack_timer_source_t* ts) {
     (void)ts;
     s_bt_disconnect_reboot_pending = false;
-    printf("[BP32] Last controller disconnected — restarting Pico for clean reconnect\n");
+    printf("[BP32] Last Xbox BLE controller disconnected — restarting Pico for clean reconnect\n");
     board_api::reboot();
+}
+
+/** Xbox Series / One S over BLE (HOGP) — in-place reconnect leaves HIDS/bond state bad. */
+static bool device_is_xbox_ble(const uni_hid_device_t* d) {
+    return d != nullptr && d->controller_type == CONTROLLER_TYPE_XBoxOneController && d->hids_cid != 0;
+}
+
+/**
+ * Drop LE links that never reached DEVICE_READY (stuck DIS/HIDS after USB suspend).
+ * Classic ACL pads are left alone so 8BitDo Android/Switch can reconnect cleanly.
+ */
+static void drop_incomplete_ble_slots(void) {
+#if defined(CONFIG_TARGET_PICO_W)
+    for (uint8_t i = 0; i < CONFIG_BLUEPAD32_MAX_DEVICES; ++i) {
+        uni_hid_device_t* d = uni_hid_device_get_instance_for_idx(static_cast<int>(i));
+        if (!d || d->conn.handle == UNI_BT_CONN_HANDLE_INVALID)
+            continue;
+        if (uni_bt_conn_get_state(&d->conn) == UNI_BT_CONN_STATE_DEVICE_READY)
+            continue;
+        if (gap_get_connection_type(d->conn.handle) != GAP_CONNECTION_LE)
+            continue;
+        printf("[BP32] Dropping incomplete BLE slot %u (stale after suspend)\n",
+               static_cast<unsigned>(i));
+        uni_hid_device_disconnect(d);
+    }
+#endif
 }
 
 static void restore_bt_pairing_mode(int disconnected_idx);
@@ -564,6 +591,7 @@ static btstack_context_callback_registration_t s_usb_resume_bt_reg;
 
 static void usb_resume_on_bt_main(void* ctx) {
     (void)ctx;
+    drop_incomplete_ble_slots();
     if (!is_pairing_idle())
         return;
     printf("[BP32] USB resume — restoring BT pairing scans\n");
@@ -637,17 +665,22 @@ static void device_disconnected_cb(uni_hid_device_t* device) {
     restore_bt_pairing_mode(idx);
 
     /*
-     * Only reboot after a pad that reached device_ready. Failed pair attempts must
-     * not reboot or we never stay in pairing mode. Reboot clears BT/HIDS so the
-     * next successful pair matches a fresh plug-in.
+     * Xbox BLE needs a full reboot after a ready disconnect — bonded re-encryption /
+     * leftover HIDS state otherwise leave the adapter frozen until unplug.
+     * Classic BT and non-Xbox BLE (8BitDo Android/Switch, DualShock, Joy-Con, etc.)
+     * reconnect in place; rebooting those on OG Xbox looks like a freeze.
+     * Failed pair attempts must not reboot or we never stay in pairing mode.
      */
-    if (was_ready && !s_bt_disconnect_reboot_pending) {
+    const bool xbox_ble = device_is_xbox_ble(device);
+    if (was_ready && xbox_ble && !s_bt_disconnect_reboot_pending) {
         s_bt_disconnect_reboot_pending = true;
         s_bt_disconnect_reboot_timer.process = bt_disconnect_reboot_cb;
         s_bt_disconnect_reboot_timer.context = nullptr;
         btstack_run_loop_set_timer(&s_bt_disconnect_reboot_timer, 500);
         btstack_run_loop_add_timer(&s_bt_disconnect_reboot_timer);
-        printf("[BP32] Pairing mode on — reboot in 500 ms for clean reconnect\n");
+        printf("[BP32] Pairing mode on — Xbox BLE reboot in 500 ms for clean reconnect\n");
+    } else if (was_ready) {
+        printf("[BP32] Pairing mode on — Classic/non-Xbox-BLE reconnect without reboot\n");
     }
 }
 

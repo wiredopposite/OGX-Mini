@@ -217,6 +217,7 @@ Full technical detail: **[Firmware/RP2040/docs/IMPROVEMENTS.md](Firmware/RP2040/
       - Nunchuck
       - GameCube Controller
 - 8BitDo Ultimate Wireless (Switch layout)
+- **8BitDo Pro 2 / SN30 Pro** — use **Switch** or **Android (D-input)** mode (not Windows/X-input). See [IMPROVEMENTS — 8BitDo Bluetooth](Firmware/RP2040/docs/IMPROVEMENTS.md#8bitdo-pro-2--sn30-pro--bluetooth-pico-w--pico-2-w) ([#86](https://github.com/MegaCadeDev/OGX-Mini-2026/issues/86))
 
 Please visit [**this page**](https://bluepad32.readthedocs.io/en/latest/supported_gamepads/) for a more comprehensive list of supported controllers and Bluetooth pairing instructions.
 

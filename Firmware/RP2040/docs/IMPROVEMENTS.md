@@ -30,21 +30,45 @@ Improvements and fixes applied to the OGX-Mini RP2040 firmware in this project.
 
 **Goal:** After a wireless controller fully connects and then disconnects, the next pair must work like a **fresh plug-in** — rumble, inputs, and pairing LED — without unplugging the Pico.
 
-**Problem:** In-place BLE reconnect (especially **Xbox Series / One over BLE**) does not reliably re-run the same path as first connect. Bonded **re-encryption**, leftover **HIDS** client / descriptor state, and scan flags left the adapter in a bad state: LED solid or off, no connection rumble, no gamepad input, until a power cycle.
+**Problem:** In-place BLE reconnect for **Xbox Series / One over BLE (HOGP)** does not reliably re-run the same path as first connect. Bonded **re-encryption**, leftover **HIDS** client / descriptor state, and scan flags left the adapter in a bad state: LED solid or off, no connection rumble, no gamepad input, until a power cycle. Rebooting **every** pad on disconnect (including Classic BT **8BitDo** / DualShock / Joy-Con) made **OG Xbox** look frozen on reconnect ([#86](https://github.com/MegaCadeDev/OGX-Mini-2026/issues/86)).
 
-**Approach:** Treat a successful pad’s disconnect as a full reset of the radio stack, the same way unplugging the Pico does.
+**Approach:** Reboot only when the last ready pad was **Xbox BLE**. Classic BT and other BLE pads restore pairing mode and reconnect in place.
 
 | Item | Detail |
 |------|--------|
-| **When** | Last Bluetooth pad that reached **device ready** disconnects (**Home**, **Start+Select**, or link drop) |
+| **When (reboot)** | Last **Xbox BLE** pad that reached **device ready** disconnects |
+| **When (no reboot)** | Classic BT / non-Xbox BLE ready disconnect (**8BitDo** Android/Switch, DS4, Joy-Con, Switch 2, Triton, etc.) |
 | **Immediate** | Restore **pairing mode**: LED blink + BT scan / new connections enabled |
-| **After ~500 ms** | **Watchdog reboot** (`watchdog_reboot`) — reliable from the BT core (Core1) |
+| **After ~500 ms (Xbox BLE only)** | **Watchdog reboot** (`watchdog_reboot`) from the BT core (Core1) |
+| **USB resume** | Drop incomplete BLE slots stuck mid-DIS/HIDS after suspend, then restore scans |
 | **Not when** | Failed pair attempts while already scanning (avoids reboot loops) |
 | **Multi-pad** | No reboot while another BT pad is still connected |
 
-**User flow:** Disconnect pad → LED flashes (pairing) → brief reboot (USB may re-enumerate on the PC) → LED flashes again → press the controller’s connect button → normal first-connect rumble and inputs.
+**User flow (Xbox BLE):** Disconnect pad → LED flashes (pairing) → brief reboot (USB may re-enumerate) → LED flashes again → press connect → normal first-connect rumble and inputs.
 
-**Files:** `src/Bluepad32/Bluepad32.cpp` (`device_ready_cb` sets `s_bt_slot_was_ready`; `device_disconnected_cb` restores pairing mode and schedules reboot), `src/Board/board_api.cpp` (`board_api::reboot()` via `watchdog_reboot`).
+**User flow (Classic / 8BitDo):** Disconnect pad → LED flashes → press connect → reconnects without adapter reboot.
+
+**Files:** `src/Bluepad32/Bluepad32.cpp` (`device_ready_cb` sets `s_bt_slot_was_ready`; `device_disconnected_cb` restores pairing mode and schedules Xbox-BLE-only reboot; `drop_incomplete_ble_slots`), `src/Board/board_api.cpp` (`board_api::reboot()` via `watchdog_reboot`).
+
+---
+
+## 8BitDo Pro 2 / SN30 Pro — Bluetooth (Pico W / Pico 2 W)
+
+**Goal:** Stable wireless input on **OG Xbox** (and other modes) with **8BitDo Pro 2** and **SN30 Pro** ([#86](https://github.com/MegaCadeDev/OGX-Mini-2026/issues/86)).
+
+**Problem:** Wrong controller mode (Windows/X-input) plus aggressive GAP inquiry (`inquiry=2`) caused failed discovery, laggy sticks/buttons, frequent drops, and a frozen adapter on reconnect when every disconnect triggered a full Pico reboot.
+
+**Approach:**
+
+| Item | Detail |
+|------|--------|
+| **Controller mode** | Put the pad in **Switch** or **Android (D-input)** before pairing — not Windows/X-input |
+| **GAP inquiry** | Restore Bluepad32 defaults (`3` / `5` / `4` × 1.28 s) so Android/D-input 8BitDo pads are discoverable |
+| **Reconnect** | Classic BT reconnect without reboot (see disconnect reboot section above) |
+| **PIDs** | Register Android-mode IDs `0x2dc8:0x6003` and `0x6103` as `8BitdoController` |
+| **Rumble** | Android/D-input 8BitDo path has no rumble parser yet; Switch mode uses Switch rumble |
+
+**Files:** `src/Bluepad32/Bluepad32.cpp`, `Firmware/external/patches/bluepad32_8bitdo_pids.diff`, `Firmware/cmake/patch_libs.cmake`.
 
 ---
 

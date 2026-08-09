@@ -58,6 +58,23 @@ function(apply_lib_patches EXTERNAL_DIR)
         message(FATAL_ERROR "Failed to apply Bluepad32 patch: ${BLUEPAD32_PATCH_ERROR}")
     endif ()
 
+    set(BLUEPAD32_8BITDO_PATCH "${EXTERNAL_DIR}/patches/bluepad32_8bitdo_pids.diff")
+    message(STATUS "Applying Bluepad32 8BitDo PID patch: ${BLUEPAD32_8BITDO_PATCH}")
+    execute_process(
+        COMMAND git apply --ignore-whitespace ${BLUEPAD32_8BITDO_PATCH}
+        WORKING_DIRECTORY ${BLUEPAD32_PATH}
+        RESULT_VARIABLE BLUEPAD32_8BITDO_RESULT
+        OUTPUT_VARIABLE BLUEPAD32_8BITDO_OUTPUT
+        ERROR_VARIABLE BLUEPAD32_8BITDO_ERROR
+    )
+    if (BLUEPAD32_8BITDO_RESULT EQUAL 0)
+        message(STATUS "Bluepad32 8BitDo PID patch applied successfully.")
+    elseif (BLUEPAD32_8BITDO_ERROR MATCHES "patch does not apply")
+        message(STATUS "Bluepad32 8BitDo PID patch already applied.")
+    else ()
+        message(FATAL_ERROR "Failed to apply Bluepad32 8BitDo PID patch: ${BLUEPAD32_8BITDO_ERROR}")
+    endif ()
+
     # Pico SDK 2.1.x still lists BTstack's old hids_client.c; Bluepad32's BTstack
     # v1.8 renamed it to hids_host.c. Patch the SDK cmake when using that tree.
     set(PICO_SDK_HIDS_PATCH "${EXTERNAL_DIR}/patches/pico_sdk_hids_host.diff")
