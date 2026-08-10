@@ -11,7 +11,7 @@ This document lists controllers supported when connected to the OGX-Mini adapter
 ### XInput (Xbox 360, Xbox One, Xbox Series)
 
 - **Microsoft:** Xbox 360 (wired and **360 PC wireless receiver**), Xbox One / Series **wired USB**, Xbox Elite
-- **Not supported (planned):** Xbox One / Series **wireless USB dongle** (`045e:02e6`, `045e:02fe`) — see [IMPROVEMENTS.md — Future planned](IMPROVEMENTS.md#future-planned)
+- **Not supported (planned):** Xbox One / Series **wireless USB dongle** (`045e:02e6`, `045e:02fe`) — see [Planned_Additions.md](Planned_Additions.md#xbox-wireless-adapter-for-windows-045e02e6-045e02fe)
 - **Third‑party:** Controllers that identify as XInput over USB (e.g. many 8BitDo, PowerA, PDP, Afterglow when in XInput mode)
 - **Razer Atrox Arcade Stick:** **Xbox One** (`1532:0a00`, vendor GIP); **Xbox 360** (`24c6:5000`, standard XInput, digital LT/RT)
 - **Other Xbox One GIP arcade sticks:** Mad Catz FightStick TE 2 (`0738:4a01`), PDP Xbox One Arcade Stick (`0e6f:015c`), Hori RAP Hayabusa / V Kai / Fighting Commander ONE — see `XBOX_ONE_GIP_IDS` in `XboxArcadeStick.h`
@@ -138,5 +138,6 @@ Controllers that use the standard HID gamepad (DInput) protocol, including:
 
 - **VID/PID lists:** `Firmware/RP2040/src/USBHost/HardwareIDs.h`
 - **Host drivers:** `Firmware/RP2040/src/USBHost/HostDriver/`
+- **Adding a new controller:** [Adding_Supported_Controllers.md](Adding_Supported_Controllers.md) (capture, drivers, Debug UART)
 - **Platform selection:** See the main [README](../../../README.md) for button combos to change output platform.
-- **SteamOS / Bazzite (STEAM output):** USB presents **DualSense** (`054c:0ce6`) + **HID mouse**. **DualSense** input (wired or BT): passthrough gamepad + **touchpad → cursor**; other pads get synthesized DualSense mapping (gamepad only — no stick mouse). **Start + LB + D-pad Up** selects mode. See [README — SteamOS / Bazzite](../../../README.md#steamos--bazzite-output-mode), [IMPROVEMENTS — STEAM mode](IMPROVEMENTS.md#steam-mode--steamos--bazzite-linux-desktop), and [Controller_Mappings — STEAM](Controller_Mappings.md#steamos--bazzite-steam-mode).
+- **SteamOS / Bazzite (STEAM output):** USB presents **DualSense** (`054c:0ce6`) + **HID mouse**. **DualSense** input (wired or BT): passthrough gamepad + **touchpad → cursor**; other pads get synthesized DualSense mapping (gamepad only — no stick mouse). **Start + LB + D-pad Up** selects mode. See [SteamOS / Bazzite output mode](SteamOS_Bazzite_Output_Mode.md), [IMPROVEMENTS — STEAM mode](IMPROVEMENTS.md#steam-mode--steamos--bazzite-linux-desktop), and [Controller_Mappings — STEAM](Controller_Mappings.md#steamos--bazzite-steam-mode).

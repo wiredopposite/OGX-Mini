@@ -478,10 +478,15 @@ static bool xfer_cb(uint8_t dev_addr, uint8_t ep_addr, xfer_result_t result, uin
                         }
                         break;
                     case XboxOne::GIP_CMD_ANNOUNCE:
-                        if (interface->gip_arcade_stick && !interface->gip_power_sent &&
+                        /* Arcade: POWER_ON once. Standard GIP (Series / PowerA): full
+                         * xboxone_init (POWER_ON + S_INIT) if bring-up was missed (#27 / #87). */
+                        if (!interface->gip_power_sent &&
                             !usbh_edpt_busy(dev_addr, interface->ep_out))
                         {
-                            xboxone_send_power_on(interface, dev_addr, instance);
+                            if (interface->gip_arcade_stick)
+                                xboxone_send_power_on(interface, dev_addr, instance);
+                            else
+                                xboxone_init(interface, dev_addr, instance);
                         }
                         break;
                 }

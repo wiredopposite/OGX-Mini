@@ -155,7 +155,7 @@ Improvements and fixes applied to the OGX-Mini RP2040 firmware in this project.
 | **Web app** | Output mode **SteamOS / Bazzite** (value `16`) |
 | **Fixed build** | **`-DOGXM_FIXED_DRIVER=STEAM`** — also option **13** in `scripts/build.sh` / `build.ps1` fixed-mode menu |
 
-**User docs:** [README — SteamOS / Bazzite output mode](../../../README.md#steamos--bazzite-output-mode). **Mappings:** [Controller_Mappings.md — STEAM mode](Controller_Mappings.md#steamos--bazzite-steam-mode).
+**User docs:** [SteamOS / Bazzite output mode](SteamOS_Bazzite_Output_Mode.md). **Mappings:** [Controller_Mappings.md — STEAM mode](Controller_Mappings.md#steamos--bazzite-steam-mode).
 
 ### DualSense USB emulation
 
@@ -228,7 +228,7 @@ sudo evtest   # select the mouse interface; drag touchpad for REL_X / REL_Y
 
 **Files:** `src/Gamepad/MotionImu.h`, `src/Gamepad/Gamepad.h`, `src/USBDevice/DeviceDriver/PS3/PS3.cpp`, `src/USBDevice/DeviceDriver/PS4/PS4.cpp`, `src/USBDevice/DeviceDriver/MotionOutputActive.h`, `src/USBDevice/DeviceManager.cpp`, `src/Bluepad32/Bluepad32.cpp`, `src/USBHost/HostDriver/SwitchPro/SwitchPro.cpp`, `src/USBHost/HostDriver/SwitchPro/Switch2ProHost.cpp`, `src/USBHost/HostDriver/PS4/PS4.cpp`, `src/USBHost/HostDriver/PS5/PS5.cpp`.
 
-**User docs:** [README — Motion controls](../../../README.md#ps3--ps4-motion-controls).
+**User docs:** [PS3 / PS4 motion controls](PS3_PS4_Motion_Controls.md).
 
 **Button mappings (all modes):** [Controller_Mappings.md](Controller_Mappings.md)
 
@@ -741,6 +741,8 @@ Removing sleep entirely while mounted fixed games but increased BT disconnects (
 
 **Fix:** In **`XboxOneHost`**: keep SYS while `0x07` says pressed; **`set_pad_in` on both press and release**; **5 s** orphan clear only if release never arrives; remove broken INPUT `memcmp` (`&prev + 4` was struct stride). **File:** `XboxOne.cpp` / `XboxOne.h`.
 
+**Issue27Test2 regression:** Guide hold fix deferred **`start_xboxone()`** only for **arcade** GIP sticks. First-party **Series X** (`045e:0b12`) only armed IN — USB enumerates (board LED), rumble may fire, but **Guide light stays off and no input**. Same class of failure as PowerA on [#87](https://github.com/MegaCadeDev/OGX-Mini-2026/issues/87). **Fix:** delayed **`start_xboxone`** for **all** GIP pads; **ANNOUNCE** runs **`xboxone_init`** for non-arcade if power was never sent. **Files:** `XboxOne.cpp`, `tuh_xinput.cpp`.
+
 **Test:** Tap Guide alone → guide menu (not shutdown). Hold Guide → long-press / shutdown behavior.
 
 ---
@@ -749,12 +751,9 @@ Removing sleep entirely while mounted fixed games but increased BT disconnects (
 
 **Problem:** On **Pico W / Pico 2 W**, the **USB gamepad** plugs into a **PIO USB** host. While PIO owns **D+ / D−**, reading line state with **`gpio_get()`** (as in **`pio_usb_bus_get_line_state()`** / **`hcd_port_connect_status()`**) often **does not** show a clean **SE0** after you pull the cable — lines can **float** or sit in a state that still looks like full-speed idle. The firmware could keep thinking the port was **connected**, so **TinyUSB** stayed up, **HostManager** still had a slot, and **Bluetooth** stayed blocked (wired takeover) until a power-cycle or “shorting” the port.
 
-**Approach:** In **`pico_w_pio_usb_bt_mux_tick()`** (`src/OGXMini/Board/PicoW.cpp`), treat **unplug** when **`HostManager::any_mounted()`** is still true **and** **either** of these **hints** fires (share one **debounce**, ~**60 ms** wall time):
+**Approach:** In **`pico_w_pio_usb_bt_mux_tick()`** (`src/OGXMini/Board/PicoW.cpp`), treat **unplug** when **`HostManager::any_mounted()`** is still true **and** TinyUSB has **no configured device** (loop addresses **`1 … CFG_TUH_DEVICE_MAX + CFG_TUH_HUB`**, require **`tuh_mounted(d)`** for at least one). Brief **HCD** disconnect glitches alone must **not** tear the host down — that caused rare mid-play **Ultimate 2** drops (#87). Real cable pull clears **`tuh_mounted`**.
 
-1. **`!hcd_port_connect_status(BOARD_TUH_RHPORT)`** — line-based disconnect when the HCD stack *does* see disconnect.
-2. **No configured TinyUSB device** — loop device addresses **`1 … CFG_TUH_DEVICE_MAX + CFG_TUH_HUB`** (matches TinyUSB’s internal **`TOTAL_DEVICES`**) and require **`tuh_mounted(d)`** for at least one address. If the stack has dropped configuration, tear down even if the line hint lied.
-
-**[#87](https://github.com/MegaCadeDev/OGX-Mini-2026/issues/87) — idle-input unplug removed:** An earlier third hint (“no `process_report` for N ms”) false-unplugged **report-on-change** pads such as the **8BitDo Ultimate 2** **2.4 GHz** dongle (`2dc8:310B`): quiet for a few seconds looked like a pulled cable, so the mux **`tuh_deinit`**’d the host and input died until the Pico was unplugged from the console. Physical unplug with floating D+/D− may clear more slowly now (stack/HCD only); that is preferable to killing idle dongles.
+**[#87](https://github.com/MegaCadeDev/OGX-Mini-2026/issues/87) — idle-input unplug removed:** An earlier third hint (“no `process_report` for N ms”) false-unplugged **report-on-change** pads such as the **8BitDo Ultimate 2** **2.4 GHz** dongle (`2dc8:310B`): quiet for a few seconds looked like a pulled cable, so the mux **`tuh_deinit`**’d the host and input died until the Pico was unplugged from the console. Physical unplug with floating D+/D− may clear more slowly now (TinyUSB loss only); that is preferable to killing idle dongles.
 
 After debounced confirmation, **`pico_w_usb_host_full_stop()`** runs **`tuh_deinit`**, stops the SOF timer, clears unplug debounce state, and **`board_api_usbh::enable_host_line_irq_monitoring()`** so normal **GPIO unplug/plug** IRQs work again; **Bluetooth** release paths run as before.
 
@@ -763,6 +762,8 @@ After debounced confirmation, **`pico_w_usb_host_full_stop()`** runs **`tuh_dein
 **Pure DS4 HID OUT keepalive ([#47](https://github.com/MegaCadeDev/OGX-Mini-2026/issues/47)):** **`HostManager::send_feedback()`** treats first-party DS4 as **`ps4_hid_periodic`** when the device has **no XInput** interface (`!has_xinput`). The old `!ps_style_hid` gate never fired for PS4 HID, so pure DS4 never got the **200 ms** LED/rumble OUT refresh.
 
 **8BitDo XInput LED keepalive ([#87](https://github.com/MegaCadeDev/OGX-Mini-2026/issues/87)):** **`Xbox360Host`** schedules periodic LED-off for VID **`0x2DC8`** PIDs **`3016` / `3106` / `310B` / `3107` / `3109`** (Ultimate 2 / Adapter idle & mode IDs).
+
+**PowerA / standard GIP POWER_ON ([#87](https://github.com/MegaCadeDev/OGX-Mini-2026/issues/87)):** **`XboxOneHost::initialize`** deferred **`start_xboxone()`** only for arcade sticks; standard pads (PowerA `20D6:2003`, first-party Series) only armed IN and never sent **POWER_ON / S_INIT**, so the pad stayed dark on Pico W and non-W. Restore delayed **`start_xboxone`** for **all** GIP pads; **ANNOUNCE** re-runs **`xboxone_init`** for non-arcade if power was never sent.
 
 ---
 
@@ -854,64 +855,7 @@ The script checks for required tools (git, python3, cmake, ninja, arm-none-eabi-
 
 ## Future planned
 
-Work that is **not implemented** in current firmware but has been researched. These items are **not** a matter of adding a VID/PID to a table — they need new host drivers and/or radio stacks.
-
-### Xbox Wireless Adapter for Windows (`045e:02e6`, `045e:02fe`)
-
-**Devices:**
-
-| VID:PID | Model | USB product string | Status |
-|---------|-------|-------------------|--------|
-| **`045e:02e6`** | 1713 | Xbox Wireless Adapter for Windows (older) | **Not supported** |
-| **`045e:02fe`** | 1790 | **XBOX ACC** (newer) | **Not supported** |
-
-These are **USB dongles** that receive **Xbox Wireless** (proprietary 2.4 GHz) from Xbox One and Xbox Series controllers. They are **not** gamepads and do **not** enumerate as XInput devices.
-
-**Do not confuse with the Xbox 360 PC receiver** — that **is supported** today:
-
-| VID:PID | Device | Why it works |
-|---------|--------|--------------|
-| **`045e:0719`** (typical) | Xbox 360 wireless **PC receiver** | Presents a standard XInput-style USB interface (`bInterfaceSubClass=0x5D`, `bInterfaceProtocol=0x81`). Handled by `tuh_xinput` / `Xbox360WHost`. |
-
-The One/Series dongles use a **completely different USB shape** (vendor bulk, not XInput interrupt).
-
-#### What the dongle looks like on USB
-
-From hardware dumps (e.g. [ControllersInfo adapter descriptor](https://github.com/DJm00n/ControllersInfo/blob/master/xboxone/DescriptorDump_Adapter%20(Xbox%20Wireless%20Adapter%20for%20Windows).txt)):
-
-- **Device class:** vendor-specific (`0xFF/0xFF/0xFF`), product name **"XBOX ACC"**
-- **Endpoints:** **bulk** IN/OUT (512-byte packets on USB 2.0), not the interrupt endpoints used by **wired** Xbox One pads
-- **Inside the stick:** a **Mediatek MT76** Wi‑Fi chipset that must run **dongle firmware** before it can talk to controllers
-
-OGX-Mini’s existing **wired Xbox One GIP** path (`tuh_xinput`, subclass `0x47` / protocol `0xD0`, `XboxOneHost`) parses GIP **after** the controller is already connected over USB. The wireless adapter never exposes that interface — the host must drive the **dongle radio** first.
-
-#### Why this is not a simple port
-
-1. **Firmware upload** — Linux [xone](https://github.com/medusalix/xone) / [xow](https://github.com/medusalix/xow) load **`xow_dongle.bin`** / variant blobs (e.g. **`xone_dongle_02fe.bin`**) into the MT76 chip over USB before the device is useful. That blob must be shipped in flash and the load sequence reimplemented on RP2040.
-
-2. **Wireless stack, not HID** — The driver brings up **MT76** (channels, pairing scan, client join/leave, optional encryption), wraps **GIP** payloads in **802.11-style data frames**, and sends them on bulk OUT queues. Inbound bulk IN carries WLAN frames that must be parsed to extract GIP input. This is the bulk of [xone `transport/dongle.c`](https://github.com/medusalix/xone/blob/master/transport/dongle.c) + [`transport/mt76.c`](https://github.com/medusalix/xone/blob/master/transport/mt76.c) — thousands of lines, not a report-descriptor tweak.
-
-3. **Resource cost** — xone uses many bulk URBs, WLAN buffers up to tens of KB per packet, and ongoing radio work. RP2040 flash/RAM and Core1 USB host timing are tight compared to a PC kernel driver.
-
-4. **Pairing model** — Controllers must be **paired to the dongle** (Sync on the pad while the dongle is in pairing mode). Pads previously used over **USB** or **Bluetooth** will not auto-attach until re-paired to the dongle — same as on Windows with xone.
-
-5. **Reuse is partial only** — Once a wireless client is connected and GIP input arrives, decoding could **reuse** existing GIP constants and mapping from `Descriptors/XboxOne.h` / `XboxOneHost.cpp`. Everything **before** that (USB dongle + radio + framing) is new work — comparable in scope to adding Switch 2 bulk bring-up, but **larger** because of firmware + Wi‑Fi.
-
-**Rough implementation phases (if pursued):**
-
-1. New TinyUSB **vendor bulk** class driver; claim `045e:02e6` / `045e:02fe`; embed firmware; port MT76 init from xone.  
-2. Bulk I/O loops, pairing, client add/remove (mirror `Xbox360W` connect callbacks in `HostManager`).  
-3. Bridge decoded GIP `0x20` / `0x07` reports into `XboxOneHost` (or a shared GIP parser).  
-4. Rumble/LED over wireless GIP OUT path.
-
-**Practical alternatives today:**
-
-- **Xbox 360 wireless receiver** + 360 pads — already supported (`Xbox360WHost`).  
-- **Xbox One / Series controller** — **Bluetooth** on Pico W / Pico 2 W (Bluepad32), or **wired USB** (`XboxOneHost`).  
-
-**References:** [medusalix/xone](https://github.com/medusalix/xone), [medusalix/xow](https://github.com/medusalix/xow), [SDL discussion of 02fe vs XInput PID](https://github.com/libsdl-org/SDL/pull/8683), [ControllersInfo dongle descriptor dump](https://github.com/DJm00n/ControllersInfo/tree/master/xboxone).
-
-**Files that would be touched (when implemented):** new `tuh_xbox_dongle` (or similar) under `USBHost/HostDriver/XInput/`, `HostManager.h`, `tuh_callbacks.cpp`, `tusb_config.h`; possible shared GIP layer with `XboxOne.cpp`.
+Moved to **[Planned_Additions.md](Planned_Additions.md)** (roadmap lists + Xbox Wireless Adapter research). That document is the source of truth for work that is **not** implemented yet.
 
 ---
 
@@ -919,7 +863,7 @@ OGX-Mini’s existing **wired Xbox One GIP** path (`tuh_xinput`, subclass `0x47`
 
 | Area | Improvement |
 |------|-------------|
-| **XInput (360)** | XSM3 authentication and descriptors aligned with joypad-os; adapter works on Xbox 360 with BT controllers (PS5, Xbox One). **360 wireless PC receiver** supported (`Xbox360WHost`). **v1.0.0.11a:** PIO USB wired receiver — **4 XInput instances** when `MAX_GAMEPADS=1`, port **priming**, **0x80** connect detect, byte-offset decode. **Razer Atrox XBO** (`1532:0a00`) — vendor GIP arcade path via **XBOFS** init + **30-byte** IN + XBOFS input layout; **POWER_ON** once only. **Xbox One/Series wireless dongle (`045e:02e6` / `02fe`)** — see [Future planned](#future-planned). 8BitDo wired fix: LED keepalive for VID 0x2DC8 / PID 0x3016 or 0x3106. **v1.0.0.12a (#38):** default (non–WebApp-customized) sticks use **stock 360-like** feel — see [§ XInput stock stick feel](#xinput--xbox-360--stock-stick-feel). |
+| **XInput (360)** | XSM3 authentication and descriptors aligned with joypad-os; adapter works on Xbox 360 with BT controllers (PS5, Xbox One). **360 wireless PC receiver** supported (`Xbox360WHost`). **v1.0.0.11a:** PIO USB wired receiver — **4 XInput instances** when `MAX_GAMEPADS=1`, port **priming**, **0x80** connect detect, byte-offset decode. **Razer Atrox XBO** (`1532:0a00`) — vendor GIP arcade path via **XBOFS** init + **30-byte** IN + XBOFS input layout; **POWER_ON** once only. **Xbox One/Series wireless dongle (`045e:02e6` / `02fe`)** — see [Planned_Additions.md](Planned_Additions.md#xbox-wireless-adapter-for-windows-045e02e6-045e02fe). 8BitDo wired fix: LED keepalive for VID 0x2DC8 / PID 0x3016 or 0x3106. **v1.0.0.12a (#38):** default (non–WebApp-customized) sticks use **stock 360-like** feel — see [§ XInput stock stick feel](#xinput--xbox-360--stock-stick-feel). |
 | **PS3** | Stuck inputs and delays addressed via L2/R2 axes; DS3-accurate sticks (0–255, center 0x80, ~1.5% deadzone); D-pad and face button mapping; Home (PS) button with 8-frame latch for BT controllers. **v1.0.0.9a:** PC host rumble deadzone + strict small-motor `0`/`1`. **v1.0.0.11a:** **DualShock 3 wired USB host** — USB Host Shield init, sync control xfer + PIO service, **1 Hz keepalive**. **v1.0.0.12a:** motion passthrough (see Motion row); **DS3 USB→BT auto-pair** sync **0xF5** restored on BT boards. |
 | **PS2 (GPIO)** | Home only = IGR (L1+L2+R1+R2+Start+Select); Home+Start = shutdown (L1+L2+R1+R2+L3+R3). OPL and protocol stability (first response byte = mode byte). |
 | **OG Xbox** | Guide only = IGR. Shutdown = LT+RT+Back+White via **Guide+Start** or **Guide+View (Back)**; Xbox BT often omits Start while Guide is held. Shutdown report strips Start so the chord matches BIOS/softmod expectations. |

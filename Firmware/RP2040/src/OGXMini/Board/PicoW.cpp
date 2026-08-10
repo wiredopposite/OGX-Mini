@@ -168,9 +168,13 @@ static void pico_w_pio_usb_bt_mux_tick() {
     if (s_pio_usb_tuh_inited) {
         const bool hcd_line_connected = hcd_port_connect_status(BOARD_TUH_RHPORT);
         board_api_usbh::store_host_line_connected(hcd_line_connected);
+        (void)hcd_line_connected;
 
         const bool tuh_still_has_device = pico_w_tuh_any_device_configured();
-        const bool unplug_hint = wired_mounted && (!hcd_line_connected || !tuh_still_has_device);
+        /* Tear down only when TinyUSB drops the configured device. Brief HCD
+         * disconnect glitches alone were killing Ultimate 2 mid-play (#87 rare
+         * drop + freeze). Real cable pull clears tuh_mounted; do not trust HCD alone. */
+        const bool unplug_hint = wired_mounted && !tuh_still_has_device;
 
         if (unplug_hint) {
             if (!s_usb_unplug_debounce_armed) {

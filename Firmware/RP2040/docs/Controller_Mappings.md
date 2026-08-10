@@ -9,6 +9,7 @@ This document describes how OGX-Mini maps **input controllers** (USB host / Blue
 | GPIO output (PS1/PS2, Dreamcast, GameCube, N64) pin-outs + mappings | [GPIO_Output_Pinout_and_Mappings.md](GPIO_Output_Pinout_and_Mappings.md) |
 | Wii **output** mode (Wiimote over BT) | [Wii_Mode_Guide.md](Wii_Mode_Guide.md) |
 | Supported wired USB pads (VID/PID lists) | [Wired_Controllers.md](Wired_Controllers.md) |
+| Adding a new controller (capture, drivers, UART debug) | [Adding_Supported_Controllers.md](Adding_Supported_Controllers.md) |
 | PS3/PS4 motion (accel/gyro) | [IMPROVEMENTS.md — motion passthrough](IMPROVEMENTS.md#ps3--ps4-output--motion-passthrough) |
 | Bluetooth pad list (Bluepad32) | [Bluepad32 supported gamepads](https://bluepad32.readthedocs.io/en/latest/supported_gamepads/) |
 

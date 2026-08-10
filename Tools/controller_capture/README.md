@@ -108,10 +108,11 @@ After you identify a safe **mask + value** (or multi-byte signature), add it to 
 
 ## Limitations
 
+- **SDL / pygame mapping alone is not enough to write a host driver.** Drivers need **full HID report** byte/bit/axis layouts. Use **`hidraw_full_report_dump.py`**, Linux hidraw hex, USB capture, or on-device Debug UART dumps — see [Adding_Supported_Controllers.md](../../Firmware/RP2040/docs/Adding_Supported_Controllers.md#step-2--capture-full-hid-reports-required-for-driver-mapping).
 - Captures **what your OS + SDL expose** for the mapping table. If the device is in the wrong mode (e.g. XInput vs DInput), unplug/replug or toggle mode per the manual and run again.
 - **Bluetooth** must be **paired and connected** in the OS before running; if capture is unstable, try **USB** for the same mapping run.
-- **Raw hidraw** capture is **Linux-only** (needs a matching `/dev/hidraw` for your VID:PID and read access). On Windows/macOS, use Linux for the hex dump or a USB analyzer; the SDL mapping file is still useful alone.
+- **Raw hidraw** capture is **Linux-only** (needs a matching `/dev/hidraw` for your VID:PID and read access). On Windows/macOS, use Linux for the hex dump or a USB analyzer; the SDL mapping file is still useful alone for names/VID.
 
 ## Troubleshooting
 
-The script prints tips if inputs don’t register (Steam Input, USB ports, drivers, Linux permissions, Bluetooth pairing, etc.). See also the main repo **[Wired Controllers](../../Firmware/RP2040/docs/Wired_Controllers.md)** doc.
+The script prints tips if inputs don’t register (Steam Input, USB ports, drivers, Linux permissions, Bluetooth pairing, etc.). See also the main repo **[Wired Controllers](../../Firmware/RP2040/docs/Wired_Controllers.md)** doc and the full firmware guide **[Adding supported controllers](../../Firmware/RP2040/docs/Adding_Supported_Controllers.md)**.

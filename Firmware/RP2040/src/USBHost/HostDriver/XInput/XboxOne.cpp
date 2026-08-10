@@ -32,18 +32,15 @@ void XboxOneHost::initialize(Gamepad& gamepad, uint8_t address, uint8_t instance
     (void)report_desc;
     (void)desc_len;
 
-    if (gip_arcade_stick_)
-    {
-        const uint8_t addr = address;
-        const uint8_t inst = instance;
-        TaskQueue::Core1::queue_delayed_task(
-            TaskQueue::Core1::get_new_task_id(), 50, false,
-            [addr, inst]() { tuh_xinput::start_xboxone(addr, inst); });
-    }
-    else
-    {
-        tuh_xinput::receive_report(address, instance);
-    }
+    /* All GIP pads (first-party Series/One, PowerA, arcade) need start_xboxone:
+     * IN arm + POWER_ON (+ S_INIT for non-arcade). Issue27Test2 only deferred this
+     * for arcade sticks — Series X (045E:0B12) and PowerA got IN only: rumble/host
+     * LED could change but Guide stayed dark and no input (#27 / #87). */
+    const uint8_t addr = address;
+    const uint8_t inst = instance;
+    TaskQueue::Core1::queue_delayed_task(
+        TaskQueue::Core1::get_new_task_id(), 50, false,
+        [addr, inst]() { tuh_xinput::start_xboxone(addr, inst); });
 }
 
 static void map_gip_buttons(Gamepad& gamepad, const XboxOne::InReport* in_report, Gamepad::PadIn& gp_in,
