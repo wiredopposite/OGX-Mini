@@ -1,0 +1,40 @@
+; PS1/PS2 controller host (read real controller). Ported from PicoGamepadConverter (Loc15).
+; CMD, CLK, ATT are outputs; DATA is input.
+
+.program clock
+.side_set 1 opt
+.wrap_target
+ set y, 2 [7] ; Commands counter -> 3 bytes command
+ set pins, 0b11 [7] side 1 ; Set ATTENTION, CLK and CMD -> HIGH
+ pull [7] ; Pull 32 bits data
+ set pins, 0b01 [2] ; Set ATTENTION -> LOW
+
+set_counter:
+ set x, 7 [7] ; 8 bit counter + delay between bytes
+
+bitloop:
+ out pins, 1 ; Pull a bit
+ set pins, 0b00 ; Driver pin low
+ in pins, 1 ; Read a bit
+ set pins, 0b01 ; Drive pin high
+ jmp set_clock ; Jump to set_clock
+
+set_clock:
+ jmp x-- bitloop
+ jmp y-- set_counter
+ set y, 5 ; Data counter -> 6 bytes data
+
+set_counter2:
+ set x, 7 [7] ; 8 bit counter + delay between bytes
+
+bitloop2:
+ set pins, 0b00 [1] ; Driver pin low
+ in pins, 1 ; Read a bit
+ set pins, 0b01 ; Driver pin high
+ jmp set_clock2 ; Jump to set_clock
+
+set_clock2:
+ jmp x-- bitloop2
+ jmp y-- set_counter2
+
+.wrap

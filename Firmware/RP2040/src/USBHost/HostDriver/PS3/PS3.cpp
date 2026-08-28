@@ -3,7 +3,54 @@
 #include "host/usbh.h"
 #include "class/hid/hid_host.h"
 
+#include "Board/Config.h"
+#if defined(CONFIG_EN_USB_HOST)
+#include "pio_usb.h"
+#endif
+#include "pico/time.h"
+
 #include "USBHost/HostDriver/PS3/PS3.h"
+
+#if defined(CONFIG_EN_BLUETOOTH)
+extern "C" {
+/* Do not include bt/uni_bt.h here: it pulls BTstack, whose btstack_hid.h redefines
+ * HID_REPORT_TYPE_* / hid_report_type_t and breaks compilation with TinyUSB hid.h. */
+typedef uint8_t uni_bt_bd_addr_t[6];
+void uni_bt_get_local_bd_addr_safe(uni_bt_bd_addr_t addr);
+}
+#endif
+
+namespace {
+
+struct SyncXferCtx {
+    bool done{false};
+};
+
+void sync_xfer_cb(tuh_xfer_s* xfer) {
+    auto* ctx = reinterpret_cast<SyncXferCtx*>(xfer->user_data);
+    ctx->done = true;
+}
+
+#if defined(CONFIG_EN_USB_HOST)
+void service_usb_host() {
+    pio_usb_host_frame();
+    tuh_task();
+}
+#else
+void service_usb_host() {
+    tuh_task();
+}
+#endif
+
+} // namespace
+
+const tusb_control_request_t PS3Host::ENABLE_USB_REQUEST = {
+    .bmRequestType = 0x21,
+    .bRequest = 0x09, // SET_REPORT
+    .wValue = static_cast<uint16_t>((HID_REPORT_TYPE_FEATURE << 8) | PS3::ReportID::FEATURE_F4),
+    .wIndex = 0x0000,
+    .wLength = 4,
+};
 
 const tusb_control_request_t PS3Host::RUMBLE_REQUEST = 
 {
@@ -14,33 +61,61 @@ const tusb_control_request_t PS3Host::RUMBLE_REQUEST =
     .wLength = sizeof(PS3::OutReport)
 };
 
-void PS3Host::initialize(Gamepad& gamepad, uint8_t address, uint8_t instance, const uint8_t* report_desc, uint16_t desc_len) 
+#if defined(CONFIG_EN_BLUETOOTH)
+/* Same as bluepad32/tools/sixaxispairer — DualShock 3 stores host BD_ADDR for Bluetooth. */
+const tusb_control_request_t PS3Host::BT_MAC_FEATURE_REQUEST = {
+    .bmRequestType = 0x21,
+    .bRequest = 0x09, // SET_REPORT
+    .wValue = static_cast<uint16_t>((HID_REPORT_TYPE_FEATURE << 8) | 0xF5),
+    .wIndex = 0x0000,
+    .wLength = 8,
+};
+
+bool PS3Host::local_bt_addr_is_nonzero(const uint8_t addr[6]) {
+    for (int i = 0; i < 6; ++i) {
+        if (addr[i] != 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool PS3Host::program_ds3_bt_host(uint8_t address) {
+    uni_bt_bd_addr_t addr{};
+    uni_bt_get_local_bd_addr_safe(addr);
+    if (!local_bt_addr_is_nonzero(addr)) {
+        return false;
+    }
+    bt_pair_buf_[0] = 0xF5;
+    bt_pair_buf_[1] = 0;
+    std::memcpy(bt_pair_buf_.data() + 2, addr, 6);
+    /* Sync transfer: PIO USB needs pio_usb_host_frame() while control completes. */
+    (void)send_control_xfer_wait(address, &BT_MAC_FEATURE_REQUEST, bt_pair_buf_.data(), 150u);
+    return true;
+}
+
+void PS3Host::try_deferred_ds3_bt_pair(uint8_t address) {
+    if (!ds3_bt_pair_deferred_) {
+        return;
+    }
+    if (program_ds3_bt_host(address)) {
+        ds3_bt_pair_deferred_ = false;
+    }
+}
+#endif
+
+void PS3Host::init_host_out_report(PS3::OutReport& out, uint8_t player_idx)
 {
-    gamepad.set_analog_host(true);
-    
-    std::memcpy(reinterpret_cast<uint8_t*>(&out_report_), 
-                PS3::DEFAULT_OUT_REPORT, 
-                std::min(sizeof(PS3::OutReport), sizeof(PS3::DEFAULT_OUT_REPORT)));
-
-    out_report_.leds_bitmap = 0x1 << (idx_ + 1);
-    out_report_.leds[idx_].time_enabled = 0xFF;
-
-    init_state_.out_report = &out_report_;
-    init_state_.dev_addr = address;
-    init_state_.init_buffer.fill(0);
-
-    tusb_control_request_t init_request =
-    {
-        .bmRequestType = 0xA1,
-        .bRequest = 0x01, // GET_REPORT
-        .wValue = (HID_REPORT_TYPE_FEATURE << 8) | 0xF2,
-        .wIndex = 0x0000,
-        .wLength = 17
-    };
-
-    send_control_xfer(address, &init_request, init_state_.init_buffer.data(), get_report_complete_cb, reinterpret_cast<uintptr_t>(&init_state_));
-
-    tuh_hid_receive_report(address, instance);
+    /* USB Host Shield PS3_REPORT_BUFFER layout — not gadget DEFAULT_OUT_REPORT (leading 0x01). */
+    std::memset(&out, 0, sizeof(out));
+    for (int i = 0; i < 4; ++i) {
+        out.leds[i].time_enabled = 0xFF;
+        out.leds[i].duty_length = 0x27;
+        out.leds[i].enabled = 0x10;
+        out.leds[i].duty_off = 0x00;
+        out.leds[i].duty_on = 0x32;
+    }
+    out.leds_bitmap = static_cast<uint8_t>(0x02u << player_idx);
 }
 
 bool PS3Host::send_control_xfer(uint8_t dev_addr, const tusb_control_request_t* request, uint8_t* buffer, tuh_xfer_cb_t complete_cb, uintptr_t user_data)
@@ -57,46 +132,67 @@ bool PS3Host::send_control_xfer(uint8_t dev_addr, const tusb_control_request_t* 
     return tuh_control_xfer(&transfer);
 }
 
-void PS3Host::get_report_complete_cb(tuh_xfer_s *xfer)
+bool PS3Host::send_control_xfer_wait(uint8_t dev_addr, const tusb_control_request_t* request, uint8_t* buffer,
+                                      uint32_t max_attempts_ms)
 {
-    InitState* init_state = reinterpret_cast<InitState*>(xfer->user_data);
-    if (init_state == nullptr || init_state->stage == InitStage::DONE)
-    {
-        return;
+    SyncXferCtx ctx;
+    if (!send_control_xfer(dev_addr, request, buffer, sync_xfer_cb, reinterpret_cast<uintptr_t>(&ctx))) {
+        return false;
     }
-
-    tusb_control_request_t init_request =
-    {
-        .bmRequestType = 0xA1,
-        .bRequest = 0x01, // GET_REPORT
-        .wValue = (HID_REPORT_TYPE_FEATURE << 8) | 0xF2,
-        .wIndex = 0x0000,
-        .wLength = 17
-    };
-
-    switch (init_state->stage)
-    {
-        case InitStage::RESP1:
-            init_state->stage = InitStage::RESP2;
-            send_control_xfer(init_state->dev_addr, &init_request, init_state->init_buffer.data(), get_report_complete_cb, xfer->user_data);
-            break;
-        case InitStage::RESP2:
-            init_state->stage = InitStage::RESP3;
-            init_request.wLength = 8;
-            send_control_xfer(init_state->dev_addr, &init_request, init_state->init_buffer.data(), get_report_complete_cb, xfer->user_data);
-            break;
-        case InitStage::RESP3:
-            init_state->stage = InitStage::DONE;
-            init_state->reports_enabled = true;
-            send_control_xfer(init_state->dev_addr, &PS3Host::RUMBLE_REQUEST, reinterpret_cast<uint8_t*>(init_state->out_report), nullptr, 0);
-            break;
-        default:
-            break;
+    for (uint32_t i = 0; !ctx.done && i < max_attempts_ms; ++i) {
+        service_usb_host();
+        sleep_ms(1);
     }
+    return ctx.done;
+}
+
+bool PS3Host::send_control_output_sync(uint8_t address, PS3::OutReport* report)
+{
+    return send_control_xfer_wait(address, &RUMBLE_REQUEST, reinterpret_cast<uint8_t*>(report), 150u);
+}
+
+bool PS3Host::send_control_output_async(uint8_t address, PS3::OutReport* report)
+{
+    return send_control_xfer(address, &RUMBLE_REQUEST, reinterpret_cast<uint8_t*>(report), nullptr, 0);
+}
+
+void PS3Host::initialize(Gamepad& gamepad, uint8_t address, uint8_t instance, const uint8_t* report_desc, uint16_t desc_len) 
+{
+    (void)report_desc;
+    (void)desc_len;
+
+    gamepad.set_analog_host(true);
+
+    init_host_out_report(out_report_, idx_);
+    reports_enabled_ = false;
+#if defined(CONFIG_EN_BLUETOOTH)
+    ds3_bt_pair_deferred_ = false;
+#endif
+
+    /* DualShock 3 USB: SET feature 0xF4 {0x42,0x0c,0,0} then one LED OUT (USB Host Shield). */
+    uint8_t enable_usb_data[] = {0x42, 0x0c, 0x00, 0x00};
+    (void)send_control_xfer_wait(address, &ENABLE_USB_REQUEST, enable_usb_data, 150u);
+    (void)send_control_output_sync(address, &out_report_);
+
+#if defined(CONFIG_EN_BLUETOOTH)
+    /* Program master BD_ADDR so the pad can reconnect wirelessly after unplug (sixaxispairer).
+     * Must run here — the old GET 0xF2 async chain was skipped once wired init marked DONE. */
+    if (!program_ds3_bt_host(address)) {
+        ds3_bt_pair_deferred_ = true;
+    }
+#endif
+
+    reports_enabled_ = true;
+    last_keepalive_ms_ = time_us_32() / 1000;
+
+    tuh_hid_receive_report(address, instance);
 }
 
 void PS3Host::process_report(Gamepad& gamepad, uint8_t address, uint8_t instance, const uint8_t* report, uint16_t len)
 {
+#if defined(CONFIG_EN_BLUETOOTH)
+    try_deferred_ds3_bt_pair(address);
+#endif
     const PS3::InReport* in_report = reinterpret_cast<const PS3::InReport*>(report);
     if (std::memcmp(&prev_in_report_, in_report, std::min(static_cast<size_t>(len), static_cast<size_t>(26))) == 0)
     {
@@ -151,25 +247,28 @@ void PS3Host::process_report(Gamepad& gamepad, uint8_t address, uint8_t instance
 
 bool PS3Host::send_feedback(Gamepad& gamepad, uint8_t address, uint8_t instance)
 {
-    static uint32_t last_rumble_ms = 0;
+    (void)instance;
 
-    uint32_t current_ms = time_us_32() / 1000;
-    
-    //Spamming set_report doesn't work, limit the rate
-    if (init_state_.reports_enabled &&
-        current_ms - last_rumble_ms >= 300)
-    {
-        Gamepad::PadOut gp_out = gamepad.get_pad_out();
-
-        out_report_.rumble.right_duration    = (gp_out.rumble_r > 0) ? 20 : 0;
-        out_report_.rumble.right_motor_on    = (gp_out.rumble_r > 0) ? 1  : 0;
-
-        out_report_.rumble.left_duration     = (gp_out.rumble_l > 0) ? 20 : 0;
-        out_report_.rumble.left_motor_force  = gp_out.rumble_l;
-
-        last_rumble_ms = current_ms;
-
-        return send_control_xfer(address, &PS3Host::RUMBLE_REQUEST, reinterpret_cast<uint8_t*>(&out_report_), nullptr, 0);
+    if (!reports_enabled_) {
+        return false;
     }
-    return true;
+
+    const uint32_t current_ms = time_us_32() / 1000;
+    Gamepad::PadOut gp_out = gamepad.get_pad_out();
+    const bool has_rumble = (gp_out.rumble_l != 0 || gp_out.rumble_r != 0);
+    const bool keepalive_due =
+        KEEPALIVE_MS != 0u && (current_ms - last_keepalive_ms_ >= KEEPALIVE_MS);
+
+    if (!has_rumble && !gamepad.new_pad_out() && !keepalive_due) {
+        return true;
+    }
+
+    out_report_.rumble.right_duration   = (gp_out.rumble_r > 0) ? 20 : 0;
+    out_report_.rumble.right_motor_on   = (gp_out.rumble_r > 0) ? 1  : 0;
+    out_report_.rumble.left_duration    = (gp_out.rumble_l > 0) ? 20 : 0;
+    out_report_.rumble.left_motor_force = gp_out.rumble_l;
+    out_report_.leds_bitmap = static_cast<uint8_t>(0x02u << idx_);
+
+    last_keepalive_ms_ = current_ms;
+    return send_control_output_async(address, &out_report_);
 }

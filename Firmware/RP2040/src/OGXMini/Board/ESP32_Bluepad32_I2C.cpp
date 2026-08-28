@@ -16,6 +16,7 @@
 #include "Board/board_api.h"
 #include "Board/esp32_api.h"
 #include "Gamepad/Gamepad.h"
+#include "Gamepad/I2CWirePad.h"
 #include "TaskQueue/TaskQueue.h"
 
 enum class PacketID : uint8_t { 
@@ -31,7 +32,7 @@ struct PacketIn {
     PacketID            packet_id{PacketID::SET_PAD};
     uint8_t             index{0};
     DeviceDriverType    device_type{DeviceDriverType::NONE};
-    Gamepad::PadIn      pad_in{Gamepad::PadIn()};
+    I2CWirePadIn        pad_in{};
     uint8_t             reserved[5]{0};
 };
 static_assert(sizeof(PacketIn) == 32, "i2c_driver_esp::PacketIn size mismatch");
@@ -73,7 +74,7 @@ static inline void slave_handler(i2c_inst_t *i2c, i2c_slave_event_t event) {
             switch (packet_in.packet_id) {
                 case PacketID::SET_PAD:
                     if (packet_in.index < MAX_GAMEPADS) {
-                        _gamepads[packet_in.index].set_pad_in(packet_in.pad_in);
+                        _gamepads[packet_in.index].set_pad_in(i2c_pad_from_wire(packet_in.pad_in));
                     }
                     break;
                 case PacketID::SET_DRIVER:

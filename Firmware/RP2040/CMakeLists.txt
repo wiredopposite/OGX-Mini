@@ -13,6 +13,11 @@ set(SRC ${CMAKE_CURRENT_LIST_DIR}/src)
 set(EXTERNAL_DIR ${CMAKE_CURRENT_LIST_DIR}/../external)
 set(PICOSDK_VERSION_TAG "2.1.0")
 
+# Default Pico SDK path when not set (e.g. by CMake Tools or command line)
+if(NOT PICO_SDK_PATH)
+    set(PICO_SDK_PATH ${EXTERNAL_DIR}/pico-sdk CACHE PATH "Path to Pico SDK")
+endif()
+
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/init_submodules.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/patch_libs.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/generate_gatt_header.cmake)
@@ -62,7 +67,19 @@ set(SOURCES_BOARD
     ${SRC}/USBDevice/DeviceDriver/DeviceDriver.cpp
     ${SRC}/USBDevice/DeviceDriver/PSClassic/PSClassic.cpp
     ${SRC}/USBDevice/DeviceDriver/PS3/PS3.cpp
+    ${SRC}/USBDevice/DeviceDriver/PS4/PS4.cpp
+    ${SRC}/USBDevice/DeviceDriver/Steam/Steam.cpp
+    ${SRC}/USBDevice/DeviceDriver/Steam/SteamTouchpad.cpp
     ${SRC}/USBDevice/DeviceDriver/Switch/Switch.cpp
+    ${SRC}/USBDevice/DeviceDriver/WiiU/WiiU.cpp
+    ${SRC}/USBDevice/DeviceDriver/Wii/Wii.cpp
+    ${SRC}/USBDevice/DeviceDriver/PS1PS2/PS1PS2.cpp
+    ${SRC}/USBDevice/DeviceDriver/PS1PS2/controller_simulator.c
+    ${SRC}/USBDevice/DeviceDriver/GameCube/GameCube.cpp
+    ${SRC}/USBDevice/DeviceDriver/GameCube/gamecube_device.c
+    ${SRC}/USBDevice/DeviceDriver/Dreamcast/Dreamcast.cpp
+    ${SRC}/USBDevice/DeviceDriver/N64/N64.cpp
+    ${SRC}/USBDevice/DeviceDriver/N64/n64_device.c
     ${SRC}/USBDevice/DeviceDriver/XInput/XInput.cpp
     ${SRC}/USBDevice/DeviceDriver/XboxOG/XboxOG_GP.cpp
     ${SRC}/USBDevice/DeviceDriver/XboxOG/XboxOG_SB.cpp
@@ -71,6 +88,18 @@ set(SOURCES_BOARD
     ${SRC}/USBDevice/DeviceDriver/WebApp/WebApp.cpp
     ${SRC}/USBDevice/DeviceDriver/XInput/tud_xinput/tud_xinput.cpp
     ${SRC}/USBDevice/DeviceDriver/XboxOG/tud_xid/tud_xid.cpp
+
+    ${SRC}/USBHost/GPIOHost/GPIOHost.cpp
+    ${SRC}/USBHost/GPIOHost/psx_host/psx_host.c
+    ${SRC}/USBHost/GPIOHost/joybus_host/joybus_controller.c
+    ${SRC}/USBHost/GPIOHost/joybus_host/n64_host.c
+    ${SRC}/USBHost/GPIOHost/dreamcast_host/MapleBus.cpp
+    # libxsm3 for Xbox 360 (XSM3) authentication in XInput mode
+    ${EXTERNAL_DIR}/libxsm3/xsm3.c
+    ${EXTERNAL_DIR}/libxsm3/usbdsec.c
+    ${EXTERNAL_DIR}/libxsm3/excrypt_des.c
+    ${EXTERNAL_DIR}/libxsm3/excrypt_parve.c
+    ${EXTERNAL_DIR}/libxsm3/excrypt_sha.c
 )
 set(LIBS_BOARD
     # Base
@@ -93,6 +122,8 @@ set(INC_DIRS_BOARD
 
 # Config options
 
+option(OGXM_SWITCH2_HID_RAW_LOG "UART: log Switch 2 Pro (0x2069) 64B HID when the 3 digital button bytes change only (Debug)" OFF)
+
 set(MAX_GAMEPADS 1 CACHE STRING "Set number of gamepads, 1 to 4")
 if (MAX_GAMEPADS GREATER 4 OR MAX_GAMEPADS LESS 1)
     message(FATAL_ERROR "MAX_GAMEPADS must be between 1 and 4")
@@ -110,17 +141,20 @@ if (OGXM_BOARD STREQUAL "PI_PICO")
 elseif (OGXM_BOARD STREQUAL "PI_PICO2")
     add_compile_definitions(CONFIG_OGXM_BOARD_PI_PICO2=1)
     set(EN_USB_HOST TRUE)
+    set(PICO_BOARD pico2)
     set(PICO_PLATFORM rp2350)
     set(FLASH_SIZE_MB 4)
 
 elseif(OGXM_BOARD STREQUAL "PI_PICOW")
     add_compile_definitions(CONFIG_OGXM_BOARD_PI_PICOW=1)
     set(EN_BLUETOOTH TRUE)
+    set(EN_USB_HOST TRUE)  # PIO USB host for Wii mode (controller on external USB)
     set(PICO_BOARD pico_w)
 
 elseif(OGXM_BOARD STREQUAL "PI_PICO2W")
     add_compile_definitions(CONFIG_OGXM_BOARD_PI_PICO2W=1)
     set(EN_BLUETOOTH TRUE)
+    set(EN_USB_HOST TRUE)  # PIO USB host for Wii mode (controller on external USB)
     set(PICO_BOARD pico2_w)
     set(PICO_PLATFORM rp2350)
     set(FLASH_SIZE_MB 4)
@@ -167,12 +201,102 @@ elseif(OGXM_BOARD STREQUAL "ESP32_BLUERETRO_I2C")
         add_compile_definitions(OGXM_RETAIL=1)
     endif()
 
+elseif(OGXM_BOARD STREQUAL "RP2350_USB_A")
+    add_compile_definitions(CONFIG_OGXM_BOARD_RP2350_USB_A=1)
+    set(EN_USB_HOST TRUE)
+    set(PICO_PLATFORM rp2350)
+    set(EN_RGB TRUE)
+    set(FLASH_SIZE_MB 2)
+
+elseif(OGXM_BOARD STREQUAL "RP2350_ZERO")
+    add_compile_definitions(CONFIG_OGXM_BOARD_RP2350_ZERO=1)
+    set(EN_USB_HOST TRUE)
+    set(PICO_PLATFORM rp2350)
+    set(EN_RGB TRUE)
+    set(FLASH_SIZE_MB 2)
+
+elseif(OGXM_BOARD STREQUAL "RP2040_XIAO")
+    add_compile_definitions(CONFIG_OGXM_BOARD_RP2040_XIAO=1)
+    set(EN_USB_HOST TRUE)
+    set(EN_RGB TRUE)
+
+elseif(OGXM_BOARD STREQUAL "RP2354")
+    add_compile_definitions(CONFIG_OGXM_BOARD_RP2354=1)
+    set(EN_BLUETOOTH TRUE)
+    set(EN_USB_HOST TRUE)
+    set(PICO_BOARD pico2_w)
+    set(PICO_PLATFORM rp2350)
+    set(FLASH_SIZE_MB 4)
+
 else()
-    message(FATAL_ERROR "Invalid OGXM_BOARD value. See options in src/board_config.h")
+    message(FATAL_ERROR "Invalid OGXM_BOARD value. See options in src/Board/Config.h")
 
 endif()
 
-add_definitions(-DOGXM_BOARD=${OGXM_BOARD})
+# Optional: default or lock USB output mode.
+# OGXM_FIXED_DRIVER = one of: XINPUT, DINPUT, XBOXOG, XBOXOG_SB, XBOXOG_XR, SWITCH, WIIU, WII, PS3, PSCLASSIC, WEBAPP, PS1PS2, GAMECUBE, DREAMCAST, N64, PS4, STEAM.
+#   Empty = use first valid driver as default, combos enabled.
+#   Set = use that mode as default (first boot / NVS init). If OGXM_FIXED_DRIVER_ALLOW_COMBOS=OFF (default):
+#     combos disabled, mode locked. If OGXM_FIXED_DRIVER_ALLOW_COMBOS=ON: default is this mode, combos still work.
+set(OGXM_FIXED_DRIVER "" CACHE STRING "Default/lock output mode. One of: XINPUT, DINPUT, XBOXOG, XBOXOG_SB, XBOXOG_XR, SWITCH, WIIU, WII, PS3, PSCLASSIC, WEBAPP, PS1PS2, GAMECUBE, DREAMCAST, N64, PS4, STEAM. Empty = combos enabled.")
+set(OGXM_FIXED_DRIVER_ALLOW_COMBOS OFF CACHE BOOL "If OGXM_FIXED_DRIVER is set: ON = use it as default but allow combos to change mode; OFF = lock to that mode, combos disabled.")
+if(OGXM_FIXED_DRIVER)
+    add_compile_definitions(CONFIG_OGXM_FIXED_DRIVER=1)
+    # WII is build-only: no combos to switch into or out of Wii.
+    if(OGXM_FIXED_DRIVER_ALLOW_COMBOS AND NOT (OGXM_FIXED_DRIVER STREQUAL "WII"))
+        add_compile_definitions(CONFIG_OGXM_FIXED_DRIVER_ALLOW_COMBOS=1)
+    endif()
+    if(OGXM_FIXED_DRIVER STREQUAL "XBOXOG")
+        add_compile_definitions(OGXM_FIXED_DRIVER_TYPE=1)
+    elseif(OGXM_FIXED_DRIVER STREQUAL "XBOXOG_SB")
+        add_compile_definitions(OGXM_FIXED_DRIVER_TYPE=2)
+    elseif(OGXM_FIXED_DRIVER STREQUAL "XBOXOG_XR")
+        add_compile_definitions(OGXM_FIXED_DRIVER_TYPE=3)
+    elseif(OGXM_FIXED_DRIVER STREQUAL "XINPUT")
+        add_compile_definitions(OGXM_FIXED_DRIVER_TYPE=4)
+    elseif(OGXM_FIXED_DRIVER STREQUAL "PS3")
+        add_compile_definitions(OGXM_FIXED_DRIVER_TYPE=5)
+    elseif(OGXM_FIXED_DRIVER STREQUAL "DINPUT")
+        add_compile_definitions(OGXM_FIXED_DRIVER_TYPE=6)
+    elseif(OGXM_FIXED_DRIVER STREQUAL "PSCLASSIC")
+        add_compile_definitions(OGXM_FIXED_DRIVER_TYPE=7)
+    elseif(OGXM_FIXED_DRIVER STREQUAL "SWITCH")
+        add_compile_definitions(OGXM_FIXED_DRIVER_TYPE=8)
+    elseif(OGXM_FIXED_DRIVER STREQUAL "WIIU")
+        add_compile_definitions(OGXM_FIXED_DRIVER_TYPE=9)
+    elseif(OGXM_FIXED_DRIVER STREQUAL "WII")
+        add_compile_definitions(OGXM_FIXED_DRIVER_TYPE=10)
+    elseif(OGXM_FIXED_DRIVER STREQUAL "PS1PS2")
+        add_compile_definitions(OGXM_FIXED_DRIVER_TYPE=11)
+    elseif(OGXM_FIXED_DRIVER STREQUAL "GAMECUBE")
+        add_compile_definitions(OGXM_FIXED_DRIVER_TYPE=12)
+    elseif(OGXM_FIXED_DRIVER STREQUAL "DREAMCAST")
+        add_compile_definitions(OGXM_FIXED_DRIVER_TYPE=13)
+    elseif(OGXM_FIXED_DRIVER STREQUAL "N64")
+        add_compile_definitions(OGXM_FIXED_DRIVER_TYPE=14)
+    elseif(OGXM_FIXED_DRIVER STREQUAL "PS4")
+        add_compile_definitions(OGXM_FIXED_DRIVER_TYPE=15)
+    elseif(OGXM_FIXED_DRIVER STREQUAL "STEAM")
+        add_compile_definitions(OGXM_FIXED_DRIVER_TYPE=16)
+    elseif(OGXM_FIXED_DRIVER STREQUAL "WEBAPP")
+        add_compile_definitions(OGXM_FIXED_DRIVER_TYPE=100)
+    else()
+        message(FATAL_ERROR "OGXM_FIXED_DRIVER must be one of: XINPUT, DINPUT, XBOXOG, XBOXOG_SB, XBOXOG_XR, SWITCH, WIIU, WII, PS3, PSCLASSIC, WEBAPP, PS1PS2, GAMECUBE, DREAMCAST, N64, PS4, STEAM")
+    endif()
+    if(OGXM_FIXED_DRIVER STREQUAL "WII")
+        message(STATUS "Wii-only build: ${OGXM_FIXED_DRIVER} (combos disabled, build option only)")
+    elseif(OGXM_FIXED_DRIVER_ALLOW_COMBOS)
+        message(STATUS "Default output mode: ${OGXM_FIXED_DRIVER} (combos enabled)")
+    else()
+        message(STATUS "Fixed output mode: ${OGXM_FIXED_DRIVER} (combos disabled)")
+    endif()
+endif()
+
+# Do not add -DOGXM_BOARD here; Config.h defines OGXM_BOARD from CONFIG_OGXM_BOARD_* to avoid redefinition warnings
+
+# Main loop delay (microseconds). 0 = lowest latency (default). Set to 250+ for lower CPU.
+set(MAIN_LOOP_DELAY_US 0 CACHE STRING "Main loop delay in microseconds; 0 = low latency (default)")
+add_compile_definitions(MAIN_LOOP_DELAY_US=${MAIN_LOOP_DELAY_US})
 
 if(EN_USB_HOST)
     message(STATUS "USB host enabled.")
@@ -184,6 +308,7 @@ if(EN_USB_HOST)
         ${SRC}/USBHost/HostDriver/PSClassic/PSClassic.cpp
         ${SRC}/USBHost/HostDriver/SwitchWired/SwitchWired.cpp
         ${SRC}/USBHost/HostDriver/SwitchPro/SwitchPro.cpp
+        ${SRC}/USBHost/HostDriver/SwitchPro/Switch2ProHost.cpp
         ${SRC}/USBHost/HostDriver/PS5/PS5.cpp
         ${SRC}/USBHost/HostDriver/PS4/PS4.cpp
         ${SRC}/USBHost/HostDriver/PS3/PS3.cpp
@@ -230,6 +355,25 @@ if(EN_BLUETOOTH)
         pico_btstack_cyw43
         bluepad32
     )
+
+    # Wii mode: Wiimote BT emulator (Pico W/2W with USB host)
+    if(EN_USB_HOST AND (OGXM_BOARD STREQUAL "PI_PICOW" OR OGXM_BOARD STREQUAL "PI_PICO2W" OR OGXM_BOARD STREQUAL "RP2354"))
+        message(STATUS "Wii Wiimote lib enabled.")
+        list(APPEND SOURCES_BOARD
+            ${SRC}/Wii/utils.c
+            ${SRC}/Wii/WiiReportConverter.cpp
+            ${SRC}/Wii/wiimote-lib/wiimote_btstack.c
+            ${SRC}/Wii/wiimote-lib/wiimote.c
+            ${SRC}/Wii/wiimote-lib/wm_reports.c
+            ${SRC}/Wii/wiimote-lib/motion.c
+            ${SRC}/Wii/wiimote-lib/wm_crypto.c
+            ${SRC}/Wii/wiimote-lib/inet.c
+        )
+        list(APPEND INC_DIRS_BOARD
+            ${SRC}/Wii
+            ${SRC}/Wii/wiimote-lib
+        )
+    endif()
 endif()
 
 if(EN_RGB)
@@ -268,6 +412,8 @@ if(EN_ESP32)
     endif()
     list(APPEND LIBS_BOARD
         hardware_i2c
+        hardware_pio
+        hardware_dma
     )
 endif()
 
@@ -293,10 +439,25 @@ if(EXISTS ${SRC}/USBDevice/DeviceDriver/XboxOG/tud_xid/tud_xid_xremote_rom.h)
     add_definitions(-DXREMOTE_ROM_AVAILABLE)
 endif()
 
-if(NOT EN_BLUETOOTH)
+# RP2040-only: force generic boot2 when no Bluetooth (RP2350 boards use platform boot2)
+if(NOT EN_BLUETOOTH
+   AND NOT (OGXM_BOARD STREQUAL "PI_PICO2")
+   AND NOT (OGXM_BOARD STREQUAL "PI_PICO2W")
+   AND NOT (OGXM_BOARD STREQUAL "RP2350_USB_A")
+   AND NOT (OGXM_BOARD STREQUAL "RP2350_ZERO")
+   AND NOT (OGXM_BOARD STREQUAL "RP2354"))
     add_compile_definitions(PICO_BOOT_STAGE2_CHOOSE_GENERIC_03H=1)
     add_compile_definitions(PICO_XOSC_STARTUP_DELAY_MULTIPLIER=64)
 endif()
+
+# Cross-compile: skip linker in compiler check (ARM linker does not accept Windows flags)
+set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+set(CMAKE_SYSTEM_NAME PICO)
+set(CMAKE_CXX_STANDARD_LIBRARIES "")
+set(CMAKE_C_STANDARD_LIBRARIES "")
+
+# Use our Platform/PICO.cmake so CMake does not add Windows linker flags (--out-implib, etc.)
+list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 
 include(${PICO_SDK_PATH}/pico_sdk_init.cmake)
 
@@ -309,15 +470,18 @@ add_executable(${FW_NAME} ${SOURCES_BOARD})
 set(BUILD_STR "")
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    if(OGXM_BOARD STREQUAL "PI_PICOW")
-        message(FATAL_ERROR "Debug build will not work with the Pico W currently")
-    endif()
-
-    message(STATUS "Debug build enabled.")
+    message(STATUS "Debug build enabled (UART logging at 115200; TinyUSB host prevents USB CDC stdio — use UART TX pin, see CMakeLists UART message).")
     set(BUILD_STR "-Debug")
 
-    set(TX_PIN 0)
-    set(RX_PIN 1)
+    # Pico W/2W: use UART1 on GP4 (TX) / GP5 (RX) - valid UART pins, avoids PIO USB (GP0/1) in Wii mode
+    # Note: GP10/11 are not valid UART pins on RP2040/RP2350
+    if(OGXM_BOARD STREQUAL "PI_PICOW" OR OGXM_BOARD STREQUAL "PI_PICO2W" OR OGXM_BOARD STREQUAL "RP2354")
+        set(TX_PIN 4)
+        set(RX_PIN 5)
+    else()
+        set(TX_PIN 0)
+        set(RX_PIN 1)
+    endif()
     set(UART_PORT)
 
     include(${CMAKE_CURRENT_LIST_DIR}/cmake/get_pico_uart_port.cmake)
@@ -325,6 +489,8 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 
     message(STATUS "UART port: ${UART_PORT}, TX: ${TX_PIN}, RX: ${RX_PIN}")
 
+    # USB CDC stdio is disabled by Pico SDK when TinyUSB host is linked; OGXM_LOG uses printf → UART only.
+    pico_enable_stdio_usb(${FW_NAME} 0)
     pico_enable_stdio_uart(${FW_NAME} 1)
     target_compile_definitions(${FW_NAME} PRIVATE
         PICO_DEFAULT_UART=${UART_PORT}
@@ -334,6 +500,12 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
  
     add_compile_definitions(CFG_TUSB_DEBUG=1)
     add_compile_definitions(OGXM_DEBUG=1)
+    add_compile_definitions(CONFIG_OGXM_DEBUG=1)
+
+    if(OGXM_SWITCH2_HID_RAW_LOG)
+        target_compile_definitions(${FW_NAME} PRIVATE OGXM_SWITCH2_HID_RAW_LOG=1)
+        message(STATUS "OGXM_SWITCH2_HID_RAW_LOG: UART hex when Switch 2 Pro 3 digital button bytes change")
+    endif()
 
     target_compile_options(${FW_NAME} PRIVATE
         -Wall                # Enable most warnings
@@ -368,11 +540,22 @@ pico_set_program_version(${FW_NAME} ${FW_VERSION})
 
 target_include_directories(${FW_NAME} PRIVATE 
     ${SRC}
+    ${EXTERNAL_DIR}/libxsm3
 )
+target_compile_definitions(${FW_NAME} PRIVATE XSM3_NO_DEBUGGING=1 XSM3_EMBEDDED=1)
 
 if(EN_RGB)
     pico_generate_pio_header(${FW_NAME} ${SRC}/Board/Pico_WS2812/WS2812.pio)
 endif()
+pico_generate_pio_header(${FW_NAME} ${SRC}/USBDevice/DeviceDriver/PS1PS2/psxSPI.pio)
+pico_generate_pio_header(${FW_NAME} ${SRC}/USBDevice/DeviceDriver/GameCube/joybus.pio)
+pico_generate_pio_header(${FW_NAME} ${SRC}/USBDevice/DeviceDriver/N64/n64send.pio)
+pico_generate_pio_header(${FW_NAME} ${SRC}/USBHost/GPIOHost/psx_host/clock.pio)
+pico_generate_pio_header(${FW_NAME} ${SRC}/USBHost/GPIOHost/joybus_host/controller.pio)
+pico_generate_pio_header(${FW_NAME} ${SRC}/USBHost/GPIOHost/dreamcast_host/maple_in.pio)
+pico_generate_pio_header(${FW_NAME} ${SRC}/USBHost/GPIOHost/dreamcast_host/maple_out.pio)
+
+target_include_directories(${FW_NAME} PRIVATE ${SRC}/USBHost/GPIOHost/dreamcast_host)
 
 include_directories(${INC_DIRS_BOARD})
 
@@ -382,6 +565,12 @@ endif()
 
 if(EN_BLUETOOTH)
     add_subdirectory(${BLUEPAD32_ROOT}/src/components/bluepad32 libbluepad32)
+    # Propagate to bluepad32 sources (e.g. DS4 parser): CYW43-specific link + setup path
+    target_compile_definitions(bluepad32 PRIVATE OGXM_BLUEPAD32_PICO_W=1)
+    target_include_directories(bluepad32 PRIVATE ${SRC})
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        target_compile_definitions(bluepad32 PRIVATE CONFIG_OGXM_DEBUG=1)
+    endif()
 endif()
 
 add_subdirectory(${LIBFIXMATH_PATH} libfixmath)
@@ -402,6 +591,16 @@ if(OGXM_RETAIL STREQUAL "TRUE")
     set(EXE_FILENAME "${FW_NAME}-${FW_VERSION}-${OGXM_BOARD}${BUILD_STR}-Retail")
 else()
     set(EXE_FILENAME "${FW_NAME}-${FW_VERSION}-${OGXM_BOARD}${BUILD_STR}")
+endif()
+
+# Output filename always reflects the mode: fixed driver name (XINPUT, PS3, ...) or "Multi" for combo mode
+if(OGXM_FIXED_DRIVER)
+    set(EXE_FILENAME "${EXE_FILENAME}-${OGXM_FIXED_DRIVER}")
+    if(OGXM_FIXED_DRIVER_ALLOW_COMBOS)
+        set(EXE_FILENAME "${EXE_FILENAME}-Combos")
+    endif()
+else()
+    set(EXE_FILENAME "${EXE_FILENAME}-Multi")
 endif()
 
 set_target_properties(${FW_NAME} PROPERTIES OUTPUT_NAME ${EXE_FILENAME})

@@ -1,5 +1,11 @@
 Firmware/.vscode
 Firmware/RP2040/build
+Firmware/RP2040/build_*
+
+# Build dirs created by scripts/build.sh and scripts/build_all_boards.sh
+scripts/build
+scripts/build_*
+Firmware/RP2040/scripts
 Firmware/RP2040/.ignore
 Firmware/RP2040/src/USBDevice/DeviceDriver/XboxOG/tud_xid/tud_xid_xremote_rom.h
 Firmware/RP2040/src/BLEServer/att_delayed_response.h
@@ -11,3 +17,14 @@ Firmware/ESP32/sdkconfig.old
 Firmware/external/pico-sdk
 Firmware/external/picotool
 Tools/dvd-dongle-rom.bin
+
+# Python
+**/__pycache__/
+*.py[cod]
+
+# Local docs (not for GitHub)
+Firmware/RP2040/docs/XInput_joypad-os_comparison.md
+Firmware/RP2040/docs/BLUEPAD32_PS4_PS5_PARSING.md
+docs/Input_Controllers_Research.md
+docs/Other_Projects_Output_Modes.md
+docs/Wired_Retro_Controllers.md

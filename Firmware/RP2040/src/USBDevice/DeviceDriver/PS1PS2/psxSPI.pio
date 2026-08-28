@@ -1,0 +1,87 @@
+; PS1/PS2 controller protocol (device side). From PicoGamepadConverter (Loc15).
+; Interfaces with the modified SPI protocol used by PSX to communicate with controller/memory cards.
+; Pinout for OGX-Mini (standard Pico): CMD=19, CLK=20, ATT/SEL=21, DAT=22, ACK=26
+
+.define PUBLIC PIN_DAT 19
+.define PUBLIC PIN_CMD 20
+.define PUBLIC PIN_SEL 21
+.define PUBLIC PIN_CLK 22
+.define PUBLIC PIN_ACK 26
+
+.program cmd_reader
+; Samples CMD line during rising clock edges, waits for SEL low before starting
+sel_high:
+wait 0 gpio PIN_SEL
+set x, 7
+.wrap_target
+wait 0 gpio PIN_CLK
+wait 1 gpio PIN_CLK
+in pins 1
+.wrap
+
+.program dat_reader
+sel_high:
+wait 0 gpio PIN_SEL
+.wrap_target
+wait 0 gpio PIN_CLK
+wait 1 gpio PIN_CLK
+in pins 1
+.wrap
+
+.program dat_writer
+.side_set 1 pindirs
+set pindirs, 0 side 0
+wait 0 gpio PIN_SEL side 0
+.wrap_target
+pull side 0
+nop side 1 [5]
+set x, 7 side 0 [5]
+sendbit:
+wait 1 gpio PIN_CLK side 0
+wait 0 gpio PIN_CLK side 0
+out pindirs 1 side 0
+jmp x-- sendbit side 0
+.wrap
+
+% c-sdk {
+#define SLOW_CLKDIV 50
+
+static inline void cmd_reader_program_init(PIO pio, uint sm, uint offset) {
+ pio_sm_config c = cmd_reader_program_get_default_config(offset);
+ sm_config_set_in_pins(&c, PIN_CMD);
+ pio_sm_set_consecutive_pindirs(pio, sm, PIN_CMD, 1, false);
+ pio_sm_set_consecutive_pindirs(pio, sm, PIN_SEL, 1, false);
+ pio_sm_set_consecutive_pindirs(pio, sm, PIN_CLK, 1, false);
+ sm_config_set_in_shift(&c, true, true, 8);
+ sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_RX);
+ sm_config_set_clkdiv_int_frac(&c, SLOW_CLKDIV, 0x00);
+ pio_sm_init(pio, sm, offset, &c);
+}
+
+static inline void dat_writer_program_init(PIO pio, uint sm, uint offset) {
+ pio_sm_config c = dat_writer_program_get_default_config(offset);
+ sm_config_set_out_pins(&c, PIN_DAT, 1);
+ sm_config_set_set_pins(&c, PIN_DAT, 1);
+ sm_config_set_sideset_pins(&c, PIN_ACK);
+ pio_sm_set_pins_with_mask(pio, sm, 0, 1 << PIN_DAT);
+ pio_sm_set_consecutive_pindirs(pio, sm, PIN_DAT, 1, false);
+ pio_gpio_init(pio, PIN_DAT);
+ pio_sm_set_pins_with_mask(pio, sm, 0, 1 << PIN_ACK);
+ pio_sm_set_consecutive_pindirs(pio, sm, PIN_ACK, 1, false);
+ pio_gpio_init(pio, PIN_ACK);
+ pio_sm_set_consecutive_pindirs(pio, sm, PIN_SEL, 1, false);
+ pio_sm_set_consecutive_pindirs(pio, sm, PIN_CLK, 1, false);
+ sm_config_set_out_shift(&c, true, true, 8);
+ sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
+ sm_config_set_clkdiv_int_frac(&c, SLOW_CLKDIV, 0x00);
+ pio_sm_init(pio, sm, offset, &c);
+}
+
+static inline uint8_t read_byte_blocking(PIO pio, uint sm) {
+ return (uint8_t)(pio_sm_get_blocking(pio, sm) >> 24);
+}
+
+static inline void write_byte_blocking(PIO pio, uint sm, uint32_t byte) {
+ pio_sm_put_blocking(pio, sm, ~byte & 0xFF);
+}
+%}

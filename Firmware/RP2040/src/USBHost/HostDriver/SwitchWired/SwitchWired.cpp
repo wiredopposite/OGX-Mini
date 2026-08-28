@@ -7,6 +7,7 @@
 
 void SwitchWiredHost::initialize(Gamepad& gamepad, uint8_t address, uint8_t instance, const uint8_t* report_desc, uint16_t desc_len) 
 {
+    
     tuh_hid_receive_report(address, instance);
 }
 
@@ -64,9 +65,9 @@ void SwitchWiredHost::process_report(Gamepad& gamepad, uint8_t address, uint8_t 
     if (in_report->buttons & SwitchWired::Buttons::L3)      gp_in.buttons |= gamepad.MAP_BUTTON_L3;
     if (in_report->buttons & SwitchWired::Buttons::R3)      gp_in.buttons |= gamepad.MAP_BUTTON_R3;
 
-    gp_in.trigger_l = (in_report->buttons & SwitchWired::Buttons::ZL) ? Range::MAX<uint8_t> : Range::MIN<uint8_t>;
-    gp_in.trigger_r = (in_report->buttons & SwitchWired::Buttons::ZR) ? Range::MAX<uint8_t> : Range::MIN<uint8_t>;
-
+    if (in_report->buttons & SwitchWired::Buttons::ZR) gp_in.trigger_r = Range::MAX<uint8_t>;
+    if (in_report->buttons & SwitchWired::Buttons::ZL) gp_in.trigger_l = Range::MAX<uint8_t>;
+  
     std::tie(gp_in.joystick_lx, gp_in.joystick_ly) = gamepad.scale_joystick_l(in_report->joystick_lx, in_report->joystick_ly);
     std::tie(gp_in.joystick_rx, gp_in.joystick_ry) = gamepad.scale_joystick_r(in_report->joystick_rx, in_report->joystick_ry);
 

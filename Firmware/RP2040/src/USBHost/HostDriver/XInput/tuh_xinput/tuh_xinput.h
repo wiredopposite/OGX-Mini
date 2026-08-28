@@ -59,6 +59,15 @@ namespace tuh_xinput
     struct Interface
     {
         bool connected{false};
+        /** Vendor-class GIP arcade stick (Razer Atrox XBO, etc.) — xpad MAP_TRIGGERS_TO_BUTTONS layout. */
+        bool gip_arcade_stick{false};
+        /** GIP OUT sequence byte (Linux xpad odata_serial). */
+        uint8_t gip_out_seq{0};
+        /** Linux xpad sends xboxone_power_on once; repeats make arcade sticks flash/cycle power. */
+        bool gip_power_sent{false};
+        /** Last successful GIP IN xfer (ms); used to re-arm IN only when the chain stalls. */
+        uint32_t gip_last_in_ok_ms{0};
+        uint32_t gip_last_in_arm_ms{0};
 
         DevType dev_type{DevType::UNKNOWN};
         ItfType itf_type{ItfType::UNKNOWN};
@@ -87,6 +96,15 @@ namespace tuh_xinput
     bool receive_report(uint8_t address, uint8_t instance);
     bool set_rumble(uint8_t address, uint8_t instance, uint8_t rumble_l, uint8_t rumble_r, bool block);
     bool set_led(uint8_t address, uint8_t instance, uint8_t led_number, bool block);
+    bool is_connected(uint8_t address, uint8_t instance);
+    /** Player LED quadrant (1–4) from wireless receiver USB interface number (0,2,4,6). */
+    uint8_t wireless_led_quadrant(uint8_t address, uint8_t instance);
+    /** Keep all four wireless ports primed (RUMBLE_ENABLE + LED) until a pad connects. */
+    void service_wireless_ports(uint8_t dev_addr);
+    /** Arm IN + GIP OUT init (call from XboxOneHost::initialize after mount). */
+    void start_xboxone(uint8_t dev_addr, uint8_t instance);
+    /** Re-arm stalled GIP IN on PIO USB (call from HostManager::send_feedback). */
+    void service_gip(uint8_t dev_addr, uint8_t instance);
 
     //Wireless only atm
     void xbox360_chatpad_init(uint8_t address, uint8_t instance); 
@@ -99,6 +117,8 @@ namespace tuh_xinput
     TU_ATTR_WEAK void report_sent_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len);
     TU_ATTR_WEAK void xbox360w_connect_cb(uint8_t dev_addr, uint8_t instance);
     TU_ATTR_WEAK void xbox360w_disconnect_cb(uint8_t dev_addr, uint8_t instance);
+    /** Called on every successful XInput IN transfer (keepalive for host idle watchdog). */
+    TU_ATTR_WEAK void host_activity_cb(uint8_t dev_addr, uint8_t instance);
     void report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len);
     
 }; // namespace tuh_xinput

@@ -33,6 +33,13 @@ struct JoystickSettings
 
     bool is_same(const JoystickSettingsRaw& raw) const;
     void set_from_raw(const JoystickSettingsRaw& raw);
+    static bool raw_has_customization(const JoystickSettingsRaw& raw);
+    /**
+     * Xbox 360–like response for XInput mode when the WebApp has not customized sticks.
+     * Mild remapped inner deadzone + softer early / steeper outer curve + circular clamp.
+     * (@param right_stick slightly larger deadzone, matching Microsoft L/R asymmetry).
+     */
+    void set_xbox360_stock_feel(bool right_stick = false);
 };
 
 #pragma pack(push, 1)

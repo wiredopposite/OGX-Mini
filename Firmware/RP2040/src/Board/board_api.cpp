@@ -1,15 +1,54 @@
 #include <pico/stdlib.h>
 #include <pico/mutex.h>
 #include <pico/multicore.h>
+#include <pico/platform.h>
 #include <hardware/clocks.h>
+#include <hardware/timer.h>
+#include <hardware/watchdog.h>
 
 #include "tusb.h"
+
+#if defined(CONFIG_EN_USB_HOST)
+#include "pio_usb.h"
+#endif
 
 #include "Board/Config.h"
 #include "Board/board_api.h"
 #include "Board/ogxm_log.h"
 #include "Board/board_api_private/board_api_private.h"
 #include "TaskQueue/TaskQueue.h"
+
+#if defined(CONFIG_EN_USB_HOST)
+#include "USBHost/HostManager.h"
+#endif
+
+extern "C" {
+
+// TUSB_OPT_TIME_CALLBACK=1: TinyUSB expects the platform to supply millis; the SDK helper may
+// not be linked in this configuration. Used by our tusb_time_delay_ms_api override and TinyUSB.
+uint32_t tusb_time_millis_api(void) {
+    return time_us_32() / 1000u;
+}
+
+// Overrides TinyUSB's weak default (busy-wait on millis only). With PIO USB host and
+// skip_alarm_pool there is no hardware 1 kHz SOF interrupt — pio_usb_host_frame() must run
+// about once per millisecond. Enumeration calls tusb_time_delay_ms_api() for 50+ ms resets
+// from inside tuh_task(); without servicing PIO here, SOFs stop and control transfers fail
+// ("Enumeration attempt N" retries, controller never works).
+void tusb_time_delay_ms_api(uint32_t ms) {
+    const uint32_t start = tusb_time_millis_api();
+    while ((tusb_time_millis_api() - start) < ms) {
+#if defined(CONFIG_EN_USB_HOST)
+        pio_usb_host_frame();
+        const uint32_t now = tusb_time_millis_api();
+        while (tusb_time_millis_api() == now) {
+            tight_loop_contents();
+        }
+#endif
+    }
+}
+
+} // extern "C"
 
 namespace board_api {
 
@@ -22,12 +61,28 @@ bool usb::host_connected() {
     return false;
 }
 
+bool usb::host_any_pad_mounted() {
+#if defined(CONFIG_EN_USB_HOST)
+    return HostManager::get_instance().any_mounted();
+#else
+    return false;
+#endif
+}
+
 //Only call this from core0
 void usb::disconnect_all() {
     OGXM_LOG("Disconnecting USB and resetting Core1\n");
 
     TaskQueue::suspend_delayed_tasks();
+#if defined(CONFIG_EN_USB_HOST)
+    if (board_api_usbh::stop_pio_usb_host) {
+        board_api_usbh::stop_pio_usb_host();
+    } else {
+        multicore_reset_core1();
+    }
+#else
     multicore_reset_core1();
+#endif
     sleep_ms(500);
     tud_disconnect();
     sleep_ms(500);
@@ -51,14 +106,12 @@ void set_led(bool state) {
 }
 
 void reboot() {
-    #define AIRCR_REG (*((volatile uint32_t *)(0xE000ED0C)))
-    #define AIRCR_SYSRESETREQ (1 << 2)
-    #define AIRCR_VECTKEY (0x5FA << 16)
-
     OGXM_LOG("Rebooting\n");
-
-    AIRCR_REG = AIRCR_VECTKEY | AIRCR_SYSRESETREQ;
-    while(1);
+    /* Watchdog reset is reliable from either core (BT runs on Core1). */
+    watchdog_reboot(0, 0, 0);
+    while (1) {
+        tight_loop_contents();
+    }
 }
 
 uint32_t ms_since_boot() {

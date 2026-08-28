@@ -3,7 +3,6 @@
 
 #include <cstdint>
 
-#include "Descriptors/XInput.h"
 #include "USBHost/HostDriver/HostDriver.h"
 
 class Xbox360WHost : public HostDriver
@@ -23,7 +22,9 @@ public:
 
 private:
     uint32_t tid_chatpad_keepalive_{0};
-    XInput::InReportWireless prev_in_report_;
+    uint8_t prev_in_report_[32]{0};
+    uint8_t active_instance_{0xFF};
+    uint8_t active_address_{0xFF};
 };
 
 #endif // _XBOX360_WIRELESS_HOST_H_

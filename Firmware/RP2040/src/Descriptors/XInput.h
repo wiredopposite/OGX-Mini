@@ -170,86 +170,85 @@ namespace XInput
 	static_assert(sizeof(OutReport) == 8, "XInput::OutReport is misaligned");
 	#pragma pack(pop)
 
+	// String descriptors — from joypad-os xinput_descriptors.h
 	static const uint8_t STRING_LANGUAGE[]     = { 0x09, 0x04 };
-	static const uint8_t STRING_MANUFACTURER[] = "Microsoft";
-	static const uint8_t STRING_PRODUCT[]      = "XInput STANDARD GAMEPAD";
+	static const uint8_t STRING_MANUFACTURER[] = "\xa9Microsoft Corporation";
+	static const uint8_t STRING_PRODUCT[]      = "Xbox 360 Controller";
 	static const uint8_t STRING_VERSION[]      = "1.0";
+	// XSM3 security string (iInterface=4), joypad-os: XINPUT_SECURITY_STRING
+	static const uint8_t STRING_XSM3[]         = "Xbox Security Method 3, Version 1.00, \xa9 2005 Microsoft Corporation. All rights reserved.";
 
 	static const uint8_t *DESC_STRING[] __attribute__((unused)) =
 	{
 		STRING_LANGUAGE,
 		STRING_MANUFACTURER,
 		STRING_PRODUCT,
-		STRING_VERSION
+		STRING_VERSION,
+		STRING_XSM3,
 	};
 
+	// Device descriptor — from joypad-os (XINPUT_VID 0x045E, XINPUT_PID 0x028E, XINPUT_BCD_DEVICE 0x0114)
 	static const uint8_t DESC_DEVICE[] =
 	{
 		0x12,       // bLength
 		0x01,       // bDescriptorType (Device)
 		0x00, 0x02, // bcdUSB 2.00
-		0xFF,	      // bDeviceClass
-		0xFF,	      // bDeviceSubClass
-		0xFF,	      // bDeviceProtocol
-		0x40,	      // bMaxPacketSize0 64
-		0x5E, 0x04, // idVendor 0x045E
-		0x8E, 0x02, // idProduct 0x028E
-		0x14, 0x01, // bcdDevice 2.14
+		0xFF,       // bDeviceClass
+		0xFF,       // bDeviceSubClass
+		0xFF,       // bDeviceProtocol
+		0x40,       // bMaxPacketSize0 64
+		0x5E, 0x04, // idVendor 0x045E (Microsoft)
+		0x8E, 0x02, // idProduct 0x028E (Xbox 360 Controller)
+		0x14, 0x01, // bcdDevice 0x0114 (v1.14)
 		0x01,       // iManufacturer (String Index)
 		0x02,       // iProduct (String Index)
 		0x03,       // iSerialNumber (String Index)
 		0x01,       // bNumConfigurations 1
 	};
 
+	// Configuration descriptor (153 bytes) — from joypad-os xinput_config_descriptor[]
+	// https://github.com/joypad-ai/joypad-os src/usb/usbd/descriptors/xinput_descriptors.h
+	static constexpr uint16_t CONFIG_TOTAL_LENGTH = 153;
+
 	static const uint8_t DESC_CONFIGURATION[] =
 	{
-		0x09,        // bLength
-		0x02,        // bDescriptorType (Configuration)
-		0x30, 0x00,  // wTotalLength 48
-		0x01,        // bNumInterfaces 1
+		// Configuration descriptor (9 bytes)
+		0x09, 0x02,
+		0x99, 0x00,  // wTotalLength 153 (LE)
+		0x04,        // bNumInterfaces
 		0x01,        // bConfigurationValue
-		0x00,        // iConfiguration (String Index)
-		0x80,        // bmAttributes
-		0xFA,        // bMaxPower 500mA
+		0x00,        // iConfiguration
+		0xA0,        // bmAttributes (bus powered, remote wakeup)
+		0xFA,        // bMaxPower (500mA)
 
-		0x09,        // bLength
-		0x04,        // bDescriptorType (Interface)
-		0x00,        // bInterfaceNumber 0
-		0x00,        // bAlternateSetting
-		0x02,        // bNumEndpoints 2
-		0xFF,        // bInterfaceClass
-		0x5D,        // bInterfaceSubClass
-		0x01,        // bInterfaceProtocol
-		0x00,        // iInterface (String Index)
+		// ---- Interface 0: Gamepad (SubClass 0x5D, Protocol 0x01) ----
+		0x09, 0x04, 0x00, 0x00, 0x02, 0xFF, 0x5D, 0x01, 0x00,
+		0x11, 0x21, 0x00, 0x01, 0x01, 0x25, 0x81, 0x14,
+		0x00, 0x00, 0x00, 0x00, 0x13, 0x02, 0x08, 0x00, 0x00,
+		0x07, 0x05, 0x81, 0x03, 0x20, 0x00, 0x04,
+		0x07, 0x05, 0x02, 0x03, 0x20, 0x00, 0x08,
 
-		0x10,        // bLength
-		0x21,        // bDescriptorType (HID)
-		// 0x10, 0x01,  // bcdHID 1.10
-		0x00, 0x01,  // bcdHID 1.00
-		0x01,        // bCountryCode
-		0x24,        // bNumDescriptors
-		0x81,        // bDescriptorType[0] (Unknown 0x81)
-		0x14, 0x03,  // wDescriptorLength[0] 788
-		0x00,        // bDescriptorType[1] (Unknown 0x00)
-		0x03, 0x13,  // wDescriptorLength[1] 4867
-		0x01,        // bDescriptorType[2] (Unknown 0x02)
-		0x00, 0x03,  // wDescriptorLength[2] 768
-		0x00,        // bDescriptorType[3] (Unknown 0x00)
+		// ---- Interface 1: Audio (SubClass 0x5D, Protocol 0x03) ----
+		0x09, 0x04, 0x01, 0x00, 0x04, 0xFF, 0x5D, 0x03, 0x00,
+		0x1B, 0x21, 0x00, 0x01, 0x01, 0x01, 0x83, 0x40,
+		0x01, 0x04, 0x20, 0x16, 0x85, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x16, 0x06, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00,
+		0x07, 0x05, 0x83, 0x03, 0x20, 0x00, 0x02,
+		0x07, 0x05, 0x04, 0x03, 0x20, 0x00, 0x04,
+		0x07, 0x05, 0x85, 0x03, 0x20, 0x00, 0x40,
+		0x07, 0x05, 0x06, 0x03, 0x20, 0x00, 0x10,
 
-		0x07,        // bLength
-		0x05,        // bDescriptorType (Endpoint)
-		0x81,        // bEndpointAddress (IN/D2H)
-		0x03,        // bmAttributes (Interrupt)
-		0x20, 0x00,  // wMaxPacketSize 32
-		0x01,        // bInterval 1 (unit depends on device speed)
+		// ---- Interface 2: Plugin Module (SubClass 0x5D, Protocol 0x02) ----
+		0x09, 0x04, 0x02, 0x00, 0x01, 0xFF, 0x5D, 0x02, 0x00,
+		0x09, 0x21, 0x00, 0x01, 0x01, 0x22, 0x86, 0x03, 0x00,
+		0x07, 0x05, 0x86, 0x03, 0x20, 0x00, 0x10,
 
-		0x07,        // bLength
-		0x05,        // bDescriptorType (Endpoint)
-		0x01,        // bEndpointAddress (OUT/H2D)
-		0x03,        // bmAttributes (Interrupt)
-		0x20, 0x00,  // wMaxPacketSize 32
-		0x08,        // bInterval 8 (unit depends on device speed)
+		// ---- Interface 3: Security (SubClass 0xFD, Protocol 0x13), iInterface=4 ----
+		0x09, 0x04, 0x03, 0x00, 0x00, 0xFF, 0xFD, 0x13, 0x04,
+		0x06, 0x41, 0x00, 0x01, 0x01, 0x03,
 	};
+	static_assert(sizeof(DESC_CONFIGURATION) == CONFIG_TOTAL_LENGTH, "XInput config descriptor size");
 };
 
 #endif // _XINPUT_DESCRIPTORS_H_

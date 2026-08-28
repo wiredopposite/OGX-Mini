@@ -1,0 +1,27 @@
+; GameCube JoyBus protocol (device side). From PicoGamepadConverter (Loc15).
+; THIS PIO PROGRAM EXPECTS THE SYSTEM CLOCK TO BE 125MHz
+; Single wire bidirectional; clock is /5 => 25MHz
+
+.program joybus
+PUBLIC inmode:
+ set pindirs, 0
+inagain:
+ wait 0 pin 0 [31]
+ nop [31]
+ in pins, 1
+ wait 1 pin 0
+ jmp inagain
+
+PUBLIC outmode:
+ set pins, 1
+ set pindirs, 1
+outagain:
+ pull ifempty block
+ out X, 1
+ out Y, 1
+ jmp !Y inmode
+ set pins, 0 [ 24 ]
+ mov pins, X [ 24 ]
+ mov pins, X [ 24 ]
+ set pins, 1 [ 19 ]
+ jmp outagain

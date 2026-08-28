@@ -19,6 +19,7 @@ public:
 private:
     PS4::InReport in_report_{};
     PS4::InReport prev_in_report_{};
+    uint8_t prev_imu_[12]{};
     PS4::OutReport out_report_{};
 };
 

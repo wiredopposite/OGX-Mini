@@ -1,0 +1,37 @@
+; N64 controller response output. Ported from pdaxrom/usb2n64-adapter.
+; Sends bits with N64 timing: pull 32-bit word (bit_count in high 16, bytes in low 16), send bits then stop.
+
+.program n64send_dma
+ SET PINS, 0
+ SET PINDIRS, 0
+
+public loop:
+ PULL BLOCK
+ OUT Y, 16
+ JMP !Y, send_stop
+
+pull_and_send:
+ OUT X, 1
+ JMP !X send_0
+ JMP send_1
+
+send_0:
+ SET PINDIRS, 1 [30]
+ NOP [4]
+ SET PINDIRS, 0 [7]
+ JMP Y-- pull_and_send
+ JMP loop
+
+send_1:
+ SET PINDIRS, 1 [11]
+ SET PINDIRS, 0 [31]
+ JMP Y-- pull_and_send
+ JMP loop
+
+send_stop:
+ SET PINDIRS, 1 [22]
+ SET PINDIRS, 0
+public stop:
+ JMP stop
+
+.wrap

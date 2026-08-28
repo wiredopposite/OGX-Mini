@@ -104,7 +104,8 @@
 //------------- CLASS -------------//
 #define CFG_TUD_CDC     1
 #define CFG_TUD_MSC     0
-#define CFG_TUD_HID     MAX_GAMEPADS
+/* +1 HID interface for Steam mode composite mouse (unused by other output drivers). */
+#define CFG_TUD_HID     (MAX_GAMEPADS + 1)
 #define CFG_TUD_MIDI    0
 #define CFG_TUD_VENDOR  0
 #define CFG_TUD_XID     1
@@ -148,13 +149,16 @@
 
 #define CFG_TUH_MSC             0
 #define CFG_TUH_VENDOR          0
-#define CFG_TUH_XINPUT          MAX_GAMEPADS
+#define CFG_TUH_XINPUT          OGXM_TUH_XINPUT_INSTANCES
 
 // max device support (excluding hub device)
 #define CFG_TUH_DEVICE_MAX          (CFG_TUH_HUB ? 4 : 1) // hub typically has 4 ports
 
 #define CFG_TUH_HID_EPIN_BUFSIZE    64
 #define CFG_TUH_HID_EPOUT_BUFSIZE   64
+
+/* Required for Switch 2 Pro bulk bring-up (tuh_edpt_xfer completion callbacks). */
+#define CFG_TUH_API_EDPT_XFER       1
 
 #endif //defined(CONFIG_EN_USB_HOST)
 
