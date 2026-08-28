@@ -13,7 +13,7 @@ Also read the [Support policy](../../../README.md#support-policy) in the main RE
 | Support policy (controllers / boards) | [README — Support policy](../../../README.md#support-policy) |
 | Adding a controller yourself | [Adding_Supported_Controllers.md](Adding_Supported_Controllers.md) |
 | Wired pad lists | [Wired_Controllers.md](Wired_Controllers.md) |
-| Full HID report capture | [Tools/controller_capture](../../../Tools/controller_capture/README.md) |
+| Full HID report capture (required for mapping) | On-device **Debug UART** — see [Adding supported controllers](Adding_Supported_Controllers.md#step-2--capture-reports-on-the-adapter-required-for-driver-mapping) |
 
 ---
 
@@ -26,7 +26,8 @@ Also read the [Support policy](../../../README.md#support-policy) in the main RE
 | Third-party / unsupported pad with no donation or shipping agreement | **Closed** as out of scope |
 | Board not on the maintainer-tested list, asking for a fix without a PR | Directed to **clone → fix → PR**; issue may be **closed** |
 | Controller bug with no VID/PID (when USB) and no mode | Delayed or closed until IDs and mode are supplied |
-| Mapping / “wrong buttons” with no full HID report dumps | Delayed until [full reports](Adding_Supported_Controllers.md#step-2--capture-full-hid-reports-required-for-driver-mapping) are attached |
+| Mapping / “wrong buttons” with no adapter-side report capture | Delayed until [on-device capture](Adding_Supported_Controllers.md#step-2--capture-reports-on-the-adapter-required-for-driver-mapping) is attached |
+| **`Tools/controller_capture/` script output** (`controller_capture.py`, `hidraw_full_report_dump.py`, etc.) | **Closed or delayed** — PC script dumps **cannot be used** for mapping at this time |
 
 Providing everything in the first post is the fastest path to a useful reply.
 
@@ -105,14 +106,15 @@ List briefly: other modes, other pads, other cables/hubs, Release vs Debug, web-
 
 ## Required when the issue is about input mapping, wrong buttons, or a new pad
 
-Attach **full HID report** evidence — SDL / “gamepad tester” screenshots alone are **not** enough.
+Attach **adapter-side full report** evidence — SDL / “gamepad tester” screenshots and **PC capture scripts are not enough**.
 
-- Prefer a log from `Tools/controller_capture/hidraw_full_report_dump.py` (Linux), **or**
-- Debug firmware UART dumps of the **full** report hex while pressing one control at a time  
+- **Debug firmware UART** — full report hex from `process_report` on the OGX-Mini while pressing **one control at a time** (see [Step 4](Adding_Supported_Controllers.md#step-4--add-temporary-full-report-logging-on-the-adapter))
 
-See [Adding_Supported_Controllers — full reports](Adding_Supported_Controllers.md#step-2--capture-full-hid-reports-required-for-driver-mapping).
+**Do not attach** logs from **`controller_capture.py`**, **`hidraw_full_report_dump.py`**, or other **`Tools/controller_capture/`** scripts — that output **cannot be used** for mapping at this time.
 
-Without full reports, mapping bugs and “add this controller” requests are likely to be **delayed or closed**.
+See [Adding supported controllers — capture on the adapter](Adding_Supported_Controllers.md#step-2--capture-reports-on-the-adapter-required-for-driver-mapping).
+
+Without acceptable adapter-side capture, mapping bugs and “add this controller” requests are likely to be **delayed or closed**.
 
 ---
 
@@ -126,7 +128,7 @@ Provide what applies; more evidence = faster triage.
 | UART log from a **Debug** build | Mount failures, disconnects, BT pairing |
 | Video (short) of the failure | Timing / disconnect / LED behavior hard to describe |
 | `lsusb` / Device Manager Hardware Ids | VID/PID disputes |
-| Capture file from `controller_capture` **plus** full report dump | New controller / wrong mapping |
+| **Debug UART full report hex** (adapter host port) | New controller / wrong mapping (**required** — not PC `Tools/controller_capture/` scripts) |
 | GitHub commit or release link | Version clarity |
 
 Debug UART pins and baud: [Adding_Supported_Controllers — UART](Adding_Supported_Controllers.md#uart-pins-and-baud) (**115200**; Pico W / 2 W: **GP4/GP5**; most other boards: **GP0/GP1**).
@@ -200,7 +202,7 @@ Always / intermittent (describe):
 
 
 ### Attachments
-- [ ] Full HID report dump or Debug UART hex (if mapping / new pad / wrong buttons)
+- [ ] **Debug UART full report hex from the adapter** (if mapping / new pad / wrong buttons) — **not** PC `Tools/controller_capture/` script output
 - [ ] UART log (if connect / disconnect / init)
 - [ ] Photos / video (optional)
 - [ ] Other:

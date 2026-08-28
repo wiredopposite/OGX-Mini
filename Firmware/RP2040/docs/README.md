@@ -14,7 +14,7 @@ This folder holds **firmware user guides**, **references**, and **contributor** 
 | [Building_From_Source.md](Building_From_Source.md) | Clone, submodules, **required tools**, Pico SDK, and build/flash on Linux / macOS / Windows. |
 | [Firmware_Architecture.md](Firmware_Architecture.md) | How the firmware is structured, runtime flow, modules, and **every file to touch** when adding host/device drivers. |
 | [Adding_Supported_Controllers.md](Adding_Supported_Controllers.md) | Add a new input pad: VID/PID, **full HID reports**, host drivers, PadIn mapping, Debug UART. |
-| [Tools/controller_capture](../../../Tools/controller_capture/README.md) | PC helpers: VID/PID checklist + **`hidraw_full_report_dump.py`** for full report streams. |
+| [Tools/controller_capture](../../../Tools/controller_capture/README.md) | Legacy PC helpers — **not accepted** for mapping submissions |
 | [README — Support policy](../../README.md#support-policy) | Maintainer-supported boards and first-party controller policy. |
 
 ---

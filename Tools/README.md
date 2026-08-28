@@ -2,7 +2,7 @@
 
 ## Controller mapping capture (new gamepad support)
 
-See **[controller_capture/README.md](controller_capture/README.md)**. Run `controller_capture.py` on your PC to record button/axis mappings and VID/PID for maintainers when requesting support for a new controller.
+See **[controller_capture/README.md](controller_capture/README.md)** for legacy PC helpers. **None of those scripts’ output is accepted for mapping support** — use on-device Debug UART capture (see [Adding supported controllers](../Firmware/RP2040/docs/Adding_Supported_Controllers.md)).
 
 ## Dumping Xbox DVD dongle firmware
 

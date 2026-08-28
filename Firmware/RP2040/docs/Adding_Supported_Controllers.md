@@ -4,6 +4,9 @@ This guide is for **community contributors** who want to add a new USB (or Bluet
 
 **Maintainer policy:** New first-party maintainer support normally requires hardware on hand, a **donation to purchase**, or a shipping agreement — see the main [README — Support policy](../../../README.md#support-policy). Opening an issue? Include everything in [Support_Issue_Requirements.md](Support_Issue_Requirements.md) or the issue may be closed or delayed. Everyone else is welcome to **clone this repo**, implement support, and **open a PR**. Board-specific fixes are especially welcome for targets the maintainer does not own.
 
+> **Do not submit PC capture script output for mapping or new-controller support.**  
+> The tools under `Tools/controller_capture/` — including **`controller_capture.py`** (interactive input grabber) and **`hidraw_full_report_dump.py`** (Linux hidraw stream) — **do not produce information that can be used** to map a pad correctly **at this time**. **Issues and PRs that attach logs from those scripts will not be used** and will be closed or delayed. For acceptable evidence, use **on-device Debug UART** full report hex from the adapter (Step 3–4) and/or **USB analyzer** captures on the adapter host port when init/handshake matters.
+
 **Related docs**
 
 | Topic | Document |
@@ -11,7 +14,8 @@ This guide is for **community contributors** who want to add a new USB (or Bluet
 | How the firmware is structured / which files enable a driver | [Firmware_Architecture.md](Firmware_Architecture.md) |
 | Supported wired pads (by driver) | [Wired_Controllers.md](Wired_Controllers.md) |
 | PadIn ↔ output mode mappings | [Controller_Mappings.md](Controller_Mappings.md) |
-| Full HID report dump / PC helpers | [Tools/controller_capture/README.md](../../../Tools/controller_capture/README.md) (`hidraw_full_report_dump.py`) |
+| Capture on the adapter (required for mapping issues/PRs) | [Step 2](#step-2--capture-reports-on-the-adapter-required-for-driver-mapping) + [Step 3–4](#step-3--build-debug-firmware-and-read-uart-logs) (Debug UART) |
+| PC scripts in `Tools/controller_capture/` — **not accepted** | `controller_capture.py`, `hidraw_full_report_dump.py`, etc. |
 | Bluetooth gamepad list (upstream) | [Bluepad32 supported gamepads](https://bluepad32.readthedocs.io/en/latest/supported_gamepads/) |
 
 ---
@@ -47,7 +51,7 @@ Canonical state is **`Gamepad::PadIn`** (Xbox-style names: A/B/X/Y, LB/RB, trigg
 | Same protocol as an existing list (DInput, PS3/4/5, Switch wired, N64, …) but **new VID/PID** | Add `{ vid, pid }` to the matching array in [`HardwareIDs.h`](../src/USBHost/HardwareIDs.h). |
 | Standard HID joystick; unknown VID/PID | May already work as **HID Generic**. If buttons are wrong, fix mapping in `HIDGeneric.cpp` **or** add a dedicated driver. |
 | Custom report / init handshake / multi-interface vendor protocol | **New `HostDriver`** (+ optional descriptor struct under `Descriptors/`). |
-| Bluetooth-only pad | Bluepad32 support (or a dedicated BLE parser). USB capture on a PC still helps document the layout. |
+| Bluetooth-only pad | Bluepad32 support (or a dedicated BLE parser). On-device UART capture on the adapter still helps document the layout. |
 
 **VID/PID alone is not always enough.** Mode switches (XInput vs DInput vs Switch), report IDs, init packets, and stick axis polarity all matter. Prefer the mode that matches an existing driver when the pad offers one.
 
@@ -81,36 +85,29 @@ Or `lsusb -v` → `idVendor` / `idProduct`.
 
 ---
 
-## Step 2 — Capture **full** HID reports (required for driver mapping)
+## Step 2 — Capture reports on the adapter (required for driver mapping)
 
-Host drivers decode **raw USB HID (or XInput) report bytes** — bit masks, byte offsets, axis ranges, report IDs. You must map from **full reports**, not from OS/SDL abstractions.
+Host drivers decode **raw USB HID (or XInput) report bytes** as **TinyUSB delivers them on the OGX-Mini USB host port** — bit masks, byte offsets, axis ranges, report IDs. You must map from those buffers, not from OS/SDL abstractions or PC-side hidraw.
 
-### What is not enough
+### Not accepted — PC scripts in `Tools/controller_capture/`
 
-**`controller_capture.py` alone is not sufficient** to write a correct host driver in all cases:
+**At this time, do not submit output from any of the PC capture scripts for mapping support, issues, or PRs.** That includes:
 
-- SDL / pygame only expose **button indices, axis indices, and hats** as the OS remaps them.
-- Those indices **do not** tell you which **byte/bit** in the HID report is A, LT, or LX.
-- Multi-mode pads, vendor report IDs, packed nibbles, hat enums, and IMU/timer fields do not show up cleanly in SDL.
-- Even the tool’s optional **per-prompt hidraw snapshots** can miss continuous axis ranges, overlapping bitfields, or bytes that only move together with sticks.
+| Script | Why it is not accepted |
+|--------|-------------------------|
+| **`controller_capture.py`** | SDL/pygame indices and optional hidraw sidecar do not reliably match adapter-side report layout. |
+| **`hidraw_full_report_dump.py`** | Linux hidraw on a PC is **not** the same path as the Pico USB host stack (init, interfaces, report IDs, and timing differ). Logs from this script **cannot be used** for mapping at this time. |
+| **`analyze_hidraw_xor.py`** on the above | Same source data — not acceptable as submission evidence. |
 
-Use `controller_capture` for **VID/PID**, product name, and a rough “which logical control exists” checklist. For **firmware mapping**, you need **full report hex** (idle vs each control, and stick sweeps).
+**Issues and PRs that attach only these dumps will be closed or delayed.** VID/PID from `lsusb` / Device Manager is still fine.
 
-### Required: full report streams
+### Accepted capture (what maintainers can use)
 
-Pick at least one of these (prefer both PC dump + on-device UART when the pad only enumerates cleanly on the adapter).
+Use evidence from **the adapter itself** (or USB traffic **on the adapter’s host port**):
 
-#### A) Linux — live full hidraw dump (preferred on PC)
+#### A) On-device Debug UART — **preferred** (Step 3–4)
 
-```bash
-cd Tools/controller_capture
-python3 -m pip install -r requirements.txt
-python3 hidraw_full_report_dump.py --vid VVVV --pid PPPP
-# print only when the packet changes:
-python3 hidraw_full_report_dump.py --vid VVVV --pid PPPP --diff
-# save a log:
-python3 hidraw_full_report_dump.py --vid VVVV --pid PPPP --diff > mypad_reports.txt
-```
+Plug the pad into the **OGX-Mini USB host port**, flash a **Debug** build, and log **`report` / `len` + full hex** from `process_report` (or temporary logging in the receive path). That is the ground truth for OGX host drivers — especially when the pad needs adapter-side init or does not enumerate cleanly on a PC.
 
 Method:
 
@@ -120,31 +117,16 @@ Method:
 4. Build a packed `InReport` / bit masks from those offsets (see `Descriptors/*.h` for examples).
 5. Re-check: hold a face button while moving sticks so axis bytes do not collide with your button masks.
 
-Helper for XOR analysis of saved capture files: `analyze_hidraw_xor.py` (see [Tools/controller_capture/README.md](../../../Tools/controller_capture/README.md)).
+See [Step 3](#step-3--build-debug-firmware-and-read-uart-logs) and [Step 4](#step-4--add-temporary-full-report-logging-on-the-adapter).
 
-#### B) On-device Debug UART — full reports as the Pico host sees them
+#### B) USB analyzer on the adapter host port (init / multi-interface)
 
-Some pads need adapter-side init, or Windows/macOS hidraw access is awkward. Then dump **`report` / `len` in `process_report`** on a **Debug** build (Step 3–4). That is the ground truth for OGX host drivers.
+When bring-up matters (Switch 2 bulk, feature reports, multiple interfaces):
 
-#### C) USB analyzers (init / multi-interface)
+- **Wireshark + USBPcap** (Windows) or **usbmon** (Linux) on the **adapter ↔ controller** link (not “PC hidraw only”).
+- Capture setup packets, feature reports, and input endpoints **as the adapter sees them**.
 
-- **Wireshark + USBPcap** (Windows) or **usbmon** (Linux) for setup packets, feature reports, and bulk bring-up.
-- **hid-tools** / `usbhid-dump` for report descriptors and streams.
-
-### Optional helper: `controller_capture.py`
-
-```bash
-cd Tools/controller_capture
-python3 controller_capture.py
-```
-
-Useful for:
-
-- **VID:PID** and retail / SDL name  
-- A prompt checklist of controls  
-- On Linux, optional hidraw sidecar fields (`hidraw_*_hex`) as a **starting** XOR hint  
-
-Still finish with a **full-report** pass (`hidraw_full_report_dump.py` and/or UART) before locking bit masks into a driver. Details: [Tools/controller_capture/README.md](../../../Tools/controller_capture/README.md).
+`Tools/controller_capture/` scripts may exist for historical or local experimentation; they are **not** supported submission formats.
 
 ### How to turn full reports into a mapping table
 
@@ -376,7 +358,7 @@ Update:
 - Controller **retail name** and **mode** (XInput / DInput / Switch / …)
 - **VID** / **PID** (hex)
 - Board + firmware version / commit
-- Capture file with **full HID report hex** (`hidraw_full_report_dump.py` log and/or UART `OGXM_LOG_HEX` dumps) — SDL-only `controller_capture` output is **not** enough for custom drivers
+- **Debug UART full report hex** from the adapter (`OGXM_LOG_HEX` in `process_report`, Step 4) — **required** acceptable format for mapping issues/PRs. **Do not attach** `Tools/controller_capture/` script output (`controller_capture.py`, `hidraw_full_report_dump.py`, etc.) — those **cannot be used** at this time.
 - UART log snippets if mount/init fails
 - Summary of code changes (files touched)
 
@@ -394,15 +376,16 @@ Update:
 | `src/Gamepad/Gamepad.h` | `PadIn`, `MAP_*`, scaling helpers |
 | `src/Board/ogxm_log.h` | `OGXM_LOG` / `OGXM_LOG_HEX` |
 | `src/Bluepad32/Bluepad32.cpp` | BT → PadIn |
-| `Tools/controller_capture/hidraw_full_report_dump.py` | **Full** HID report stream (required for bit/axis mapping) |
-| `Tools/controller_capture/` | Optional SDL checklist + VID/PID helpers |
+| `Tools/controller_capture/` | **Not accepted** for mapping submissions — PC scripts do not match adapter-side reports |
+| Debug UART + `OGXM_LOG_HEX` in host driver | **Accepted** — full report as TinyUSB delivers on the adapter |
 | `Firmware/RP2040/CMakeLists.txt` | Sources + Debug UART pins |
 
 ---
 
 ## Common pitfalls
 
-- **Mapping from SDL / `controller_capture` indices only** — drivers need **full report** byte/bit layouts; always take a full hidraw or UART hex dump.
+- **Submitting `Tools/controller_capture/` dumps** — **`controller_capture.py`**, **`hidraw_full_report_dump.py`**, and related PC script output are **not accepted** for mapping or new-pad support at this time. Use **Debug UART** full hex from the adapter instead.
+- **Mapping from PC hidraw / SDL indices** — drivers need the **adapter-side** report layout; capture on the Pico host (Step 4).
 - **Wrong mode** on multi-mode pads — capture and test the mode you listed in `HardwareIDs.h`.
 - **Logging every report without a gate** — UART cannot keep up; gate the *trigger*, still print full hex when logging.
 - **Timer / IMU bytes** mistaken for buttons — causes flicker; XOR against idle and ignore always-changing fields.

@@ -154,7 +154,7 @@ Sticks use the same 12-bit packing as Switch 1 Pro, with **Y inverted** into Pad
 
 ### Generic / DInput USB host
 
-Unknown HID pads use the generic host path; mapping depends on the report descriptor. Use the [controller capture tool](../../../Tools/controller_capture/README.md) when adding support. DInput **output** mode uses PlayStation names on the wire (see below).
+Unknown HID pads use the generic host path; mapping depends on the report descriptor. Capture on the **adapter** with Debug UART when adding support — **PC scripts in `Tools/controller_capture/` are not accepted** (see [Adding supported controllers](Adding_Supported_Controllers.md)). DInput **output** mode uses PlayStation names on the wire (see below).
 
 ---
 

@@ -65,7 +65,7 @@ Unofficial clones, random AliExpress spin-offs, or homebrew PCBs that only “lo
 - DInput
 - **SteamOS / Bazzite** — Linux desktop / Steam Deck (desktop mode): **DualSense** USB gamepad + **touchpad → HID mouse** (see [SteamOS / Bazzite output mode](Firmware/RP2040/docs/SteamOS_Bazzite_Output_Mode.md))
 - **PS3 / PS4 motion** — Sixaxis / accelerometer passthrough from DS4, DualSense, Switch Pro, and Wii Remote (see [PS3 / PS4 motion controls](Firmware/RP2040/docs/PS3_PS4_Motion_Controls.md))
-- Wii U (GameCube Adapter)
+- Wii U (GameCube Adapter) — **only output mode tested and supported for multi-controller builds** (`MAX_GAMEPADS` > 1; see [Multi-controller builds](#multi-controller-builds-max_gamepads--1))
 - **Wii (Wiimote)** — Pico W / Pico 2 W only; build with `-DOGXM_FIXED_DRIVER=WII`. See [Wii Mode Guide](Firmware/RP2040/docs/Wii_Mode_Guide.md).
 - **PlayStation 1 & 2** — GPIO output to a console controller cable. **Intended use:** **Pico W** or **Pico 2 W** + Bluetooth pad, wired to a PS1/PS2 controller cable plugged into the console (wireless adapter). **USB-A / wired USB host input on those boards does not work in these builds and is out of scope.** See [GPIO pinouts](Firmware/RP2040/docs/GPIO_Output_Pinout_and_Mappings.md).
 - **Dreamcast** — GPIO output over Maple Bus to a console controller cable. **Intended use:** **Pico W** or **Pico 2 W** + Bluetooth pad, wired to a Dreamcast controller cable. **USB-A / wired USB host input does not work in these builds and is out of scope.**
@@ -263,7 +263,20 @@ Use one of these values for **`OGXM_BOARD`** in a manual build, or pick the same
 - ```ESP32_BLUERETRO_I2C``` 
 - ```EXTERNAL_4CH_I2C```
 
-You can also set ```MAX_GAMEPADS``` (if &gt; 1, only DInput/PS3 and Switch Pro are supported). **Optional:** ```OGXM_FIXED_DRIVER``` to lock output mode (e.g. ```XINPUT```, ```PS3```, ```STEAM```, ```PS4```); ```OGXM_FIXED_DRIVER_ALLOW_COMBOS=ON``` to keep combos when fixed. ```MAIN_LOOP_DELAY_US``` (default ```0```) sets main-loop delay for lower CPU use (e.g. ```250```).
+You can also set ```MAX_GAMEPADS``` (1–4; default **1**). **Multi-controller use is not supported for most output modes** — see [Multi-controller builds](#multi-controller-builds-max_gamepads--1). **Optional:** ```OGXM_FIXED_DRIVER``` to lock output mode (e.g. ```XINPUT```, ```PS3```, ```STEAM```, ```PS4```); ```OGXM_FIXED_DRIVER_ALLOW_COMBOS=ON``` to keep combos when fixed. ```MAIN_LOOP_DELAY_US``` (default ```0```) sets main-loop delay for lower CPU use (e.g. ```250```).
+
+### Multi-controller builds (`MAX_GAMEPADS` > 1)
+
+CMake option **`-DMAX_GAMEPADS=2`** (or **3** / **4**) builds firmware that can expose more than one emulated controller over USB. **Do not assume every output mode works correctly with multiple players.**
+
+| Status | Output mode |
+|--------|-------------|
+| **Tested and supported** | **Wii U (GameCube Adapter)** — use **Start + Left Bumper + D-Pad Down**, or a fixed build with Wii U output. This is the **only** mode maintainer testing has confirmed for multi-controller use. |
+| **Not supported** | **All other output modes** (XInput, Original Xbox, Switch Pro, PS3, PS4, SteamOS / Bazzite, DInput, PS Classic, GPIO modes, Web App, etc.) |
+
+A multi-pad build may still **compile** with other modes available in the combo list, but those modes are **not tested**, **not intended** for more than one controller at a time, and **not supported** for multi-player setups. Bugs, missing players, wrong port assignment, or console rejection are expected if you use them that way.
+
+**Recommendation:** Use **`-DMAX_GAMEPADS=1`** (default) unless you specifically need a **Wii U GameCube Adapter** multi-player adapter. For local multiplayer on other consoles, use **one OGX-Mini per player** or a native multi-port solution — see **Two adapters on one console** under [Features new to this fork](#features-new-to-this-fork).
 
 You'll need the tools listed in [Building_From_Source.md](Firmware/RP2040/docs/Building_From_Source.md). CMake scripts patch Bluepad32 and BTStack and initialize selected git submodules; clone with `--recursive` (or `git submodule update --init --recursive`) and install Pico SDK **2.1.0** before the first build.
 
