@@ -8,7 +8,8 @@
 namespace PS3 
 {
 	static constexpr uint8_t MAGIC_BYTES[8] = { 0x21, 0x26, 0x01, 0x07, 0x00, 0x00, 0x00, 0x00 };
-	static constexpr uint8_t JOYSTICK_MID = 0x7F;
+	// DS3/Sixaxis analog sticks: 8-bit range 0–255, center 0x80 (128) per HID spec
+	static constexpr uint8_t JOYSTICK_MID = 0x80;
 	static constexpr uint16_t SIXAXIS_MID = 0xFF01;
 
 	namespace ReportID 
@@ -340,7 +341,7 @@ namespace PS3
 		0x01,        // bNumInterfaces 1
 		0x01,        // bConfigurationValue
 		0x00,        // iConfiguration (String Index)
-		0x80,        // bmAttributes
+		0xA0,        // bmAttributes (bus powered, remote wakeup — for wake from standby via PS or Start)
 		0xFA,        // bMaxPower 500mA
 
 		0x09,        // bLength

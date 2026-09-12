@@ -1,9 +1,11 @@
 #include "TaskQueue/TaskQueue.h"
 
-TaskQueue::TaskQueue(CoreNum core_num) 
-{   
+TaskQueue::TaskQueue(CoreNum core_num)
+{
     alarm_num_ = (core_num == CoreNum::Core0) ? 0 : 1;
-    alarm_num_ += (OGXM_BOARD == PI_PICOW) ? 1 : 0; //BTStack uses alarm 0
+#if defined(OGXM_BOARD_USES_PICO_W_FIRMWARE)
+    alarm_num_ += 1;  // BTStack uses alarm 0; Pico W path offsets Core1 timer
+#endif
 
     hw_set_bits(&timer_hw->inte, 1u << alarm_num_);
 
@@ -196,7 +198,7 @@ void TaskQueue::timer_irq_handler()
 void TaskQueue::suspend_delayed_tasks()
 {
     get_core0().suspend_delayed();
-#if (OGXM_BOARD != PI_PICOW) && (OGXM_BOARD != PI_PICO2W)
+#if !defined(OGXM_BOARD_USES_PICO_W_FIRMWARE)
     get_core1().suspend_delayed();
 #endif
 }
@@ -204,7 +206,7 @@ void TaskQueue::suspend_delayed_tasks()
 void TaskQueue::resume_delayed_tasks()
 {
     get_core0().resume_delayed();
-#if (OGXM_BOARD != PI_PICOW) && (OGXM_BOARD != PI_PICO2W)
+#if !defined(OGXM_BOARD_USES_PICO_W_FIRMWARE)
     get_core1().resume_delayed();
 #endif
 }

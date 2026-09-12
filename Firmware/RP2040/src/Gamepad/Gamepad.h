@@ -16,13 +16,14 @@
 #include "UserSettings/UserProfile.h"
 #include "UserSettings/JoystickSettings.h"
 #include "UserSettings/TriggerSettings.h"
+#include "USBDevice/DeviceDriver/DeviceDriverTypes.h"
 #include "Board/ogxm_log.h"
 
 class Gamepad 
 {
 public:
+    
     //Defaults used by device to get buttons
-
     static constexpr uint8_t DPAD_UP         = 0x01;
     static constexpr uint8_t DPAD_DOWN       = 0x02;
     static constexpr uint8_t DPAD_LEFT       = 0x04;
@@ -96,6 +97,16 @@ public:
 #pragma pack(push, 1)
     struct PadIn
     {
+        /** IMU for PS3 Sixaxis / PS4 gadget: Sony, Switch Pro, Wii Remote, wired or BT. */
+        static constexpr uint8_t MOTION_SRC_NONE = 0;
+        static constexpr uint8_t MOTION_SRC_DS4 = 1;
+        static constexpr uint8_t MOTION_SRC_DS5 = 2;
+        static constexpr uint8_t MOTION_SRC_SWITCH_PRO = 3;
+        static constexpr uint8_t MOTION_SRC_DS5_USB = 4;
+        static constexpr uint8_t MOTION_SRC_DS4_USB = 5;
+        static constexpr uint8_t MOTION_SRC_SWITCH_USB = 6;
+        static constexpr uint8_t MOTION_SRC_WII_BT = 7;
+
         uint8_t  dpad;
         uint16_t buttons;
         uint8_t  trigger_l;
@@ -105,7 +116,31 @@ public:
         int16_t  joystick_rx;
         int16_t  joystick_ry;
         uint8_t  analog[10];
-    
+
+        /** Bluepad / USB DS4+DS5: int32 accel (DS4 units/g) and gyro (DS4 rate units). */
+        int32_t accel[3];
+        int32_t gyro[3];
+        /** If MOTION_SRC_NONE, PS3 mode leaves Sixaxis at neutral; else maps to DS3 report. */
+        uint8_t motion_source;
+
+        bool has_motion() const
+        {
+            return motion_source == MOTION_SRC_DS4 ||
+                   motion_source == MOTION_SRC_DS5 ||
+                   motion_source == MOTION_SRC_SWITCH_PRO ||
+                   motion_source == MOTION_SRC_DS5_USB ||
+                   motion_source == MOTION_SRC_DS4_USB ||
+                   motion_source == MOTION_SRC_SWITCH_USB ||
+                   motion_source == MOTION_SRC_WII_BT;
+        }
+
+        /** DualSense touchpad raw bytes (Steam mode mouse). Wire format: 8 bytes at DS5 touch offset. */
+        uint8_t touch_raw[8];
+        uint8_t touchpad_click;
+        /** Set when touch_raw was filled from a DS5 report this frame. */
+        uint8_t touchpad_valid;
+        uint8_t touchpad_reserved;
+
         PadIn()
         {
             std::memset(this, 0, sizeof(PadIn));
@@ -143,16 +178,51 @@ public:
     inline bool new_pad_in() const { return new_pad_in_.load(); }
     inline bool new_pad_out() const { return new_pad_out_.load(); }
 
+    // True if current pad_out has non-zero rumble (read-only, does not clear new_pad_out).
+    inline bool has_rumble()
+    {
+        mutex_enter_blocking(&pad_out_mutex_);
+        bool r = (pad_out_.rumble_l > 0 || pad_out_.rumble_r > 0);
+        mutex_exit(&pad_out_mutex_);
+        return r;
+    }
+
     //True if both host and device have enabled analog
     inline bool analog_enabled() const { return analog_enabled_.load(std::memory_order_relaxed); }
 
     inline PadIn get_pad_in()
     {
         mutex_enter_blocking(&pad_in_mutex_);
-        PadIn pad_in = pad_in_;
-        new_pad_in_.store(false);
+        /* Bluetooth HID runs on Core1; never block there on this mutex (would stall HCI/L2CAP).
+         * Latest BT reports are staged lock-free (2 slots) and merged here on Core0. */
+        while (bt_pad_staged_count_.load(std::memory_order_acquire) > 0) {
+            const unsigned ri = bt_pad_staged_read_.load(std::memory_order_relaxed) % BT_PAD_STAGING_SLOTS;
+            const PadIn& p = bt_pending_pads_[ri];
+            if (pad_in_count_ < PAD_IN_QUEUE_SIZE) {
+                pad_in_queue_[pad_in_tail_] = p;
+                pad_in_tail_ = (pad_in_tail_ + 1) % PAD_IN_QUEUE_SIZE;
+                pad_in_count_++;
+            } else {
+                pad_in_head_ = (pad_in_head_ + 1) % PAD_IN_QUEUE_SIZE;
+                pad_in_queue_[pad_in_tail_] = p;
+                pad_in_tail_ = (pad_in_tail_ + 1) % PAD_IN_QUEUE_SIZE;
+            }
+            bt_pad_staged_read_.store((ri + 1) % BT_PAD_STAGING_SLOTS, std::memory_order_relaxed);
+            bt_pad_staged_count_.fetch_sub(1, std::memory_order_acq_rel);
+            new_pad_in_.store(true);
+        }
+        PadIn pad_in;
+        if (pad_in_count_ > 0) {
+            pad_in = pad_in_queue_[pad_in_head_];
+            pad_in_head_ = (pad_in_head_ + 1) % PAD_IN_QUEUE_SIZE;
+            pad_in_count_--;
+            last_pad_in_ = pad_in;
+            if (pad_in_count_ == 0)
+                new_pad_in_.store(false);
+        } else {
+            pad_in = last_pad_in_;
+        }
         mutex_exit(&pad_in_mutex_);
-
         return pad_in;
     }
 
@@ -195,18 +265,42 @@ public:
         }
     }
 
-    void set_profile(const UserProfile& user_profile) 
-    { 
+    void set_profile(const UserProfile& user_profile, DeviceDriverType driver = DeviceDriverType::NONE) 
+    {
         set_profile_mappings(user_profile);
-        set_profile_settings(user_profile);
+        set_profile_settings(user_profile, driver);
     }
 
     inline void set_pad_in(PadIn pad_in)
     {
         mutex_enter_blocking(&pad_in_mutex_);
-        pad_in_ = pad_in;
+        if (pad_in_count_ < PAD_IN_QUEUE_SIZE) {
+            pad_in_queue_[pad_in_tail_] = pad_in;
+            pad_in_tail_ = (pad_in_tail_ + 1) % PAD_IN_QUEUE_SIZE;
+            pad_in_count_++;
+        } else {
+            /* Queue full: drop oldest, keep newest so fast taps (press+release) both get sent */
+            pad_in_head_ = (pad_in_head_ + 1) % PAD_IN_QUEUE_SIZE;
+            pad_in_queue_[pad_in_tail_] = pad_in;
+            pad_in_tail_ = (pad_in_tail_ + 1) % PAD_IN_QUEUE_SIZE;
+        }
         new_pad_in_.store(true);
         mutex_exit(&pad_in_mutex_);
+    }
+
+    /** Bluetooth (Core1): never blocks on Core0 — avoids stalling the BT stack in HID callbacks. */
+    inline void set_pad_in_from_bluetooth(const PadIn& pad_in)
+    {
+        if (bt_pad_staged_count_.load(std::memory_order_acquire) >= BT_PAD_STAGING_SLOTS) {
+            const unsigned drop = bt_pad_staged_read_.load(std::memory_order_relaxed) % BT_PAD_STAGING_SLOTS;
+            bt_pad_staged_read_.store((drop + 1) % BT_PAD_STAGING_SLOTS, std::memory_order_relaxed);
+            bt_pad_staged_count_.fetch_sub(1, std::memory_order_acq_rel);
+        }
+        const unsigned wi = bt_pad_staged_write_.load(std::memory_order_relaxed) % BT_PAD_STAGING_SLOTS;
+        bt_pending_pads_[wi] = pad_in;
+        bt_pad_staged_write_.store((wi + 1) % BT_PAD_STAGING_SLOTS, std::memory_order_release);
+        bt_pad_staged_count_.fetch_add(1, std::memory_order_release);
+        new_pad_in_.store(true, std::memory_order_release);
     }
 
     inline void set_pad_out(const PadOut& pad_out)
@@ -224,10 +318,20 @@ public:
         mutex_exit(&chatpad_in_mutex_);
     }
 
-    inline void reset_pad_in() 
-	{ 
+    // Wii U GC adapter: set by host when controller uses positive Y for physical up (e.g. Xbox One/360)
+    void set_stick_y_positive_is_up(bool v) { stick_y_positive_is_up_ = v; }
+    bool stick_y_positive_is_up() const { return stick_y_positive_is_up_; }
+
+    inline void reset_pad_in()
+    {
+        bt_pad_staged_write_.store(0, std::memory_order_relaxed);
+        bt_pad_staged_read_.store(0, std::memory_order_relaxed);
+        bt_pad_staged_count_.store(0, std::memory_order_relaxed);
         mutex_enter_blocking(&pad_in_mutex_);
-        pad_in_ = PadIn();
+        pad_in_head_ = 0;
+        pad_in_tail_ = 0;
+        pad_in_count_ = 0;
+        last_pad_in_ = PadIn();
         mutex_exit(&pad_in_mutex_);
         new_pad_in_.store(true);
     }
@@ -341,13 +445,24 @@ public:
                     : trigger_value;
     }
 
-private:    
+    static constexpr unsigned PAD_IN_QUEUE_SIZE = 8;
+    static constexpr unsigned BT_PAD_STAGING_SLOTS = 2;
+
+private:
+    PadIn bt_pending_pads_[BT_PAD_STAGING_SLOTS]{};
+    std::atomic<unsigned> bt_pad_staged_write_{0};
+    std::atomic<unsigned> bt_pad_staged_read_{0};
+    std::atomic<unsigned> bt_pad_staged_count_{0};
     mutex_t pad_in_mutex_;
     mutex_t pad_out_mutex_;
     mutex_t chatpad_in_mutex_;
 
     PadOut pad_out_;
-    PadIn pad_in_;
+    PadIn pad_in_queue_[PAD_IN_QUEUE_SIZE];
+    unsigned pad_in_head_{0};
+    unsigned pad_in_tail_{0};
+    unsigned pad_in_count_{0};
+    PadIn last_pad_in_{};
     ChatpadIn chatpad_in_{0};
 
     std::atomic<bool> new_pad_in_{false};
@@ -359,6 +474,8 @@ private:
 
     bool profile_analog_enabled_{false};
 
+    bool stick_y_positive_is_up_{false};  // true for Xbox (positive Y = up), false for Wii U/Nintendo
+
     JoystickSettings joy_settings_l_;
     JoystickSettings joy_settings_r_;
     TriggerSettings trig_settings_l_;
@@ -369,27 +486,62 @@ private:
     bool trig_settings_l_en_{false};
     bool trig_settings_r_en_{false};
 
-    void set_profile_settings(const UserProfile& profile)
+    void set_profile_settings(const UserProfile& profile, DeviceDriverType driver = DeviceDriverType::NONE)
     {
         profile_analog_enabled_ = profile.analog_enabled ? true : false;
+#if 0
         OGXM_LOG("profile_analog_enabled_: %d\n", profile_analog_enabled_);
+#endif
 
-        if ((joy_settings_l_en_ = !joy_settings_l_.is_same(profile.joystick_settings_l)))
+        const bool xinput_stock =
+            (driver == DeviceDriverType::XINPUT);
+
+        if (JoystickSettings::raw_has_customization(profile.joystick_settings_l))
         {
-            joy_settings_l_.set_from_raw(profile.joystick_settings_l);
-            //This needs to be addressed in the webapp, just multiply here for now
-            joy_settings_l_.axis_restrict *= static_cast<int16_t>(100);
-            joy_settings_l_.angle_restrict *= static_cast<int16_t>(100);
-            joy_settings_l_.anti_dz_angular *= static_cast<int16_t>(100);
+            joy_settings_l_en_ = true;
+            if (!joy_settings_l_.is_same(profile.joystick_settings_l))
+            {
+                joy_settings_l_.set_from_raw(profile.joystick_settings_l);
+                //This needs to be addressed in the webapp, just multiply here for now
+                joy_settings_l_.axis_restrict *= static_cast<int16_t>(100);
+                joy_settings_l_.angle_restrict *= static_cast<int16_t>(100);
+                joy_settings_l_.anti_dz_angular *= static_cast<int16_t>(100);
+            }
         }
-        if ((joy_settings_r_en_ = !joy_settings_r_.is_same(profile.joystick_settings_r)))
+        else if (xinput_stock)
         {
-            joy_settings_r_.set_from_raw(profile.joystick_settings_r);
-            //This needs to be addressed in the webapp, just multiply here for now
-            joy_settings_r_.axis_restrict *= static_cast<int16_t>(100);
-            joy_settings_r_.angle_restrict *= static_cast<int16_t>(100);
-            joy_settings_r_.anti_dz_angular *= static_cast<int16_t>(100);
+            joy_settings_l_.set_xbox360_stock_feel(false);
+            joy_settings_l_en_ = true;
         }
+        else
+        {
+            joy_settings_l_ = JoystickSettings{};
+            joy_settings_l_en_ = false;
+        }
+
+        if (JoystickSettings::raw_has_customization(profile.joystick_settings_r))
+        {
+            joy_settings_r_en_ = true;
+            if (!joy_settings_r_.is_same(profile.joystick_settings_r))
+            {
+                joy_settings_r_.set_from_raw(profile.joystick_settings_r);
+                //This needs to be addressed in the webapp, just multiply here for now
+                joy_settings_r_.axis_restrict *= static_cast<int16_t>(100);
+                joy_settings_r_.angle_restrict *= static_cast<int16_t>(100);
+                joy_settings_r_.anti_dz_angular *= static_cast<int16_t>(100);
+            }
+        }
+        else if (xinput_stock)
+        {
+            joy_settings_r_.set_xbox360_stock_feel(true);
+            joy_settings_r_en_ = true;
+        }
+        else
+        {
+            joy_settings_r_ = JoystickSettings{};
+            joy_settings_r_en_ = false;
+        }
+
         if ((trig_settings_l_en_ = !trig_settings_l_.is_same(profile.trigger_settings_l)))
         {
             trig_settings_l_.set_from_raw(profile.trigger_settings_l);
@@ -399,11 +551,13 @@ private:
             trig_settings_r_.set_from_raw(profile.trigger_settings_r);
         }
 
+#if 0
         OGXM_LOG("GamepadMapper: JoyL: %s, JoyR: %s, TrigL: %s, TrigR: %s\n",
             joy_settings_l_en_ ? "Enabled" : "Disabled",
             joy_settings_r_en_ ? "Enabled" : "Disabled",
             trig_settings_l_en_ ? "Enabled" : "Disabled",
             trig_settings_r_en_ ? "Enabled" : "Disabled");
+#endif
     }
 
     void set_profile_mappings(const UserProfile& profile)
@@ -481,12 +635,43 @@ private:
             ? FIX_0 
             : ((abs_y - set.axis_restrict) * inv_axis_restrict);
 
+        /* WebApp uses raw stick magnitude for the inner deadzone test (before axial restrict). */
+        const Fix16 raw_magnitude = fix16::sqrt(fix16::sq(abs_x) + fix16::sq(abs_y));
         Fix16 in_magnitude = fix16::sqrt(fix16::sq(axial_x) + fix16::sq(axial_y));
 
-        if (in_magnitude < set.dz_inner)
+        /* Anti-deadzone pushes any non-zero reading to at least anti_dz_* magnitude.
+         * Switch Pro / Switch 2 Pro USB sticks are rarely perfect at the nominal
+         * center, so with dz_inner=0 that becomes a constant drift (often bottom-left
+         * after Y invert). Gate idle noise when anti-dz is active, but keep the
+         * user's dz_inner for the magnitude warp so anti-dz still applies fully. */
+        const bool anti_dz_active =
+            set.anti_dz_square > FIX_EPSILON || set.anti_dz_circle > FIX_EPSILON ||
+            set.anti_dz_square_y_scale > FIX_EPSILON || set.anti_dz_circle_y_scale > FIX_EPSILON;
+        static const Fix16 FIX_ANTI_DZ_NOISE_MIN(0.07f);
+        static const Fix16 FIX_ANTI_DZ_NOISE_MAX(0.12f);
+        Fix16 gate = set.dz_inner;
+        if (anti_dz_active && gate < FIX_ANTI_DZ_NOISE_MIN)
+        {
+            const Fix16 anti_ref =
+                (set.anti_dz_circle > set.anti_dz_square) ? set.anti_dz_circle : set.anti_dz_square;
+            Fix16 adaptive_gate = anti_ref * Fix16(0.4f);
+            if (adaptive_gate < FIX_ANTI_DZ_NOISE_MIN)
+            {
+                adaptive_gate = FIX_ANTI_DZ_NOISE_MIN;
+            }
+            if (adaptive_gate > FIX_ANTI_DZ_NOISE_MAX)
+            {
+                adaptive_gate = FIX_ANTI_DZ_NOISE_MAX;
+            }
+            gate = adaptive_gate;
+        }
+
+        if (raw_magnitude <= gate)
         {
             return { 0, 0 };
         }
+
+        const Fix16 dz_inner = set.dz_inner;
 
         Fix16 angle = 
             fix16::abs(axial_x) < FIX_EPSILON 
@@ -496,10 +681,10 @@ private:
         Fix16 anti_r_scale = (set.anti_dz_square_y_scale == FIX_0) ? set.anti_dz_square : set.anti_dz_square_y_scale;
         Fix16 anti_dz_c = set.anti_dz_circle;
 
-        if (anti_r_scale > FIX_0 && anti_dz_c > FIX_0)
+        if (set.anti_dz_circle_y_scale > FIX_0 && anti_dz_c > FIX_0)
         {
-            Fix16 anti_ellip_scale = anti_ellip_scale / anti_dz_c;
-            Fix16 ellipse_angle = fix16::atan((FIX_1 / anti_ellip_scale) * fix16::tan(fix16::rad2deg(rAngle)));
+            Fix16 anti_ellip_scale = set.anti_dz_circle_y_scale / anti_dz_c;
+            Fix16 ellipse_angle = fix16::atan((FIX_1 / anti_ellip_scale) * fix16::tan(fix16::deg2rad(rAngle)));
             ellipse_angle = (ellipse_angle < FIX_0) ? FIX_ELLIPSE_DEF : ellipse_angle;
 
             Fix16 ellipse_x = fix16::cos(ellipse_angle);
@@ -507,9 +692,11 @@ private:
             anti_dz_c *= fix16::sqrt(fix16::sq(ellipse_x) + fix16::sq(ellipse_y));
         }
 
+        /* Match WebApp: counter square anti-dz shrinkage (must use anti_dz_square, not circle). */
         if (anti_dz_c > FIX_0)
         {
-            anti_dz_c = anti_dz_c / ((anti_dz_c * (FIX_1 - set.anti_dz_circle / set.dz_outer)) / (anti_dz_c * (FIX_1 - set.anti_dz_square)));
+            anti_dz_c = anti_dz_c / ((anti_dz_c * (FIX_1 - set.anti_dz_square / set.dz_outer)) /
+                                    (anti_dz_c * (FIX_1 - set.anti_dz_square)));
         }
 
         if (abs_x > set.axis_restrict && abs_y > set.axis_restrict)
@@ -554,7 +741,7 @@ private:
         }
 
         //Deadzone Warp
-        Fix16 out_magnitude = (in_magnitude - set.dz_inner) / (set.anti_dz_outer - set.dz_inner);
+        Fix16 out_magnitude = (in_magnitude - dz_inner) / (set.anti_dz_outer - dz_inner);
         out_magnitude = fix16::pow(out_magnitude, (FIX_1 / set.curve)) * (set.dz_outer - anti_dz_c) + anti_dz_c;
         out_magnitude = (out_magnitude > set.dz_outer && !set.uncap_radius) ? set.dz_outer : out_magnitude;
 

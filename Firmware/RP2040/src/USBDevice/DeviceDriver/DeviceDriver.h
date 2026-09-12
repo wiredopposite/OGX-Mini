@@ -28,6 +28,9 @@ public:
     virtual const uint8_t* get_hid_descriptor_report_cb(uint8_t itf) = 0;
     virtual const uint8_t* get_descriptor_configuration_cb(uint8_t index) = 0;
     virtual const uint8_t* get_descriptor_device_qualifier_cb() = 0;
+
+    virtual void line_state_cb(uint8_t itf, bool dtr, bool rts) {};
+    virtual void line_coding_cb(uint8_t itf, cdc_line_coding_t const* p_line_coding) {};
     
     const usbd_class_driver_t* get_class_driver() { return &class_driver_; };
 

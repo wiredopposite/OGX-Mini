@@ -5,6 +5,7 @@
 #include <atomic>
 #include <cstring>
 #include <pico/multicore.h>
+#include <pico/time.h>
 #include <hardware/gpio.h>
 #include <hardware/i2c.h>
 #include <pico/i2c_slave.h>
@@ -19,6 +20,7 @@
 #include "Board/ogxm_log.h"
 #include "UserSettings/UserSettings.h"
 #include "Gamepad/Gamepad.h"
+#include "Gamepad/I2CWirePad.h"
 #include "TaskQueue/TaskQueue.h"
 
 constexpr uint32_t FEEDBACK_DELAY_MS = 250;
@@ -53,7 +55,7 @@ namespace I2C {
     struct PacketIn {
         uint8_t             packet_len{sizeof(PacketIn)};
         PacketID            packet_id{PacketID::PAD};
-        Gamepad::PadIn      pad_in{Gamepad::PadIn()};
+        I2CWirePadIn        pad_in{};
         Gamepad::ChatpadIn  chatpad_in{0};
         uint8_t             reserved[4]{0};
     };
@@ -127,7 +129,7 @@ namespace I2C {
                             // instance_->packet_in_ = *packet_in_p;
                             // *packet_out_p = instance_->packet_out_;
                             // instance_->new_pad_in_.store(true);
-                            _gamepads[0].set_pad_in(packet_in_p->pad_in);
+                            _gamepads[0].set_pad_in(i2c_pad_from_wire(packet_in_p->pad_in));
                             if (_gamepads[0].new_pad_out()) {
                                 packet_out_p->pad_out = _gamepads[0].get_pad_out();
                             }
@@ -186,7 +188,7 @@ namespace I2C {
         };
 
         static constexpr size_t NUM_SLAVES = MAX_GAMEPADS - 1;
-        static_assert(NUM_SLAVES > 0, "I2CMaster::NUM_SLAVES must be greater than 0 to use I2C");
+        // NUM_SLAVES may be 0 when MAX_GAMEPADS==1 (slave-only or master with no I2C slaves)
 
         std::array<Slave, NUM_SLAVES> _slaves; 
 
@@ -248,7 +250,7 @@ namespace I2C {
                 if (packet_cmd.status == Status::READY) {
                     Gamepad& gamepad = _gamepads[i + 1];
                     PacketIn packet_in;
-                    packet_in.pad_in = gamepad.get_pad_in();
+                    packet_in.pad_in = i2c_wire_pad_from(gamepad.get_pad_in());
                     packet_in.chatpad_in = gamepad.get_chatpad_in();
 
                     if (write_blocking(slave.address, &packet_in, sizeof(PacketIn))) {
@@ -263,7 +265,7 @@ namespace I2C {
         }
 
         static void xbox360w_connect(bool connected, uint8_t idx) {
-            if (idx < 1 || idx >= MAX_GAMEPADS) {
+            if (idx < 1 || idx > NUM_SLAVES) {
                 return;
             }
             // This function can be called from core1 
@@ -354,7 +356,7 @@ void core1_task() {
     tuh_init(BOARD_TUH_RHPORT);
 
     uint32_t tid_feedback = TaskQueue::Core1::get_new_task_id();
-    TaskQueue::Core1::queue_delayed_task(tid_feedback, FEEDBACK_DELAY_MS, true, 
+    TaskQueue::Core1::queue_delayed_task(tid_feedback, FEEDBACK_DELAY_MS, true,
     [&host_manager] {
         host_manager.send_feedback();
     });
@@ -366,8 +368,9 @@ void core1_task() {
 }
 
 void set_gp_check_timer(uint32_t task_id) {
+#if !defined(CONFIG_OGXM_FIXED_DRIVER) || defined(CONFIG_OGXM_FIXED_DRIVER_ALLOW_COMBOS)
     UserSettings& user_settings = UserSettings::get_instance();
-    TaskQueue::Core0::queue_delayed_task(task_id, UserSettings::GP_CHECK_DELAY_MS, true, 
+    TaskQueue::Core0::queue_delayed_task(task_id, UserSettings::GP_CHECK_DELAY_MS, true,
     [&user_settings] {
         //Check gamepad inputs for button combo to change usb device driver
         if (user_settings.check_for_driver_change(_gamepads[0]))
@@ -376,6 +379,9 @@ void set_gp_check_timer(uint32_t task_id) {
             user_settings.store_driver_type(user_settings.get_current_driver());
         }
     });
+#else
+    (void)task_id;  // Fixed output, combos disabled
+#endif
 }
 
 void four_ch_i2c::wireless_connected(bool connected, uint8_t idx) {
@@ -418,7 +424,7 @@ void four_ch_i2c::initialize() {
     board_api::init_board();
 
     for (uint8_t i = 0; i < MAX_GAMEPADS; ++i) {
-        _gamepads[i].set_profile(user_settings.get_profile_by_index(i));
+        _gamepads[i].set_profile(user_settings.get_profile_by_index(i), user_settings.get_current_driver());
     }
 
     DeviceManager::get_instance().initialize_driver(user_settings.get_current_driver(), _gamepads);
@@ -444,17 +450,21 @@ void four_ch_i2c::run() {
     if (I2C::role() == I2C::Role::MASTER) {
         while (true) {
             TaskQueue::Core0::process_tasks();
+            tud_task();
             I2C::Master::process();
             device_driver->process(0, _gamepads[0]);
-            tud_task();
-            sleep_ms(1);
+#if MAIN_LOOP_DELAY_US > 0
+            sleep_us(MAIN_LOOP_DELAY_US);
+#endif
         }
     } else {
         while (true) {
             TaskQueue::Core0::process_tasks();
-            device_driver->process(0, _gamepads[0]);
             tud_task();
-            sleep_ms(1);
+            device_driver->process(0, _gamepads[0]);
+#if MAIN_LOOP_DELAY_US > 0
+            sleep_us(MAIN_LOOP_DELAY_US);
+#endif
         }
     }
 }

@@ -4,13 +4,39 @@
 #include "host/usbh.h"
 #include "class/hid/hid_host.h"
 
+#include "Board/Config.h"
+#if defined(CONFIG_EN_USB_HOST)
+#include "pio_usb.h"
+#endif
+
 #include "USBHost/HostDriver/PS4/PS4.h"
+#include "Gamepad/MotionImu.h"
 
 void PS4Host::initialize(Gamepad& gamepad, uint8_t address, uint8_t instance, const uint8_t* report_desc, uint16_t desc_len) 
 {
+    (void)gamepad;
+    (void)report_desc;
+    (void)desc_len;
+
     out_report_.report_id = 0x05;
     out_report_.set_led = 1;
     out_report_.lightbar_blue = 0xFF / 2;
+
+    /* PS5Host pushes an initial OUT report; PS4 did not. Composite XInput+HID pads often need this
+     * before IN starts. Periodic send_feedback only runs when new_pad_out/has_rumble, so the LED
+     * and input path never woke when we stopped using XInput for feedback on these devices. */
+    uint32_t attempts = 0;
+    while (!tuh_hid_send_report(address, instance, 0, reinterpret_cast<const uint8_t*>(&out_report_), sizeof(PS4::OutReport)))
+    {
+#if defined(CONFIG_EN_USB_HOST)
+        pio_usb_host_frame();
+#endif
+        tuh_task();
+        if (++attempts > 4000u)
+        {
+            break;
+        }
+    }
 
     tuh_hid_receive_report(address, instance);
 }
@@ -18,9 +44,16 @@ void PS4Host::initialize(Gamepad& gamepad, uint8_t address, uint8_t instance, co
 void PS4Host::process_report(Gamepad& gamepad, uint8_t address, uint8_t instance, const uint8_t* report, uint16_t len)
 {
     std::memcpy(&in_report_, report, std::min(static_cast<size_t>(len), sizeof(PS4::InReport)));
-    in_report_.buttons[2] &= PS4::COUNTER_MASK;
-    if (std::memcmp(reinterpret_cast<const PS4::InReport*>(report), &prev_in_report_, sizeof(PS4::InReport)) == 0)
+    in_report_.buttons[2] &= static_cast<uint8_t>(~PS4::COUNTER_MASK);
+
+    bool imu_same = true;
+    if (len >= 25) {
+        imu_same = std::memcmp(&report[13], prev_imu_, sizeof(prev_imu_)) == 0;
+    }
+    if (std::memcmp(reinterpret_cast<const PS4::InReport*>(report), &prev_in_report_, sizeof(PS4::InReport)) == 0 &&
+        imu_same)
     {
+        tuh_hid_receive_report(address, instance);
         return;
     }
 
@@ -75,10 +108,18 @@ void PS4Host::process_report(Gamepad& gamepad, uint8_t address, uint8_t instance
     std::tie(gp_in.joystick_lx, gp_in.joystick_ly) = gamepad.scale_joystick_l(in_report_.joystick_lx, in_report_.joystick_ly);
     std::tie(gp_in.joystick_rx, gp_in.joystick_ry) = gamepad.scale_joystick_r(in_report_.joystick_rx, in_report_.joystick_ry);
 
+    if (len >= 25) {
+        gp_in.motion_source = Gamepad::PadIn::MOTION_SRC_DS4_USB;
+        MotionImu::fill_from_ds4_usb_report(gp_in.accel, gp_in.gyro, report);
+    }
+
     gamepad.set_pad_in(gp_in);
 
     tuh_hid_receive_report(address, instance);
     std::memcpy(&prev_in_report_, &in_report_, sizeof(PS4::InReport));
+    if (len >= 25) {
+        std::memcpy(prev_imu_, &report[13], sizeof(prev_imu_));
+    }
 }
 
 bool PS4Host::send_feedback(Gamepad& gamepad, uint8_t address, uint8_t instance)

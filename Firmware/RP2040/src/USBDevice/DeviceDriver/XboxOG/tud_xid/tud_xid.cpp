@@ -12,6 +12,9 @@
 #else
     #define XREMOTE_ENABLED 0
 #endif
+#if defined(CONFIG_OGXM_DEBUG)
+#include "Board/ogxm_log.h"
+#endif
 
 namespace tud_xid {
 
@@ -284,6 +287,25 @@ bool xid_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_request_t c
     uint8_t index = get_idx_by_itf(static_cast<uint8_t>(request->wIndex));
     TU_VERIFY(index != 0xFF, false);
 
+#if defined(CONFIG_OGXM_DEBUG)
+    {
+        static uint32_t s_ctl_count = 0;
+        s_ctl_count++;
+        RequestType rt = get_request_type(request);
+        const char* rt_str = "UNKNOWN";
+        switch (rt) {
+            case RequestType::GET_REPORT: rt_str = "GET_REPORT"; break;
+            case RequestType::SET_REPORT: rt_str = "SET_REPORT"; break;
+            case RequestType::GET_DESC: rt_str = "GET_DESC"; break;
+            case RequestType::GET_CAPABILITIES_IN: rt_str = "GET_CAP_IN"; break;
+            case RequestType::GET_CAPABILITIES_OUT: rt_str = "GET_CAP_OUT"; break;
+            default: break;
+        }
+        if (s_ctl_count <= 15 || s_ctl_count % 500 == 0)
+            OGXM_LOG("XboxOG XID: ctrl #%lu stage=%u %s\n", (unsigned long)s_ctl_count, (unsigned)stage, rt_str);
+    }
+#endif
+
     Interface& interface = interfaces_[index];
 
     bool ret = false;
@@ -338,6 +360,11 @@ bool xid_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_request_t c
                 request->bmRequestType,
                 request->bRequest,
                 request->wValue);
+#if defined(CONFIG_OGXM_DEBUG)
+        OGXM_LOG("XboxOG XID: STALL wIndex=%02x bmReq=%02x bReq=%02x wVal=%04x\n",
+                 (unsigned)request->wIndex, (unsigned)request->bmRequestType,
+                 (unsigned)request->bRequest, (unsigned)request->wValue);
+#endif
         return false;
     }
 

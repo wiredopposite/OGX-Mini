@@ -103,3 +103,13 @@ const uint8_t * UARTBridgeDevice::get_descriptor_device_qualifier_cb()
 {
 	return nullptr;
 }
+
+void UARTBridgeDevice::line_state_cb(uint8_t itf, bool dtr, bool rts)
+{
+    uart_bridge_line_state_cb(itf, dtr, rts);
+}
+
+void UARTBridgeDevice::line_coding_cb(uint8_t itf, cdc_line_coding_t const* p_line_coding)
+{
+    uart_bridge_line_coding_cb(itf, p_line_coding);
+}
