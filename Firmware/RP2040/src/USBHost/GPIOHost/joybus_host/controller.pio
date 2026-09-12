@@ -1,0 +1,59 @@
+; JoyBus host (read GameCube controller). Ported from PicoGamepadConverter (Loc15).
+; Single pin: output to send, input to receive.
+
+.program controller
+.side_set 1 opt pindirs
+.define public T1 4
+.define public T2 12
+
+.wrap_target
+ out y, 5 side 0 ; load # of bytes expected in response
+sendData:
+ out x, 1 side 0 [T1 - 1]; send data bit by bit
+ jmp !x do_zero side 1 [T1 - 1] ; set 0 for 4 cycles
+do_one:
+ jmp !OSRE sendData side 0 [T1 * 2 - 1] ; set 1 for 10 cycles
+ jmp sendStop [T1 - 1]
+do_zero:
+ jmp !OSRE sendData [T1 * 2 - 1]; set 1
+ jmp sendStop side 0 [T1 - 1]
+sendStop:
+ nop side 1 [T1 - 1] ; send the stop bit (1)
+ nop side 0
+
+receiveByte:
+ set x, 7
+getBit:
+ wait 0 pin 0 [T1 + 1]; wait until the line goes low
+ in pins 1 ; read
+ wait 1 pin 0 ; wait for a 1 if it's a 0
+ jmp x-- getBit ; get the next bit
+ jmp y-- receiveByte ; get the next byte
+
+.wrap
+
+
+% c-sdk {
+#include "hardware/clocks.h"
+#include "hardware/pio.h"
+
+static inline void controller_program_init(PIO pio, uint sm, uint offset, uint pin_controller, pio_sm_config *c) {
+ pio_sm_set_consecutive_pindirs(pio, sm, pin_controller, 1, false);
+ pio_gpio_init(pio, pin_controller);
+
+ sm_config_set_in_pins(c, pin_controller);
+ sm_config_set_sideset_pins(c, pin_controller);
+ sm_config_set_jmp_pin(c, pin_controller);
+ sm_config_set_out_shift(c, false, true, 13);
+ sm_config_set_in_shift(c, false, true, 8);
+
+ int cyclesPerBit = (controller_T1 + controller_T2) / 4;
+ float frequency = 1000000;
+ float clockDiv = clock_get_hz(clk_sys) / (cyclesPerBit * frequency);
+ sm_config_set_clkdiv(c, clockDiv);
+
+ pio_sm_init(pio, sm, offset, c);
+ pio_sm_set_enabled(pio, sm, true);
+}
+
+%}

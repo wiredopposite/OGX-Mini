@@ -1,0 +1,176 @@
+diff --git a/src/components/bluepad32/parser/uni_hid_parser_ds4.c b/src/components/bluepad32/parser/uni_hid_parser_ds4.c
+index e2622a2..147d13e 100644
+--- a/src/components/bluepad32/parser/uni_hid_parser_ds4.c
++++ b/src/components/bluepad32/parser/uni_hid_parser_ds4.c
+@@ -425,6 +425,43 @@ static void ds4_parse_input_report_01(uni_hid_device_t* d, const ds4_input_repor
+     ctl->gamepad.throttle = r->throttle * 4;
+ }
+ 
++/* Parse only gamepad from first 9 bytes of payload when report is short. Ensures we never drop a report (like Xbox One): every packet delivers at least gamepad state. */
++static void ds4_parse_input_report_11_minimal(uni_hid_device_t* d, const uint8_t* report, uint16_t len) {
++    uni_controller_t* ctl = &d->controller;
++    if (len < 3 + 9)
++        return;
++    const uint8_t* p = &report[3];
++    ctl->gamepad.axis_x = (p[0] - 127) * 4;
++    ctl->gamepad.axis_y = (p[1] - 127) * 4;
++    ctl->gamepad.axis_rx = (p[2] - 127) * 4;
++    ctl->gamepad.axis_ry = (p[3] - 127) * 4;
++    uint8_t value = p[4] & 0xf;
++    if (value > 7)
++        value = 0xff;
++    ctl->gamepad.dpad = uni_hid_parser_hat_to_dpad(value);
++    ctl->gamepad.buttons = 0;
++    ctl->gamepad.misc_buttons = 0;
++    if (p[4] & 0x10) ctl->gamepad.buttons |= BUTTON_X;
++    if (p[4] & 0x20) ctl->gamepad.buttons |= BUTTON_A;
++    if (p[4] & 0x40) ctl->gamepad.buttons |= BUTTON_B;
++    if (p[4] & 0x80) ctl->gamepad.buttons |= BUTTON_Y;
++    if (p[5] & 0x01) ctl->gamepad.buttons |= BUTTON_SHOULDER_L;
++    if (p[5] & 0x02) ctl->gamepad.buttons |= BUTTON_SHOULDER_R;
++    if (p[5] & 0x04) ctl->gamepad.buttons |= BUTTON_TRIGGER_L;
++    if (p[5] & 0x08) ctl->gamepad.buttons |= BUTTON_TRIGGER_R;
++    if (p[5] & 0x10) ctl->gamepad.misc_buttons |= MISC_BUTTON_SELECT;
++    if (p[5] & 0x20) ctl->gamepad.misc_buttons |= MISC_BUTTON_START;
++    if (p[5] & 0x40) ctl->gamepad.buttons |= BUTTON_THUMB_L;
++    if (p[5] & 0x80) ctl->gamepad.buttons |= BUTTON_THUMB_R;
++    if (p[6] & 0x01) ctl->gamepad.misc_buttons |= MISC_BUTTON_SYSTEM;
++    ctl->gamepad.brake = p[7] * 4;
++    ctl->gamepad.throttle = p[8] * 4;
++    for (size_t i = 0; i < ARRAY_SIZE(ctl->gamepad.gyro); i++)
++        ctl->gamepad.gyro[i] = 0;
++    for (size_t i = 0; i < ARRAY_SIZE(ctl->gamepad.accel); i++)
++        ctl->gamepad.accel[i] = 0;
++}
++
+ static void ds4_parse_input_report_11(uni_hid_device_t* d, const ds4_input_report_11_t* r) {
+     ds4_instance_t* ins = get_ds4_instance(d);
+     uni_controller_t* ctl = &d->controller;
+@@ -500,9 +537,14 @@ static void ds4_parse_input_report_11(uni_hid_device_t* d, const ds4_input_repor
+ }
+ 
+ void uni_hid_parser_ds4_parse_input_report(uni_hid_device_t* d, const uint8_t* report, uint16_t len) {
+-    if (report[0] == 0x11 && len == 78) {
+-        const ds4_input_report_11_t* r = (ds4_input_report_11_t*)&report[3];
+-        ds4_parse_input_report_11(d, r);
++    if (report[0] == 0x11 && len >= 12) {
++        if (len >= 78) {
++            const ds4_input_report_11_t* r = (ds4_input_report_11_t*)&report[3];
++            ds4_parse_input_report_11(d, r);
++        } else {
++            /* Short report (e.g. 77 bytes over BT): parse gamepad only so we don't drop packets. */
++            ds4_parse_input_report_11_minimal(d, report, len);
++        }
+     } else if (report[0] == 0x01 && len == 10) {
+         const ds4_input_report_01_t* r = (ds4_input_report_01_t*)&report[1];
+         ds4_parse_input_report_01(d, r);
+diff --git a/src/components/bluepad32/parser/uni_hid_parser_ds5.c b/src/components/bluepad32/parser/uni_hid_parser_ds5.c
+index 9316260..111595e 100644
+--- a/src/components/bluepad32/parser/uni_hid_parser_ds5.c
++++ b/src/components/bluepad32/parser/uni_hid_parser_ds5.c
+@@ -554,26 +554,97 @@ void uni_hid_parser_ds5_parse_feature_report(uni_hid_device_t* d, const uint8_t*
+     }
+ }
+ 
++/* Parse only gamepad from first 10 bytes of payload when report is short. Ensures we never drop a report (like Xbox One): every packet delivers at least gamepad state. */
++static void ds5_parse_input_report_minimal(uni_hid_device_t* d, const uint8_t* report, uint16_t len) {
++    uni_controller_t* ctl = &d->controller;
++    if (len < 2 + 10)
++        return;
++    const uint8_t* p = &report[2];
++    ctl->gamepad.axis_x = (p[0] - 127) * 4;
++    ctl->gamepad.axis_y = (p[1] - 127) * 4;
++    ctl->gamepad.axis_rx = (p[2] - 127) * 4;
++    ctl->gamepad.axis_ry = (p[3] - 127) * 4;
++    ctl->gamepad.brake = p[4] * 4;
++    ctl->gamepad.throttle = p[5] * 4;
++    uint8_t value = p[7] & 0xf;
++    if (value > 7)
++        value = 0xff;
++    ctl->gamepad.dpad = uni_hid_parser_hat_to_dpad(value);
++    ctl->gamepad.buttons = 0;
++    ctl->gamepad.misc_buttons = 0;
++    if (p[7] & 0x10) ctl->gamepad.buttons |= BUTTON_X;
++    if (p[7] & 0x20) ctl->gamepad.buttons |= BUTTON_A;
++    if (p[7] & 0x40) ctl->gamepad.buttons |= BUTTON_B;
++    if (p[7] & 0x80) ctl->gamepad.buttons |= BUTTON_Y;
++    if (p[8] & 0x01) ctl->gamepad.buttons |= BUTTON_SHOULDER_L;
++    if (p[8] & 0x02) ctl->gamepad.buttons |= BUTTON_SHOULDER_R;
++    if (p[8] & 0x04) ctl->gamepad.buttons |= BUTTON_TRIGGER_L;
++    if (p[8] & 0x08) ctl->gamepad.buttons |= BUTTON_TRIGGER_R;
++    if (p[8] & 0x10) ctl->gamepad.misc_buttons |= MISC_BUTTON_SELECT;
++    if (p[8] & 0x20) ctl->gamepad.misc_buttons |= MISC_BUTTON_START;
++    if (p[8] & 0x40) ctl->gamepad.buttons |= BUTTON_THUMB_L;
++    if (p[8] & 0x80) ctl->gamepad.buttons |= BUTTON_THUMB_R;
++    if (p[9] & 0x01) ctl->gamepad.misc_buttons |= MISC_BUTTON_SYSTEM;
++    if (p[9] & 0x04) ctl->gamepad.misc_buttons |= MISC_BUTTON_CAPTURE;
++    for (size_t i = 0; i < ARRAY_SIZE(ctl->gamepad.gyro); i++)
++        ctl->gamepad.gyro[i] = 0;
++    for (size_t i = 0; i < ARRAY_SIZE(ctl->gamepad.accel); i++)
++        ctl->gamepad.accel[i] = 0;
++}
++
+ void uni_hid_parser_ds5_parse_input_report(uni_hid_device_t* d, const uint8_t* report, uint16_t len) {
+     ds5_instance_t* ins = get_ds5_instance(d);
+-
+-    // Don't process reports until state is ready. Prevents possible div-by-0 on calibration
+-    // and ignores other warnings.
+-    if (ins->state != DS5_STATE_READY)
+-        return;
++    uni_controller_t* ctl = &d->controller;
+ 
+     if (report[0] != 0x31) {
+         loge("DS5: Unexpected report type: got 0x%02x, want: 0x31\n", report[0]);
+         return;
+     }
+-    if (len != 78) {
+-        loge("DS5: Unexpected report len: got %d, want: 78\n", len);
++    /* Accept any length that has at least gamepad bytes (2+10=12). Never reject a report and leave state zeroed (like Xbox One). */
++    if (len < 12) {
++        loge("DS5: Report too short: got %d, need >= 12\n", len);
++        return;
++    }
++
++    if (len < 76) {
++        ds5_parse_input_report_minimal(d, report, len);
+         return;
+     }
+ 
+-    uni_controller_t* ctl = &d->controller;
+     const ds5_input_report_t* r = (ds5_input_report_t*)&report[2];
+ 
++    /* When not READY, still deliver gamepad (no gyro/accel) so input is responsive during calibration. */
++    if (ins->state != DS5_STATE_READY) {
++        ctl->gamepad.buttons = 0;
++        ctl->gamepad.misc_buttons = 0;
++        ctl->gamepad.axis_x = (r->x - 127) * 4;
++        ctl->gamepad.axis_y = (r->y - 127) * 4;
++        ctl->gamepad.axis_rx = (r->rx - 127) * 4;
++        ctl->gamepad.axis_ry = (r->ry - 127) * 4;
++        ctl->gamepad.brake = r->brake * 4;
++        ctl->gamepad.throttle = r->throttle * 4;
++        uint8_t value = r->buttons[0] & 0xf;
++        if (value > 7)
++            value = 0xff;
++        ctl->gamepad.dpad = uni_hid_parser_hat_to_dpad(value);
++        if (r->buttons[0] & 0x10) ctl->gamepad.buttons |= BUTTON_X;
++        if (r->buttons[0] & 0x20) ctl->gamepad.buttons |= BUTTON_A;
++        if (r->buttons[0] & 0x40) ctl->gamepad.buttons |= BUTTON_B;
++        if (r->buttons[0] & 0x80) ctl->gamepad.buttons |= BUTTON_Y;
++        if (r->buttons[1] & 0x01) ctl->gamepad.buttons |= BUTTON_SHOULDER_L;
++        if (r->buttons[1] & 0x02) ctl->gamepad.buttons |= BUTTON_SHOULDER_R;
++        if (r->buttons[1] & 0x04) ctl->gamepad.buttons |= BUTTON_TRIGGER_L;
++        if (r->buttons[1] & 0x08) ctl->gamepad.buttons |= BUTTON_TRIGGER_R;
++        if (r->buttons[1] & 0x10) ctl->gamepad.misc_buttons |= MISC_BUTTON_SELECT;
++        if (r->buttons[1] & 0x20) ctl->gamepad.misc_buttons |= MISC_BUTTON_START;
++        if (r->buttons[1] & 0x40) ctl->gamepad.buttons |= BUTTON_THUMB_L;
++        if (r->buttons[1] & 0x80) ctl->gamepad.buttons |= BUTTON_THUMB_R;
++        if (r->buttons[2] & 0x01) ctl->gamepad.misc_buttons |= MISC_BUTTON_SYSTEM;
++        if (r->buttons[2] & 0x04) ctl->gamepad.misc_buttons |= MISC_BUTTON_CAPTURE;
++        ctl->battery = (r->status & DS5_STATUS_BATTERY_CAPACITY) * 25 + 1;
++        return;
++    }
++
+     // Axis
+     ctl->gamepad.axis_x = (r->x - 127) * 4;
+     ctl->gamepad.axis_y = (r->y - 127) * 4;

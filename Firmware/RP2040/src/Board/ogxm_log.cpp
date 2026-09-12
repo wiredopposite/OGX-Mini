@@ -2,13 +2,12 @@
 #if defined(CONFIG_OGXM_DEBUG)
 
 #include <cstdint>
+#include <cstdio>
 #include <string>
 #include <sstream>
 #include <iostream>
 #include <iomanip>
 #include <pico/mutex.h>
-#include <hardware/uart.h>
-#include <hardware/gpio.h>
 
 #include "USBDevice/DeviceDriver/DeviceDriverTypes.h"
 #include "Board/ogxm_log.h"
@@ -21,9 +20,15 @@ std::ostream& operator<<(std::ostream& os, DeviceDriverType type) {
         case DeviceDriverType::XBOXOG_XR:     os << "XBOXOG_XR"; break;
         case DeviceDriverType::XINPUT:        os << "XINPUT"; break;
         case DeviceDriverType::PS3:           os << "PS3"; break;
+        case DeviceDriverType::PS4:           os << "PS4"; break;
+        case DeviceDriverType::STEAM:         os << "STEAM"; break;
         case DeviceDriverType::DINPUT:        os << "DINPUT"; break;
         case DeviceDriverType::PSCLASSIC:     os << "PSCLASSIC"; break;
         case DeviceDriverType::SWITCH:        os << "SWITCH"; break;
+        case DeviceDriverType::WIIU:          os << "WIIU"; break;
+        case DeviceDriverType::WII:           os << "WII"; break;
+        case DeviceDriverType::PS1PS2:        os << "PS1PS2"; break;
+        case DeviceDriverType::GAMECUBE:      os << "GAMECUBE"; break;
         case DeviceDriverType::WEBAPP:        os << "WEBAPP"; break;
         case DeviceDriverType::UART_BRIDGE:   os << "UART_BRIDGE"; break;
         default:                              os << "UNKNOWN"; break;
@@ -34,9 +39,8 @@ std::ostream& operator<<(std::ostream& os, DeviceDriverType type) {
 namespace ogxm_log {
 
 void init() {
-    uart_init(DEBUG_UART_PORT, PICO_DEFAULT_UART_BAUD_RATE);
-    gpio_set_function(PICO_DEFAULT_UART_TX_PIN, GPIO_FUNC_UART);
-    gpio_set_function(PICO_DEFAULT_UART_RX_PIN, GPIO_FUNC_UART);
+    // Debug: pico_stdio_uart only (host stack disables USB CDC stdio). main/init_board set PICO_DEFAULT_UART pins.
+    setvbuf(stdout, nullptr, _IONBF, 0);
 }
 
 void log(const std::string& message) {
@@ -50,7 +54,8 @@ void log(const std::string& message) {
 
     std::string formatted_msg = "OGXM: " + message;
 
-    uart_puts(DEBUG_UART_PORT, formatted_msg.c_str());
+    printf("%s", formatted_msg.c_str());
+    fflush(stdout);
 
     mutex_exit(&log_mutex);
 }

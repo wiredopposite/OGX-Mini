@@ -21,12 +21,14 @@ public:
 	void initialize_driver(DeviceDriverType driver_type, Gamepad(&gamepads)[MAX_GAMEPADS]);
 	
 	DeviceDriver* get_driver() { return device_driver_.get(); }
-	
+	DeviceDriverType get_driver_type() const { return current_driver_type_; }
+
 private:
     DeviceManager() = default;
 	~DeviceManager() = default;
 
 	std::unique_ptr<DeviceDriver> device_driver_{nullptr};
+	DeviceDriverType current_driver_type_{DeviceDriverType::NONE};
 };
 
 #endif // _DEVICE_MANAGER_H_

@@ -1,0 +1,54 @@
+; Maple Bus input (read). Ported from DreamPicoPort (OrangeFox86).
+; Waits for start sequence, samples data bits (A=clock, B=data), detects end.
+
+.program maple_in
+
+wait_start:
+mov y, ~NULL
+b_toggle_loop:
+jmp pin check_toggle_count
+mov osr, pins
+out x 2
+jmp x-- b_toggle_loop
+wait 1 pin 1
+jmp pin wait_start
+jmp y-- b_toggle_loop
+
+check_toggle_count:
+mov y, ~y
+set x, 4
+jmp x!=y wait_start
+
+data_start:
+irq set 0 rel
+wait 0 pin 0
+
+.wrap_target
+data_loop:
+set y, 1
+end_detect_b_toggle:
+mov osr, pins
+out x 1
+jmp !x sample_b_from_osr
+out x 1
+jmp !y end_detect_b_to_low
+end_detect_b_to_high:
+jmp !x end_detect_b_toggle
+jmp y-- end_detect_b_toggle
+end_detect_b_to_low:
+jmp x-- end_detect_b_toggle
+
+end_detected:
+in null 24
+irq wait 0 rel
+
+sample_b_from_osr:
+in osr 1
+
+sample_a:
+wait 1 pin 1
+wait 0 pin 1
+in pins 1
+wait 1 pin 0
+
+.wrap

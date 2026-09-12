@@ -1,0 +1,13 @@
+diff --git a/src/ble/gatt-service/hids_host.h b/src/ble/gatt-service/hids_host.h
+index de529831a..d02c067f1 100644
+--- a/src/ble/gatt-service/hids_host.h
++++ b/src/ble/gatt-service/hids_host.h
+@@ -63,7 +63,7 @@ extern "C" {
+ #endif
+ #define HIDS_HOST_INVALID_REPORT_INDEX 0xFF
+ 
+-#define HIDS_HOST_NUM_REPORTS 15
++#define HIDS_HOST_NUM_REPORTS 32
+ 
+ typedef enum {
+     HIDS_HOST_STATE_IDLE,
