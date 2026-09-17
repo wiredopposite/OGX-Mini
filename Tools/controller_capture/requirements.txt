@@ -1,0 +1,4 @@
+# Controller mapping capture for OGX-Mini maintainers
+pygame>=2.5.0
+# Switch 2 Pro / Joy-Con 2 USB bulk handshake (needs system libusb-1.0)
+pyusb>=1.2.0

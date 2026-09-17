@@ -1,0 +1,67 @@
+diff --git a/src/rp2_common/pico_cyw43_driver/btstack_hci_transport_cyw43.c b/src/rp2_common/pico_cyw43_driver/btstack_hci_transport_cyw43.c
+index ecfcf3d..d45a579 100644
+--- a/src/rp2_common/pico_cyw43_driver/btstack_hci_transport_cyw43.c
++++ b/src/rp2_common/pico_cyw43_driver/btstack_hci_transport_cyw43.c
+@@ -11,8 +11,10 @@
+ #include "pico/btstack_hci_transport_cyw43.h"
+ #include "pico/btstack_chipset_cyw43.h"
+ 
++#define CYW43_PACKET_HEADER_SIZE 4
++
+ // assert outgoing pre-buffer for cyw43 header is available
+-#if !defined(HCI_OUTGOING_PRE_BUFFER_SIZE) || (HCI_OUTGOING_PRE_BUFFER_SIZE < 4)
++#if !defined(HCI_OUTGOING_PRE_BUFFER_SIZE) || (HCI_OUTGOING_PRE_BUFFER_SIZE < CYW43_PACKET_HEADER_SIZE)
+ #error HCI_OUTGOING_PRE_BUFFER_SIZE not defined or smaller than 4. Please update btstack_config.h
+ #endif
+ 
+@@ -28,12 +30,20 @@
+ #define BT_DEBUG(...) (void)0
+ #endif
+ 
++// Keep the receive buffer word-aligned while leaving the complete BTstack
++// pre-buffer in front of the HCI packet. Newer BTstack GATT events need all six
++// configured bytes, not just the four-byte CYW43 transport header.
++#define HCI_INCOMING_PRE_BUFFER_SIZE_ALIGNED ((HCI_INCOMING_PRE_BUFFER_SIZE + 3) & ~3)
++
+ // Callback when we have data
+ static void (*hci_transport_cyw43_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = NULL;
+ 
+-// Incoming packet buffer - cyw43 packet header (incl packet type) + incoming pre buffer + max(acl header + acl payload, event header + event data)
++// Incoming packet buffer: aligned BTstack pre-buffer followed by the HCI packet.
++// The last four bytes of the pre-buffer are temporarily used by CYW43.
+ __attribute__((aligned(4)))
+-static uint8_t hci_packet_with_pre_buffer[4 + HCI_INCOMING_PRE_BUFFER_SIZE + HCI_INCOMING_PACKET_BUFFER_SIZE ];
++static uint8_t hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE_ALIGNED + HCI_INCOMING_PACKET_BUFFER_SIZE];
++static uint8_t * cyw43_receive_buffer =
++        &hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE_ALIGNED - CYW43_PACKET_HEADER_SIZE];
+ 
+ static btstack_data_source_t transport_data_source;
+ static bool hci_transport_ready;
+@@ -97,8 +107,8 @@ static int hci_transport_cyw43_can_send_now(uint8_t packet_type) {
+ static int hci_transport_cyw43_send_packet(uint8_t packet_type, uint8_t *packet, int size) {
+     // store packet type before actual data and increase size
+     // This relies on HCI_OUTGOING_PRE_BUFFER_SIZE being set
+-    uint8_t *buffer = &packet[-4];
+-    uint32_t buffer_size = size + 4;
++    uint8_t *buffer = &packet[-CYW43_PACKET_HEADER_SIZE];
++    uint32_t buffer_size = size + CYW43_PACKET_HEADER_SIZE;
+     buffer[3] = packet_type;
+ 
+     CYW43_THREAD_ENTER
+@@ -143,10 +153,14 @@ static void hci_transport_cyw43_process(void) {
+     uint32_t loop_count = 0;
+ #endif
+     do {
+-        int err = cyw43_bluetooth_hci_read(hci_packet_with_pre_buffer, sizeof(hci_packet_with_pre_buffer), &len);
++        int err = cyw43_bluetooth_hci_read(cyw43_receive_buffer,
++                                           CYW43_PACKET_HEADER_SIZE + HCI_INCOMING_PACKET_BUFFER_SIZE,
++                                           &len);
+         BT_DEBUG("bt in len=%lu err=%d\n", len, err);
+         if (err == 0 && len > 0) {
+-            hci_transport_cyw43_packet_handler(hci_packet_with_pre_buffer[3], hci_packet_with_pre_buffer + 4, len - 4);
++            hci_transport_cyw43_packet_handler(cyw43_receive_buffer[3],
++                                               cyw43_receive_buffer + CYW43_PACKET_HEADER_SIZE,
++                                               len - CYW43_PACKET_HEADER_SIZE);
+             has_work = true;
+         } else {
+             has_work = false;

@@ -22,6 +22,8 @@ namespace tuh_xinput
         static constexpr uint8_t GIP_SEQ0           = 0x00;
         static constexpr uint8_t GIP_OPT_ACK        = 0x10;
         static constexpr uint8_t GIP_OPT_INTERNAL   = 0x20;
+        static constexpr uint8_t GIP_OPT_CHUNK_START = 0x40;
+        static constexpr uint8_t GIP_OPT_CHUNK      = 0x80;
 
         constexpr uint8_t GIP_PL_LEN(uint8_t N) { return N; }
 
@@ -42,6 +44,14 @@ namespace tuh_xinput
         static constexpr uint8_t POWER_ON[]     = { GIP_CMD_POWER, GIP_OPT_INTERNAL, GIP_SEQ0, GIP_PL_LEN(1), GIP_PWR_ON };
         static constexpr uint8_t S_INIT[]       = { GIP_CMD_POWER, GIP_OPT_INTERNAL, GIP_SEQ0, GIP_PL_LEN(15), 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x55, 0x53, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
         static constexpr uint8_t S_LED_INIT[]   = { GIP_CMD_LED, GIP_OPT_INTERNAL, GIP_SEQ0, GIP_PL_LEN(3), 0x00, 0x01, 0x14 };
+        static constexpr uint8_t VIRTUAL_KEY_ACK[] = {
+            GIP_CMD_ACK, GIP_OPT_INTERNAL, GIP_SEQ0, GIP_PL_LEN(9),
+            0x00, GIP_CMD_VIRTUAL_KEY, GIP_OPT_INTERNAL, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00
+        };
+        /** Host IDENTIFY request (SDL / xone) — empty payload. */
+        static constexpr uint8_t IDENTIFY_REQ[] = {
+            GIP_CMD_IDENTIFY, GIP_OPT_INTERNAL, GIP_SEQ0, GIP_PL_LEN(0)
+        };
         static constexpr uint8_t EXTRA_INPUT_PACKET_INIT[] = { 0x4d, 0x10, GIP_SEQ0, 0x02, 0x07, 0x00 };
         static constexpr uint8_t PDP_LED_ON[]   = { GIP_CMD_LED, GIP_OPT_INTERNAL, GIP_SEQ0, GIP_PL_LEN(3), 0x00, GIP_LED_ON, 0x14 };
         static constexpr uint8_t PDP_AUTH[]     = { GIP_CMD_AUTHENTICATE, GIP_OPT_INTERNAL, GIP_SEQ0, GIP_PL_LEN(2), 0x01, 0x00 };

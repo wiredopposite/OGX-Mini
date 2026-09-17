@@ -1,0 +1,13 @@
+diff --git a/src/ble/gatt-service/hids_host.c b/src/ble/gatt-service/hids_host.c
+index 4f674ce09..a792fc393 100644
+--- a/src/ble/gatt-service/hids_host.c
++++ b/src/ble/gatt-service/hids_host.c
+@@ -1697,7 +1697,7 @@ static uint8_t hids_host_send_control_point_cmd(uint16_t hids_cid, uint8_t servi
+     client->value = value;
+ 
+     client->state = HIDS_HOST_W2_WRITE_VALUE_OF_CHARACTERISTIC_WITHOUT_RESPONSE;
+-    hids_host_request_to_send_next_query(client);
++    hids_host_request_to_send_write_without_response(client);
+     return ERROR_CODE_SUCCESS;
+ }
+ 

@@ -6,6 +6,17 @@ under Apache 2.0 (Bluepad32) and BTStack's proprietary (non-commercial)
 license. For full details, please refer to the repositories contained in the 
 Firmware/external directory of this project.
 
+Xbox 360 console authentication: Builds that emulate Xbox 360 controllers use 
+libxsm3 (Xbox Security Method 3) for authentication with retail Xbox 360 
+consoles. libxsm3 is licensed under the GNU Lesser General Public License 
+v2.1 (or later). A copy of the LGPL v2.1 is included in 
+Firmware/external/libxsm3/LICENSE.txt. libxsm3 also uses ExCrypt (3-clause BSD); 
+see Firmware/external/libxsm3/README.md for credits.
+
+Xbox 360 controller rumble/vibration: Host-side rumble handling (including 
+wireless RUMBLE_ENABLE sequence) is attributed to faithvoid 
+(https://github.com/faithvoid).
+
 Copyright (c) 2024 wiredOpposite (wiredopposite.com)
 Copyright (c) 2024 OpenStickCommunity (gp2040-ce.info)
 Copyright (c) 2021 Jason Skuby (mytechtoybox.com)

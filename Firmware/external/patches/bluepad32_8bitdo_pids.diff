@@ -1,0 +1,23 @@
+diff --git a/src/components/bluepad32/include/controller/uni_controller_list.h b/src/components/bluepad32/include/controller/uni_controller_list.h
+index 4390c5b..a411391 100644
+--- a/src/components/bluepad32/include/controller/uni_controller_list.h
++++ b/src/components/bluepad32/include/controller/uni_controller_list.h
+@@ -639,15 +639,17 @@ static const uni_controller_description_t arrControllers[] = {
+         // Smart TV remotes
+         { MAKE_CONTROLLER_ID(0x1949, 0x0401), k_eControllerType_SmartTVRemoteController, NULL},  // Amazon Fire TV remote Controller 1st gen
+ 
+-        // 8BitDo controllers
++        // 8BitDo controllers (Android / D-input Bluetooth modes — #86)
+         { MAKE_CONTROLLER_ID(0x2820, 0x0009), k_eControllerType_8BitdoController, NULL},  // 8BitDo NES30 Gamepro
+         { MAKE_CONTROLLER_ID(0x2dc8, 0x0651), k_eControllerType_8BitdoController, NULL},  // 8BitDo M30
+         { MAKE_CONTROLLER_ID(0x2dc8, 0x2830), k_eControllerType_8BitdoController, NULL},  // 8BitDo SFC30
+         { MAKE_CONTROLLER_ID(0x2dc8, 0x2840), k_eControllerType_8BitdoController, NULL},  // 8BitDo SNES30
+         { MAKE_CONTROLLER_ID(0x2dc8, 0x3230), k_eControllerType_8BitdoController, NULL},  // 8BitDo Zero 2
++        { MAKE_CONTROLLER_ID(0x2dc8, 0x6003), k_eControllerType_8BitdoController, NULL},  // 8BitDo Pro 2 (Android)
+         { MAKE_CONTROLLER_ID(0x2dc8, 0x6006), k_eControllerType_8BitdoController, NULL},  // 8BitDo Pro 2
+         { MAKE_CONTROLLER_ID(0x2dc8, 0x6100), k_eControllerType_8BitdoController, NULL},  // 8BitDo SF30 Pro
+         { MAKE_CONTROLLER_ID(0x2dc8, 0x6101), k_eControllerType_8BitdoController, NULL},  // 8BitDo SN30 Pro
++        { MAKE_CONTROLLER_ID(0x2dc8, 0x6103), k_eControllerType_8BitdoController, NULL},  // 8BitDo Pro 2 / SN30 Pro+
+ 
+         // Generic gamepad
+         { MAKE_CONTROLLER_ID(0x0a5c, 0x4502), k_eControllerType_GenericController, NULL},  // White-label mini gamepad received as gift in conference

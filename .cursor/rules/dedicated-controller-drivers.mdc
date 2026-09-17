@@ -1,0 +1,39 @@
+---
+description: New controllers get dedicated drivers; do not modify existing drivers to add different pads
+alwaysApply: true
+---
+
+# Dedicated controller drivers
+
+When adding support for a **new** controller in this OGX-Mini 2026 fork:
+
+## Core rule
+
+**Do not modify an existing controller driver to add support for a different controller.**
+
+Create a **new dedicated driver** (host class / Bluepad32 parser / module) by default. Existing working drivers are effectively **read-only** unless the user explicitly instructs otherwise or a shared subsystem change is unavoidable.
+
+**Adding Controller B must not risk breaking Controller A.**
+
+## Required shape
+
+- New detection rules (VID/PID/descriptors) that claim **only** that controller/family
+- Own init/handshake, report parse, mappings, rumble/LED/quirks/timing
+- Register via `HardwareIDs.h` / `HostManager` / Bluepad32 without changing other drivers’ behavior
+- Prefer `HostDriver/MyPad/MyPad.cpp` over growing `if (device == …)` chains inside XboxOne, PS4, SwitchPro, etc.
+
+## Shared code
+
+Reuse genuinely common helpers (base `HostDriver`, USB/HID utilities, PadIn mapping helpers). Do **not** put controller-specific exceptions into a shared or existing driver because two pads look similar.
+
+## Variants
+
+Only share a driver when there is **strong evidence** the hardware is functionally identical (same protocol + report layout). When uncertain, **separate drivers first**; consolidate later after testing.
+
+## Before editing an existing driver
+
+Ask: *Can this live entirely in the new driver?* If yes, do that. If a shared change is required, keep it minimal and preserve existing driver behavior.
+
+## Exception
+
+Modify an existing driver for a new pad **only** when the user explicitly asks, or when there is an unavoidable architectural reason (document it in the PR).

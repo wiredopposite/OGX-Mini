@@ -27,6 +27,8 @@ private:
     PS3::BTInfo bt_info_;
     uint8_t ef_byte_;
     bool new_report_out_{false};
+    // Latch PS button so short taps (DS4/DS5 over BT) aren't missed due to cross-core timing.
+    uint8_t sys_button_latch_frames_{0};
 };
 
 #endif // _PS3_DEVICE_H_

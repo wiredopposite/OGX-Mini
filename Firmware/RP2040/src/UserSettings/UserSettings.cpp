@@ -1,4 +1,5 @@
 #include <cstring>
+#include <string>
 #include <array>
 #include <memory>
 #include <pico/multicore.h>
@@ -13,16 +14,34 @@ static constexpr uint32_t BUTTON_COMBO(const uint16_t& buttons, const uint8_t& d
     return (static_cast<uint32_t>(buttons) << 16) | static_cast<uint32_t>(dpad);
 }
 
+/** Required buttons/dpad pressed (extra face buttons or triggers do not block the combo). */
+static bool combo_matches(uint32_t current, uint32_t expected)
+{
+    const uint16_t req_buttons = static_cast<uint16_t>(expected >> 16);
+    const uint16_t cur_buttons = static_cast<uint16_t>(current >> 16);
+    const uint8_t req_dpad = static_cast<uint8_t>(expected & 0xFF);
+    const uint8_t cur_dpad = static_cast<uint8_t>(current & 0xFF);
+    return ((cur_buttons & req_buttons) == req_buttons) && (cur_dpad == req_dpad);
+}
+
 namespace ButtonCombo {
     static constexpr uint32_t PS3       = BUTTON_COMBO(Gamepad::BUTTON_START, Gamepad::DPAD_LEFT);
+    static constexpr uint32_t PS4       = BUTTON_COMBO(Gamepad::BUTTON_START | Gamepad::BUTTON_LB, Gamepad::DPAD_LEFT);
+    static constexpr uint32_t STEAM     = BUTTON_COMBO(Gamepad::BUTTON_START | Gamepad::BUTTON_LB, Gamepad::DPAD_UP);
     static constexpr uint32_t DINPUT    = BUTTON_COMBO(Gamepad::BUTTON_START | Gamepad::BUTTON_RB, Gamepad::DPAD_LEFT);
     static constexpr uint32_t XINPUT    = BUTTON_COMBO(Gamepad::BUTTON_START, Gamepad::DPAD_UP);
     static constexpr uint32_t SWITCH    = BUTTON_COMBO(Gamepad::BUTTON_START, Gamepad::DPAD_DOWN);
+    static constexpr uint32_t WIIU      = BUTTON_COMBO(Gamepad::BUTTON_START | Gamepad::BUTTON_LB, Gamepad::DPAD_DOWN);
     static constexpr uint32_t XBOXOG    = BUTTON_COMBO(Gamepad::BUTTON_START, Gamepad::DPAD_RIGHT);
     static constexpr uint32_t XBOXOG_SB = BUTTON_COMBO(Gamepad::BUTTON_START | Gamepad::BUTTON_RB, Gamepad::DPAD_RIGHT);
     static constexpr uint32_t XBOXOG_XR = BUTTON_COMBO(Gamepad::BUTTON_START | Gamepad::BUTTON_LB, Gamepad::DPAD_RIGHT);
     static constexpr uint32_t PSCLASSIC = BUTTON_COMBO(Gamepad::BUTTON_START | Gamepad::BUTTON_A);
+    static constexpr uint32_t PS1PS2    = BUTTON_COMBO(Gamepad::BUTTON_START | Gamepad::BUTTON_B);
+    static constexpr uint32_t GAMECUBE  = BUTTON_COMBO(Gamepad::BUTTON_START | Gamepad::BUTTON_X);
+    static constexpr uint32_t DREAMCAST = BUTTON_COMBO(Gamepad::BUTTON_START | Gamepad::BUTTON_Y);
+    static constexpr uint32_t N64       = BUTTON_COMBO(Gamepad::BUTTON_START | Gamepad::BUTTON_RB);
     static constexpr uint32_t WEBAPP    = BUTTON_COMBO(Gamepad::BUTTON_START | Gamepad::BUTTON_LB | Gamepad::BUTTON_RB);
+    // WII is build-option only (OGXM_FIXED_DRIVER=WII), not in combo map
 };
 
 static constexpr DeviceDriverType VALID_DRIVER_TYPES[] = {
@@ -31,7 +50,11 @@ static constexpr DeviceDriverType VALID_DRIVER_TYPES[] = {
     DeviceDriverType::XBOXOG_SB, 
     DeviceDriverType::XINPUT,
     DeviceDriverType::PS3,
+    DeviceDriverType::PS4,
+    DeviceDriverType::STEAM,
     DeviceDriverType::PSCLASSIC, 
+    DeviceDriverType::WIIU,
+    DeviceDriverType::WII,
     DeviceDriverType::WEBAPP,
     #if defined(XREMOTE_ROM_AVAILABLE)
     DeviceDriverType::XBOXOG_XR,
@@ -40,6 +63,8 @@ static constexpr DeviceDriverType VALID_DRIVER_TYPES[] = {
 #elif MAX_GAMEPADS > 1
     DeviceDriverType::DINPUT, 
     DeviceDriverType::SWITCH, 
+    DeviceDriverType::WIIU,
+    DeviceDriverType::WII,
     DeviceDriverType::WEBAPP,
 
 #else // MAX_GAMEPADS == 1
@@ -47,9 +72,17 @@ static constexpr DeviceDriverType VALID_DRIVER_TYPES[] = {
     DeviceDriverType::XBOXOG_SB, 
     DeviceDriverType::DINPUT, 
     DeviceDriverType::SWITCH, 
+    DeviceDriverType::WIIU,
+    DeviceDriverType::WII,
     DeviceDriverType::WEBAPP,
     DeviceDriverType::PS3,
-    DeviceDriverType::PSCLASSIC, 
+    DeviceDriverType::PS4,
+    DeviceDriverType::STEAM,
+    DeviceDriverType::PSCLASSIC,
+    DeviceDriverType::PS1PS2,
+    DeviceDriverType::GAMECUBE,
+    DeviceDriverType::DREAMCAST,
+    DeviceDriverType::N64,
     DeviceDriverType::XINPUT,
     #if defined(XREMOTE_ROM_AVAILABLE)
     DeviceDriverType::XBOXOG_XR,
@@ -63,17 +96,45 @@ struct ComboMap {
     DeviceDriverType driver; 
 };
 
-static constexpr std::array<ComboMap, 9> BUTTON_COMBO_MAP = {{
+// GAMECUBE and N64 are build-only (fixed driver), not in combo map; use -DOGXM_FIXED_DRIVER=GAMECUBE or N64.
+static constexpr std::array<ComboMap, 14> BUTTON_COMBO_MAP = {{
     { ButtonCombo::XBOXOG,    DeviceDriverType::XBOXOG    },
     { ButtonCombo::XBOXOG_SB, DeviceDriverType::XBOXOG_SB },
     { ButtonCombo::XBOXOG_XR, DeviceDriverType::XBOXOG_XR },
     { ButtonCombo::WEBAPP,    DeviceDriverType::WEBAPP    },
     { ButtonCombo::DINPUT,    DeviceDriverType::DINPUT    },
     { ButtonCombo::SWITCH,    DeviceDriverType::SWITCH    },
+    { ButtonCombo::WIIU,      DeviceDriverType::WIIU      },
     { ButtonCombo::XINPUT,    DeviceDriverType::XINPUT    },
     { ButtonCombo::PS3,       DeviceDriverType::PS3       },
-    { ButtonCombo::PSCLASSIC, DeviceDriverType::PSCLASSIC }
+    { ButtonCombo::PS4,       DeviceDriverType::PS4       },
+    { ButtonCombo::STEAM,     DeviceDriverType::STEAM     },
+    { ButtonCombo::PSCLASSIC, DeviceDriverType::PSCLASSIC },
+    { ButtonCombo::PS1PS2,    DeviceDriverType::PS1PS2    },
+    { ButtonCombo::DREAMCAST, DeviceDriverType::DREAMCAST },
 }};
+
+/** Prefer the combo that requires the most buttons (e.g. STEAM over XInput when LB is held). */
+static uint32_t find_matching_combo(uint32_t current)
+{
+    uint32_t best = 0;
+    uint8_t best_button_count = 0;
+    for (const auto& entry : BUTTON_COMBO_MAP) {
+        if (!combo_matches(current, entry.combo)) {
+            continue;
+        }
+        const uint16_t req = static_cast<uint16_t>(entry.combo >> 16);
+        uint8_t count = 0;
+        for (uint16_t bit = req; bit != 0; bit &= static_cast<uint16_t>(bit - 1)) {
+            ++count;
+        }
+        if (count >= best_button_count) {
+            best_button_count = count;
+            best = entry.combo;
+        }
+    }
+    return best;
+}
 
 const std::string UserSettings::INIT_FLAG_KEY()
 {
@@ -95,6 +156,11 @@ const std::string UserSettings::DRIVER_TYPE_KEY()
     return std::string("driver_type");
 }
 
+const std::string UserSettings::INPUT_SOURCE_KEY()
+{
+    return std::string("input_source");
+}
+
 const std::string UserSettings::DATETIME_KEY()
 {
     return std::string("datetime");
@@ -102,22 +168,32 @@ const std::string UserSettings::DATETIME_KEY()
 
 DeviceDriverType UserSettings::DEFAULT_DRIVER()
 {
+#if defined(CONFIG_OGXM_FIXED_DRIVER)
+    return static_cast<DeviceDriverType>(OGXM_FIXED_DRIVER_TYPE);
+#else
     return VALID_DRIVER_TYPES[0];
+#endif
 }
 
 //Checks if button combo has been held for 3 seconds, returns true if mode has been changed
 bool UserSettings::check_for_driver_change(Gamepad& gamepad)
 {
+#if defined(CONFIG_OGXM_FIXED_DRIVER) && !defined(CONFIG_OGXM_FIXED_DRIVER_ALLOW_COMBOS)
+    (void)gamepad;
+    return false;  // Fixed output build: combos disabled
+#else
     Gamepad::PadIn gp_in = gamepad.get_pad_in();
-    static uint32_t last_button_combo = BUTTON_COMBO(gp_in.buttons, gp_in.dpad);
+    static uint32_t last_button_combo = 0;
     static uint8_t call_count = 0;
 
-    uint32_t current_button_combo = BUTTON_COMBO(gp_in.buttons, gp_in.dpad);
+    const uint32_t current_button_combo = BUTTON_COMBO(gp_in.buttons, gp_in.dpad);
+    const uint32_t active_combo = find_matching_combo(current_button_combo);
 
-    if (!(current_button_combo & (static_cast<uint32_t>(Gamepad::BUTTON_START) << 16)) || 
-        last_button_combo != current_button_combo)
+    if (!(current_button_combo & (static_cast<uint32_t>(Gamepad::BUTTON_START) << 16)) ||
+        active_combo == 0 ||
+        last_button_combo != active_combo)
     {
-        last_button_combo = current_button_combo;
+        last_button_combo = active_combo;
         call_count = 0;
         return false;
     }
@@ -135,7 +211,7 @@ bool UserSettings::check_for_driver_change(Gamepad& gamepad)
 
     for (const auto& combo_map : BUTTON_COMBO_MAP)
     {
-        if (combo_map.combo == current_button_combo && is_valid_driver(combo_map.driver))
+        if (combo_map.combo == active_combo && is_valid_driver(combo_map.driver))
         {
             new_driver = combo_map.driver;
             break;
@@ -144,12 +220,19 @@ bool UserSettings::check_for_driver_change(Gamepad& gamepad)
 
     if (new_driver == DeviceDriverType::NONE || new_driver == current_driver_)
     {
+#if defined(CONFIG_OGXM_DEBUG)
+        if (new_driver == DeviceDriverType::NONE)
+            OGXM_LOG("WII driver check: combo 0x" + std::to_string(current_button_combo) + " no match\n");
+        else
+            OGXM_LOG("WII driver check: same driver " + OGXM_TO_STRING(current_driver_) + ", no change\n");
+#endif
         return false;
     }
 
     current_driver_ = new_driver;
-
+    OGXM_LOG("WII driver check: returning true, new_driver=" + OGXM_TO_STRING(new_driver) + "\n");
     return true;
+#endif
 }
 
 //Disconnects usb and resets pico, call from core0
@@ -212,7 +295,7 @@ bool UserSettings::store_profile_and_driver_type(DeviceDriverType new_driver_typ
 }
 
 //Disconnects usb and resets pico if it's a new & valid mode, call from core0
-void UserSettings::store_driver_type(DeviceDriverType new_driver) 
+void UserSettings::store_driver_type(DeviceDriverType new_driver)
 {
     if (!is_valid_driver(new_driver))
     {
@@ -227,6 +310,40 @@ void UserSettings::store_driver_type(DeviceDriverType new_driver)
     nvs_tool_.write(DRIVER_TYPE_KEY(), &new_driver, sizeof(uint8_t));
 
     board_api::reboot();
+}
+
+// Store driver and reboot only; no disconnect_all(). Use from Core0.
+void UserSettings::store_driver_type_and_reboot(DeviceDriverType new_driver)
+{
+    if (!is_valid_driver(new_driver))
+    {
+        OGXM_LOG("Invalid driver type during store_and_reboot: " + OGXM_TO_STRING(new_driver) + "\n");
+        return;
+    }
+
+    OGXM_LOG("Storing new driver type and rebooting: " + OGXM_TO_STRING(new_driver) + "\n");
+
+    nvs_tool_.write(DRIVER_TYPE_KEY(), &new_driver, sizeof(uint8_t));
+
+    board_api::reboot();
+}
+
+// Store driver to flash only. Used from Core0 after watchdog reboot (Wii exit) or from flash_safe_execute callback.
+// Updates in-memory current_driver_ so the rest of run() sees the new mode.
+bool UserSettings::store_driver_type_only(DeviceDriverType new_driver)
+{
+    if (!is_valid_driver(new_driver))
+    {
+        OGXM_LOG("Invalid driver type in store_driver_type_only: " + OGXM_TO_STRING(new_driver) + "\n");
+        return false;
+    }
+
+    OGXM_LOG("Storing new driver type (flash only): " + OGXM_TO_STRING(new_driver) + "\n");
+
+    nvs_tool_.write(DRIVER_TYPE_KEY(), &new_driver, sizeof(uint8_t));
+    current_driver_ = new_driver;
+
+    return true;
 }
 
 uint8_t UserSettings::get_active_profile_id(const uint8_t index)
@@ -280,15 +397,18 @@ bool UserSettings::is_valid_driver(DeviceDriverType driver)
 
 DeviceDriverType UserSettings::get_current_driver()
 {
+#if defined(CONFIG_OGXM_FIXED_DRIVER) && !defined(CONFIG_OGXM_FIXED_DRIVER_ALLOW_COMBOS)
+    return static_cast<DeviceDriverType>(OGXM_FIXED_DRIVER_TYPE);
+#else
     if (current_driver_ != DeviceDriverType::NONE)
     {
         return current_driver_;
     }
 
     uint8_t stored_value = 0;
-    nvs_tool_.read(DRIVER_TYPE_KEY(), &stored_value, sizeof(uint8_t));
+    bool read_ok = nvs_tool_.read(DRIVER_TYPE_KEY(), &stored_value, sizeof(uint8_t));
 
-    if (is_valid_driver(static_cast<DeviceDriverType>(stored_value)))
+    if (read_ok && is_valid_driver(static_cast<DeviceDriverType>(stored_value)))
     {
         OGXM_LOG("Driver type read from flash: " + OGXM_TO_STRING(static_cast<DeviceDriverType>(stored_value)) + "\n");
 
@@ -296,10 +416,103 @@ DeviceDriverType UserSettings::get_current_driver()
         return current_driver_;
     }
 
+#if defined(CONFIG_OGXM_DEBUG)
+    if (!read_ok)
+        OGXM_LOG("Driver type read failed or key missing, using default\n");
+    else
+        OGXM_LOG("Driver type from flash raw=0x" + std::to_string(stored_value) + " invalid, using default " + OGXM_TO_STRING(DEFAULT_DRIVER()) + "\n");
+#else
     OGXM_LOG("Invalid driver type read from flash, setting default driver\n");
+#endif
 
     current_driver_ = DEFAULT_DRIVER();
     return current_driver_;
+#endif  // !(CONFIG_OGXM_FIXED_DRIVER && !CONFIG_OGXM_FIXED_DRIVER_ALLOW_COMBOS)
+}
+
+HostInputSource UserSettings::get_input_source()
+{
+    if (!input_source_loaded_)
+    {
+        uint8_t stored = 0;
+        if (nvs_tool_.read(INPUT_SOURCE_KEY(), &stored, sizeof(uint8_t)) && stored <= 3)
+        {
+            current_input_source_ = static_cast<HostInputSource>(stored);
+        }
+        input_source_loaded_ = true;
+    }
+    return current_input_source_;
+}
+
+void UserSettings::store_input_source(HostInputSource source)
+{
+    uint8_t v = static_cast<uint8_t>(source);
+    nvs_tool_.write(INPUT_SOURCE_KEY(), &v, sizeof(uint8_t));
+    current_input_source_ = source;
+    input_source_loaded_ = true;
+}
+
+static constexpr uint32_t INPUT_SOURCE_COMBO = BUTTON_COMBO(Gamepad::BUTTON_START | Gamepad::BUTTON_BACK, 0);
+static constexpr unsigned INPUT_SOURCE_CHECK_COUNT = 2500 / 600;  /* 2.5s hold to cycle input source */
+
+bool UserSettings::check_for_input_source_change(Gamepad& gamepad)
+{
+    Gamepad::PadIn gp = gamepad.get_pad_in();
+    uint32_t combo = BUTTON_COMBO(gp.buttons, gp.dpad);
+    static uint32_t last_combo = 0;
+    static uint8_t hold_count = 0;
+
+    if (combo != INPUT_SOURCE_COMBO)
+    {
+        last_combo = combo;
+        hold_count = 0;
+        return false;
+    }
+    if (last_combo != INPUT_SOURCE_COMBO)
+    {
+        hold_count = 0;
+    }
+    last_combo = INPUT_SOURCE_COMBO;
+    ++hold_count;
+    if (hold_count < INPUT_SOURCE_CHECK_COUNT)
+    {
+        return false;
+    }
+    hold_count = 0;
+    DeviceDriverType dr = get_current_driver();
+    HostInputSource cur = get_input_source();
+    HostInputSource next = HostInputSource::USB;
+    if (dr == DeviceDriverType::PS1PS2)
+    {
+        next = (cur == HostInputSource::USB) ? HostInputSource::PSX_GPIO : HostInputSource::USB;
+    }
+    else if (dr == DeviceDriverType::GAMECUBE)
+    {
+        next = (cur == HostInputSource::USB) ? HostInputSource::GAMECUBE_GPIO : HostInputSource::USB;
+    }
+    else if (dr == DeviceDriverType::DREAMCAST)
+    {
+        next = (cur == HostInputSource::USB) ? HostInputSource::DREAMCAST_GPIO : HostInputSource::USB;
+    }
+    else
+    {
+        /* Any other output (Switch, DInput, Xbox, etc.): cycle USB -> PSX_GPIO -> GAMECUBE_GPIO -> DREAMCAST_GPIO -> N64_GPIO -> USB */
+        if (cur == HostInputSource::USB)
+            next = HostInputSource::PSX_GPIO;
+        else if (cur == HostInputSource::PSX_GPIO)
+            next = HostInputSource::GAMECUBE_GPIO;
+        else if (cur == HostInputSource::GAMECUBE_GPIO)
+            next = HostInputSource::DREAMCAST_GPIO;
+        else if (cur == HostInputSource::DREAMCAST_GPIO)
+            next = HostInputSource::N64_GPIO;
+        else if (cur == HostInputSource::N64_GPIO)
+            next = HostInputSource::USB;
+        else
+            next = HostInputSource::USB;
+    }
+    store_input_source(next);
+    OGXM_LOG("Input source changed to " + std::to_string(static_cast<uint8_t>(next)) + "\n");
+    return true;
 }
 
 void UserSettings::write_datetime()
@@ -340,6 +553,9 @@ void UserSettings::initialize_flash()
 
     uint8_t device_mode_buffer = static_cast<uint8_t>(DEFAULT_DRIVER());
     nvs_tool_.write(DRIVER_TYPE_KEY(), &device_mode_buffer, sizeof(uint8_t));
+
+    uint8_t input_source_buffer = static_cast<uint8_t>(HostInputSource::USB);
+    nvs_tool_.write(INPUT_SOURCE_KEY(), &input_source_buffer, sizeof(uint8_t));
 
     OGXM_LOG("Writing default profile ids\n");
 

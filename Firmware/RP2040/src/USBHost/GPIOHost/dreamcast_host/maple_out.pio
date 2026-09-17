@@ -1,0 +1,64 @@
+; Maple Bus output (write). Ported from DreamPicoPort (OrangeFox86).
+; First word = number of bits to send; then frame + payload + CRC.
+
+.program maple_out
+.side_set 2 opt
+
+.define public MASK_A 0x1
+.define public MASK_B 0x2
+.define public MASK_AB 0x3
+.define public DOUBLE_PHASE_TICKS 4
+.define public SINGLE_PHASE_TICKS 2
+
+maple_out_start:
+out x, 32 side MASK_AB
+
+start_sequence:
+set pindirs MASK_AB side MASK_AB [DOUBLE_PHASE_TICKS - 1]
+set y, 3 side MASK_B [DOUBLE_PHASE_TICKS - 1]
+start_b_toggle_loop:
+nop side 0 [DOUBLE_PHASE_TICKS - 1]
+nop side MASK_B [DOUBLE_PHASE_TICKS - 2]
+jmp y-- start_b_toggle_loop
+jmp x--, first_clock_a_data_b side MASK_AB
+
+first_clock_a_data_b:
+out y, 1 side MASK_AB
+jmp !y, clock_a_data_b_zero side MASK_AB
+jmp first_clock_a_data_b_one side MASK_AB
+
+clock_a_data_b:
+out y, 1 side MASK_A [SINGLE_PHASE_TICKS - 2]
+jmp !y clock_a_data_b_zero
+clock_a_data_b_one:
+nop side MASK_AB [SINGLE_PHASE_TICKS - 1]
+first_clock_a_data_b_one:
+jmp x-- clock_b_data_a side MASK_B [SINGLE_PHASE_TICKS - 1]
+
+clock_a_data_b_zero:
+nop side MASK_A [SINGLE_PHASE_TICKS - 1]
+jmp x-- clock_b_data_a side 0 [SINGLE_PHASE_TICKS - 1]
+
+clock_b_data_a:
+out y, 1 side MASK_B [SINGLE_PHASE_TICKS - 2]
+jmp !y clock_b_data_a_zero
+clock_b_data_a_one:
+nop side MASK_AB [SINGLE_PHASE_TICKS - 1]
+jmp x-- clock_a_data_b side MASK_A [SINGLE_PHASE_TICKS - 1]
+
+.wrap
+
+clock_b_data_a_zero:
+nop side MASK_B [SINGLE_PHASE_TICKS - 1]
+jmp x-- clock_a_data_b side 0 [SINGLE_PHASE_TICKS - 1]
+
+.wrap_target
+
+end_sequence:
+out y, 24 side MASK_A [SINGLE_PHASE_TICKS - 1]
+nop side MASK_AB [DOUBLE_PHASE_TICKS - 1]
+nop side MASK_A [DOUBLE_PHASE_TICKS - 1]
+nop side 0 [DOUBLE_PHASE_TICKS - 1]
+nop side MASK_A [DOUBLE_PHASE_TICKS - 1]
+nop side 0 [DOUBLE_PHASE_TICKS - 1]
+irq wait 0 rel side MASK_A

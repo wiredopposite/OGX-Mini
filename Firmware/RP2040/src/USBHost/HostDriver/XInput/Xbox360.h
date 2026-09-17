@@ -17,6 +17,7 @@ public:
     bool send_feedback(Gamepad& gamepad, uint8_t address, uint8_t instance) override;
 
 private:
+    uint32_t tid_keepalive_{0};
     XInput::InReport prev_in_report_;
 };
 
